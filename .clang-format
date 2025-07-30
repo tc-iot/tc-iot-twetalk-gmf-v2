@@ -1,0 +1,24 @@
+BasedOnStyle: Google
+AlignConsecutiveAssignments: true
+AlignConsecutiveMacros: true
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: false
+BreakBeforeBraces: Custom
+BraceWrapping:
+     AfterClass:      false
+     AfterControlStatement: false
+     AfterEnum:       true
+     AfterFunction:   true
+     AfterNamespace:  false
+     AfterObjCDeclaration: false
+     AfterStruct:     false
+     AfterUnion:      false
+     AfterExternBlock: false
+     BeforeCatch:     false
+     BeforeElse:      false
+     IndentBraces:    false
+     SplitEmptyFunction: true
+     SplitEmptyRecord: true
+     SplitEmptyNamespace: true
+ColumnLimit: 120
+IndentWidth: 4

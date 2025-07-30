@@ -1,0 +1,294 @@
+menu "Example Audio Configuration"
+
+#
+# Select how the audio conversation is triggered
+#
+choice
+    prompt "Audio Conversation Trigger Mode"
+    default CONTINUOUS_CONVERSATION_MODE
+
+config VOICE_WAKEUP_MODE
+    bool "Wake Word Mode"
+    select SR_WN_WN9_HILEXIN
+    help
+      System is activated by a predefined wake word (e.g. 'Hi Lexin').
+
+config CONTINUOUS_CONVERSATION_MODE
+    bool "Continuous Mode"
+    help
+      Keeps the system active after the initial trigger for ongoing conversation.
+
+config KEY_PRESS_DIALOG_MODE
+    bool "Key Press Mode"
+    help
+      System is triggered by a physical key press.
+
+endchoice
+
+#
+# Select audio upload encoding format
+#
+choice
+    prompt "Audio Encoder Format"
+    default ENCODER_FORMAT_OPUS
+    help
+      Select the audio format for encoding voice data for upload to COZE service.
+
+config ENCODER_FORMAT_OPUS
+    bool "OPUS"
+    help
+      Use OPUS encoding for audio data.
+
+if ENCODER_FORMAT_OPUS
+    config ENCODER_SAMPLE_RATE
+        int "Encoder Sample Rate (Hz)"
+        default 16000
+        help
+          Sample rate for audio encoding in Hz.
+
+    config ENCODER_BIT_WIDTH
+        int "Encoder Bit Width"
+        default 16
+        help
+          Bit width for audio encoding.
+
+    config ENCODER_CHANNEL_COUNT
+        int "Encoder Channel Count"
+        default 1
+        help
+          Number of audio channels for encoding.
+     
+    config ENCODER_OPUS_BITRATE
+        int "OPUS Encoder Bitrate (bps)"
+        default 24000
+        help
+          Bitrate for OPUS encoder in bps.
+
+    config ENCODER_OPUS_ENABLE_VBR
+        bool "Enable OPUS VBR Mode"
+        default n
+        help
+          Enable Variable Bit Rate mode for OPUS encoding.
+endif
+
+config ENCODER_FORMAT_PCM
+    bool "PCM"
+    help
+      Use PCM encoding for audio data.
+      Note: Not recommended for production use due to large data size.
+
+if ENCODER_FORMAT_PCM
+    config ENCODER_SAMPLE_RATE
+        int "Encoder Sample Rate (Hz)"
+        default 16000
+        help
+          Sample rate for audio encoding in Hz.
+
+    config ENCODER_BIT_WIDTH
+        int "Encoder Bit Width"
+        default 16
+        help
+          Bit width for audio encoding.
+
+    config ENCODER_CHANNEL_COUNT
+        int "Encoder Channel Count"
+        default 1
+        help
+          Number of audio channels for encoding.
+endif
+
+config ENCODER_FORMAT_G711A
+    bool "G711A (A-law)"
+    help
+      Use G711A (A-law) encoding for audio data.
+      Default settings: Sample rate 8000Hz, Bit width 16, Channel count 1.
+
+config ENCODER_FORMAT_G711U
+    bool "G711U (μ-law)"
+    help
+      Use G711U (μ-law) encoding for audio data.
+    
+config ENCODER_FORMAT_AAC
+    bool "AAC"
+    help
+      Use AAC encoding for audio data.
+
+if ENCODER_FORMAT_AAC
+    config ENCODER_SAMPLE_RATE
+        int "Encoder Sample Rate (Hz)"
+        default 16000
+        help
+          Sample rate for audio encoding in Hz.
+
+    config ENCODER_BIT_WIDTH
+        int "Encoder Bit Width"
+        default 16
+        help
+          Bit width for audio encoding.
+
+    config ENCODER_CHANNEL_COUNT
+        int "Encoder Channel Count"
+        default 1
+        help
+          Number of audio channels for encoding.
+      
+    config ENCODER_AAC_BITRATE
+        int "AAC Encoder Bitrate (bps)"
+        default 24000
+        help
+          Bitrate for AAC encoder in bps.
+   
+    config ENCODER_AAC_ENABLE_VBR
+        bool "Enable AAC VBR Mode"
+        default n
+        help
+          Enable Variable Bit Rate mode for AAC encoding.
+
+endif
+
+endchoice
+
+#
+# Select audio download decoding format
+#
+choice
+    prompt "Audio Decoder Format"
+    default DECODER_FORMAT_OPUS
+    help
+      Select the audio format for decoding voice data from COZE service.
+
+config DECODER_FORMAT_OPUS
+    bool "OPUS"
+    help
+      Use OPUS decoding for audio data.
+
+if DECODER_FORMAT_OPUS
+    config DECODER_SAMPLE_RATE
+        int "Decoder Sample Rate (Hz)"
+        default 16000
+        help
+          Sample rate for audio decoding in Hz.
+
+    config DECODER_BIT_WIDTH
+        int "Decoder Bit Width"
+        default 16
+        help
+          Bit width for audio decoding.
+
+    config DECODER_CHANNEL_COUNT
+        int "Decoder Channel Count"
+        default 1
+        help
+          Number of audio channels for decoding.
+
+    config DECODER_OPUS_FRAME_DURATION_MS
+        int "OPUS Frame Duration (ms)"
+        default 5
+        help
+          Select the OPUS frame duration for decoding.
+          0: Data corresponds to 2.5ms per frame
+          1: Data corresponds to 5ms per frame
+          2: Data corresponds to 10ms per frame
+          3: Data corresponds to 20ms per frame
+          4: Data corresponds to 40ms per frame
+          5: Data corresponds to 60ms per frame
+          6: Data corresponds to 80ms per frame
+          7: Data corresponds to 100ms per frame
+          8: Data corresponds to 120ms per frame
+          The value determines the duration of each OPUS frame in milliseconds.
+
+endif
+
+config DECODER_FORMAT_PCM
+    bool "PCM"
+    help
+      Use PCM decoding for audio data.
+      Note: Not recommended for production use due to large data size.
+
+if DECODER_FORMAT_PCM
+    config DECODER_SAMPLE_RATE
+        int "Decoder Sample Rate (Hz)"
+        default 16000
+        help
+          Sample rate for audio decoding in Hz.
+
+    config DECODER_BIT_WIDTH
+        int "Decoder Bit Width"
+        default 16
+        help
+          Bit width for audio decoding.
+
+    config DECODER_CHANNEL_COUNT
+        int "Decoder Channel Count"
+        default 1
+        help
+          Number of audio channels for decoding.
+endif
+
+config DECODER_FORMAT_G711A
+    bool "G711A (A-law)"
+    help
+      Use G711A (A-law) decoding for audio data.
+      Default settings: Sample rate 8000Hz, Bit width 16, Channel count 1.
+
+config DECODER_FORMAT_G711U
+    bool "G711U (μ-law)"
+    help
+      Use G711U (μ-law) decoding for audio data.
+
+config DECODER_FORMAT_AAC
+    bool "AAC"
+    help
+      Use AAC decoding for audio data.
+
+if DECODER_FORMAT_AAC
+    config DECODER_SAMPLE_RATE
+        int "Decoder Sample Rate (Hz)"
+        default 16000
+        help
+          Sample rate for audio decoding in Hz.
+
+    config DECODER_BIT_WIDTH
+        int "Decoder Bit Width"
+        default 16
+        help
+          Bit width for audio decoding.
+
+    config DECODER_CHANNEL_COUNT
+        int "Decoder Channel Count"
+        default 1
+        help
+          Number of audio channels for decoding.
+
+    config DECODER_AAC_ENABLE_PLUS
+        bool "Enable AAC+ Mode"
+        default n
+        help
+          Enable AAC+ (High-Efficiency AAC) decoding mode.
+     
+    config DECODER_AAC_DISABLE_ADTS_HEADER
+        bool "Disable AAC ADTS Header"
+        default n
+        help
+          Configure decoder for AAC streams without ADTS headers.
+
+endif
+
+endchoice
+
+config ENABLE_RECORDER_DEBUG
+    bool "Enable AEC Debug"
+    default n
+    help
+      Enable AEC (Acoustic Echo Cancellation) debug functionality.
+      When enabled, AEC debug data will be written for debugging purposes.
+
+config COZE_BOT_ID
+    string "COZE_BOT_ID"
+    default "7239506**************"
+
+config COZE_ACCESS_TOKEN
+    string "COZE_ACCESS_TOKEN"
+    default "pat_******************"
+
+endmenu

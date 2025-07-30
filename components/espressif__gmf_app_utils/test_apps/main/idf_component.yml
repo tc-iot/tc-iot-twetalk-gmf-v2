@@ -1,0 +1,5 @@
+dependencies:
+  espressif/gmf_core:
+    override_path: "../../../../gmf_core"
+  espressif/gmf_app_utils:
+    override_path: "../../../gmf_app_utils"
