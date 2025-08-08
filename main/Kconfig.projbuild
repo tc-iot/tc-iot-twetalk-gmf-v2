@@ -283,12 +283,25 @@ config ENABLE_RECORDER_DEBUG
       Enable AEC (Acoustic Echo Cancellation) debug functionality.
       When enabled, AEC debug data will be written for debugging purposes.
 
-config COZE_BOT_ID
-    string "COZE_BOT_ID"
-    default "7239506**************"
+config QCLOUD_PRODUCT_ID
+    string "QCLOUD_PRODUCT_ID"
+    default "YOUR_PRODUCT_ID"
 
-config COZE_ACCESS_TOKEN
-    string "COZE_ACCESS_TOKEN"
-    default "pat_******************"
+config QCLOUD_DEVICE_NAME
+    string "QCLOUD_DEVICE_NAME"
+    default "YOUR_DEVICE_NAME"
+
+config QCLOUD_DEVICE_SECRET
+    string "QCLOUD_DEVICE_SECRET"
+    default "YOUR_DEVICE_SECRET"
+
+config TWETALK_CALLING_NAME 
+   string "TWETALK_CALLING_NAME"
+   default "妈妈"
+
+config TWETALK_CALLING_OPENID
+   string "TWETALK_CALLING_OPENID"
+   default "oOMCN5CR14xUh7vBmxRQdSYjsLek"
+  
 
 endmenu

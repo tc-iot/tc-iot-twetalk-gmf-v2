@@ -23,6 +23,8 @@
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "esp_system.h"
+#include "esp_gmf_oal_thread.h"
+#include "qcloud_iot_platform.h"
 
 #define TAG "BUTTON"
 
@@ -57,6 +59,14 @@ uint8_t prv_btn_get_state(struct ebtn_btn *btn)
     return gpio_get_level(BUTTON_PIN) == 0 ? 1 : 0;
 }
 
+static void button_key_thread_entry(void *arg)
+{
+    while (1) {
+        ebtn_process(HAL_Timer_CurrentMs());
+        HAL_SleepMs(10);
+    }
+}
+
 int button_key_init(ebtn_evt_fn event_cb)
 {
    esp_err_t ret;
@@ -86,5 +96,7 @@ int button_key_init(ebtn_evt_fn event_cb)
     //     return -1;
     // }
     // gpio_set_level(LED_PIN, 1);  // off
-    return 0;
+    static esp_gmf_oal_thread_t button_thread;
+    return esp_gmf_oal_thread_create(&button_thread, "button_key", button_key_thread_entry, (void *)NULL, 4 * 1024, 2,
+                                     true, 1);
 }

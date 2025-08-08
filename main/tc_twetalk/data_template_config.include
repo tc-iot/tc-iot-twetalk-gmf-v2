@@ -1,0 +1,90 @@
+#include "qcloud_iot_data_template_config.h"
+
+/*----------------- property index enum start  -------------------*/
+
+typedef enum {
+    USR_PROPERTY_INDEX_BATTERY = 0,
+    USR_PROPERTY_INDEX_VOLUME,
+} UsrPropertyIndex;
+
+/*----------------- property index enum end  -------------------*/
+
+/*----------------- event index enum start  -------------------*/
+
+typedef enum {
+    USR_EVENT_INDEX_NONE = 0,
+} UsrEventIndex;
+
+/*----------------- event index enum end  -------------------*/
+
+/*----------------- action index enum start  -------------------*/
+
+typedef enum {
+    USR_ACTION_INDEX_NONE = 0,
+} UsrActionIndex;
+
+/*----------------- action index enum end  -------------------*/
+
+// ----------------------------------------------------------------------------
+// user property
+// ----------------------------------------------------------------------------/
+
+#define TOTAL_USR_PROPERTY_COUNT 2
+
+typedef struct {
+} PropertyDataDefine;
+
+static void _init_data_template_property(DataTemplateProperty* property, PropertyDataDefine* data)
+{
+    property[USR_PROPERTY_INDEX_BATTERY].value.value_int = 0;
+    property[USR_PROPERTY_INDEX_BATTERY].key = "battery";
+    property[USR_PROPERTY_INDEX_BATTERY].type = DATA_TEMPLATE_TYPE_INT;
+    property[USR_PROPERTY_INDEX_BATTERY].need_report = 1;
+    property[USR_PROPERTY_INDEX_BATTERY].is_rw = 0;
+
+    property[USR_PROPERTY_INDEX_VOLUME].value.value_int = 0;
+    property[USR_PROPERTY_INDEX_VOLUME].key = "volume";
+    property[USR_PROPERTY_INDEX_VOLUME].type = DATA_TEMPLATE_TYPE_INT;
+    property[USR_PROPERTY_INDEX_VOLUME].need_report = 1;
+    property[USR_PROPERTY_INDEX_VOLUME].is_rw = 1;
+
+}
+
+// ----------------------------------------------------------------------------
+// user event
+// ----------------------------------------------------------------------------
+
+#define TOTAL_USR_EVENT_COUNT 0
+
+static void _init_data_template_event(DataTemplateEvent* event)
+{
+}
+
+// ----------------------------------------------------------------------------
+// user action
+// ----------------------------------------------------------------------------
+
+#define TOTAL_USR_ACTION_COUNT 0
+
+typedef struct {
+} ActionDataDefine;
+
+static void _init_data_template_action(DataTemplateAction* action, ActionDataDefine* data)
+{
+}
+
+// ----------------------------------------------------------------------------
+// user data template create
+// ----------------------------------------------------------------------------
+
+static DataTemplate* _usr_data_template_create(void)
+{
+    DataTemplate* data_template = iot_data_template_create(TOTAL_USR_PROPERTY_COUNT, sizeof(PropertyDataDefine), TOTAL_USR_EVENT_COUNT, TOTAL_USR_ACTION_COUNT, sizeof(ActionDataDefine));
+    if (!data_template) {
+        return NULL;
+    }
+    _init_data_template_property(data_template->property, data_template->property_data);
+    _init_data_template_event(data_template->event);
+    _init_data_template_action(data_template->action, data_template->action_data);
+    return data_template;
+}

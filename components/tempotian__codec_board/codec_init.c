@@ -1,40 +1,41 @@
-#include <string.h>
 #include <stdint.h>
+#include <string.h>
+
 #include "driver/i2c.h"
 #include "esp_idf_version.h"
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+#include "driver/i2s_pdm.h"
 #include "driver/i2s_std.h"
 #include "driver/i2s_tdm.h"
-#include "driver/i2s_pdm.h"
 #include "soc/soc_caps.h"
 #else
 #include "driver/i2s.h"
 #endif
+#include "codec_board.h"
+#include "codec_init.h"
+#include "driver/i2c_master.h"
+#include "driver/sdmmc_defs.h"
+#include "driver/sdmmc_host.h"
+#include "dummy_codec.h"
 #include "esp_codec_dev.h"
 #include "esp_codec_dev_defaults.h"
 #include "esp_codec_dev_os.h"
-#include "codec_board.h"
-#include "codec_init.h"
 #include "esp_log.h"
-#include "dummy_codec.h"
-#include "driver/i2c_master.h"
 #include "esp_vfs_fat.h"
-#include "driver/sdmmc_host.h"
-#include "driver/sdmmc_defs.h"
 
 #define TAG "CODEC_INIT"
 
 typedef struct {
-    bool                         inited;
+    bool inited;
     const audio_codec_data_if_t *data_if;
     const audio_codec_data_if_t *data_in_if;
     const audio_codec_gpio_if_t *gpio_if;
     const audio_codec_ctrl_if_t *in_ctrl_if;
     const audio_codec_ctrl_if_t *out_ctrl_if;
-    const audio_codec_if_t      *out_codec_if;
-    const audio_codec_if_t      *in_codec_if;
-    esp_codec_dev_handle_t       play_dev;
-    esp_codec_dev_handle_t       record_dev;
+    const audio_codec_if_t *out_codec_if;
+    const audio_codec_if_t *in_codec_if;
+    esp_codec_dev_handle_t play_dev;
+    esp_codec_dev_handle_t record_dev;
 } codec_res_t;
 
 #define USE_I2C_MASTER
@@ -46,10 +47,10 @@ typedef struct {
 #endif
 } i2s_keep_t;
 
-static bool                    i2c_inited[MAX_I2C_NUM];
+static bool i2c_inited[MAX_I2C_NUM];
 static i2c_master_bus_handle_t i2c_bus_handle[MAX_I2C_NUM];
-static i2s_keep_t             *i2s_keep[MAX_I2S_NUM];
-static codec_res_t             codec_res;
+static i2s_keep_t *i2s_keep[MAX_I2S_NUM];
+static codec_res_t codec_res;
 
 static int _i2c_init(uint8_t port)
 {
@@ -67,14 +68,14 @@ static int _i2c_init(uint8_t port)
     // workaround to check i2c initialized already
     int ret = 0;
 #ifdef USE_I2C_MASTER
-    i2c_master_bus_config_t i2c_bus_config = { 0 };
-    i2c_bus_config.clk_source = I2C_CLK_SRC_DEFAULT;
-    i2c_bus_config.i2c_port = port;
-    i2c_bus_config.scl_io_num = i2c_pin.scl;
-    i2c_bus_config.sda_io_num = i2c_pin.sda;
-    i2c_bus_config.glitch_ignore_cnt = 7;
+    i2c_master_bus_config_t i2c_bus_config      = {0};
+    i2c_bus_config.clk_source                   = I2C_CLK_SRC_DEFAULT;
+    i2c_bus_config.i2c_port                     = port;
+    i2c_bus_config.scl_io_num                   = i2c_pin.scl;
+    i2c_bus_config.sda_io_num                   = i2c_pin.sda;
+    i2c_bus_config.glitch_ignore_cnt            = 7;
     i2c_bus_config.flags.enable_internal_pullup = true;
-    ret = i2c_new_master_bus(&i2c_bus_config, &i2c_bus_handle[port]);
+    ret                                         = i2c_new_master_bus(&i2c_bus_config, &i2c_bus_handle[port]);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "failed to initialize I2C master bus port %d", port);
         return -1;
@@ -82,14 +83,14 @@ static int _i2c_init(uint8_t port)
     ESP_LOGI(TAG, "Set mater handle %d %p", port, i2c_bus_handle[port]);
 #else
     i2c_config_t i2c_cfg = {
-        .mode = I2C_MODE_MASTER,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
+        .mode             = I2C_MODE_MASTER,
+        .sda_pullup_en    = GPIO_PULLUP_ENABLE,
+        .scl_pullup_en    = GPIO_PULLUP_ENABLE,
         .master.clk_speed = 100000,
     };
     i2c_cfg.sda_io_num = i2c_pin.sda;
     i2c_cfg.scl_io_num = i2c_pin.scl;
-    ret = i2c_param_config(port, &i2c_cfg);
+    ret                = i2c_param_config(port, &i2c_cfg);
     if (ret != ESP_OK) {
         return -1;
     }
@@ -123,7 +124,7 @@ static int _i2c_deinit(uint8_t port)
     i2c_driver_delete(port);
 #endif
     i2c_bus_handle[port] = NULL;
-    i2c_inited[port] = false;
+    i2c_inited[port]     = false;
     return 0;
 }
 
@@ -140,8 +141,7 @@ static int _i2s_init(uint8_t port, esp_codec_dev_type_t dev_type, codec_init_cfg
         ESP_LOGE(TAG, "Fail to get i2s pin");
         return -1;
     }
-    ESP_LOGI(TAG, "Init i2s %d type: %d mclk:%d bclk:%d ws:%d din:%d dout:%d",
-             port, dev_type, i2s_cfg.mclk,
+    ESP_LOGI(TAG, "Init i2s %d type: %d mclk:%d bclk:%d ws:%d din:%d dout:%d", port, dev_type, i2s_cfg.mclk,
              i2s_cfg.bclk, i2s_cfg.ws, i2s_cfg.din, i2s_cfg.dout);
     i2s_keep[port] = (i2s_keep_t *)calloc(1, sizeof(i2s_keep_t));
     if (i2s_keep[port] == NULL) {
@@ -149,20 +149,21 @@ static int _i2s_init(uint8_t port, esp_codec_dev_type_t dev_type, codec_init_cfg
     }
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
     i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
-    chan_cfg.auto_clear = true;
-    i2s_std_config_t std_cfg = {
-        .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(16000),
-        .slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(32, I2S_SLOT_MODE_STEREO),
-        .gpio_cfg = {
-            .mclk = i2s_cfg.mclk,
-            .bclk = i2s_cfg.bclk,
-            .ws = i2s_cfg.ws,
-            .dout = i2s_cfg.dout,
-            .din = i2s_cfg.din,
-        },
+    chan_cfg.auto_clear        = true;
+    i2s_std_config_t std_cfg   = {
+          .clk_cfg  = I2S_STD_CLK_DEFAULT_CONFIG(16000),
+          .slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(32, I2S_SLOT_MODE_STEREO),
+          .gpio_cfg =
+            {
+                  .mclk = i2s_cfg.mclk,
+                  .bclk = i2s_cfg.bclk,
+                  .ws   = i2s_cfg.ws,
+                  .dout = i2s_cfg.dout,
+                  .din  = i2s_cfg.din,
+            },
     };
     bool output = (dev_type & ESP_CODEC_DEV_TYPE_OUT) > 0;
-    bool input = (dev_type & ESP_CODEC_DEV_TYPE_IN) > 0;
+    bool input  = (dev_type & ESP_CODEC_DEV_TYPE_IN) > 0;
     // Same I2S have tx and rx but use rx or tx only
     if (output && init_cfg->out_mode == CODEC_I2S_MODE_NONE) {
         output = false;
@@ -175,21 +176,22 @@ static int _i2s_init(uint8_t port, esp_codec_dev_type_t dev_type, codec_init_cfg
     }
 #ifdef SOC_I2S_SUPPORTS_TDM
     i2s_tdm_slot_mask_t slot_mask = I2S_TDM_SLOT0 | I2S_TDM_SLOT1 | I2S_TDM_SLOT2 | I2S_TDM_SLOT3;
-    i2s_tdm_config_t tdm_cfg = {
-        .slot_cfg = I2S_TDM_PHILIPS_SLOT_DEFAULT_CONFIG(32, I2S_SLOT_MODE_STEREO, slot_mask),
-        .clk_cfg = I2S_TDM_CLK_DEFAULT_CONFIG(16000),
-        .gpio_cfg = {
-            .mclk = i2s_cfg.mclk,
-            .bclk = i2s_cfg.bclk,
-            .ws = i2s_cfg.ws,
-            .dout = i2s_cfg.dout,
-            .din = i2s_cfg.din,
-        },
+    i2s_tdm_config_t tdm_cfg      = {
+             .slot_cfg = I2S_TDM_PHILIPS_SLOT_DEFAULT_CONFIG(32, I2S_SLOT_MODE_STEREO, slot_mask),
+             .clk_cfg  = I2S_TDM_CLK_DEFAULT_CONFIG(16000),
+             .gpio_cfg =
+            {
+                     .mclk = i2s_cfg.mclk,
+                     .bclk = i2s_cfg.bclk,
+                     .ws   = i2s_cfg.ws,
+                     .dout = i2s_cfg.dout,
+                     .din  = i2s_cfg.din,
+            },
     };
     tdm_cfg.slot_cfg.total_slot = 4;
 #endif
-    chan_cfg.id = I2S_NUM_AUTO; // Use auto ID
-    int ret = i2s_new_channel(&chan_cfg, output == false ? NULL : &i2s_keep[port]->tx_handle,
+    chan_cfg.id = I2S_NUM_AUTO;  // Use auto ID
+    int ret     = i2s_new_channel(&chan_cfg, output == false ? NULL : &i2s_keep[port]->tx_handle,
                               input == false ? NULL : &i2s_keep[port]->rx_handle);
     ESP_LOGI(TAG, "tx:%p rx:%p", i2s_keep[port]->tx_handle, i2s_keep[port]->rx_handle);
     if (i2s_keep[port]->tx_handle) {
@@ -206,15 +208,17 @@ static int _i2s_init(uint8_t port, esp_codec_dev_type_t dev_type, codec_init_cfg
 #ifdef SOC_I2S_SUPPORTS_PDM_TX
         else if (init_cfg->out_mode == CODEC_I2S_MODE_PDM) {
             i2s_pdm_tx_config_t pdm_cfg = {
-                .clk_cfg = I2S_PDM_TX_CLK_DEFAULT_CONFIG(16000),
+                .clk_cfg  = I2S_PDM_TX_CLK_DEFAULT_CONFIG(16000),
                 .slot_cfg = I2S_PDM_TX_SLOT_DEFAULT_CONFIG(16, I2S_SLOT_MODE_STEREO),
-                .gpio_cfg = {
-                    .dout = i2s_cfg.dout,
-                    .clk = i2s_cfg.bclk,
-                    .invert_flags = {
-                        .clk_inv = false,
+                .gpio_cfg =
+                    {
+                        .dout = i2s_cfg.dout,
+                        .clk  = i2s_cfg.bclk,
+                        .invert_flags =
+                            {
+                                .clk_inv = false,
+                            },
                     },
-                },
             };
             ret = i2s_channel_init_pdm_tx_mode(i2s_keep[port]->tx_handle, &pdm_cfg);
             ESP_LOGI(TAG, "output init pdm ret %d", ret);
@@ -235,15 +239,17 @@ static int _i2s_init(uint8_t port, esp_codec_dev_type_t dev_type, codec_init_cfg
 #ifdef SOC_I2S_SUPPORTS_PDM_RX
         else if (init_cfg->in_mode == CODEC_I2S_MODE_PDM) {
             i2s_pdm_rx_config_t pdm_cfg = {
-                .clk_cfg = I2S_PDM_RX_CLK_DEFAULT_CONFIG(16000),
+                .clk_cfg  = I2S_PDM_RX_CLK_DEFAULT_CONFIG(16000),
                 .slot_cfg = I2S_PDM_RX_SLOT_DEFAULT_CONFIG(16, I2S_SLOT_MODE_STEREO),
-                .gpio_cfg = {
-                    .din = i2s_cfg.din,
-                    .clk = i2s_cfg.bclk,
-                    .invert_flags = {
-                        .clk_inv = false,
+                .gpio_cfg =
+                    {
+                        .din = i2s_cfg.din,
+                        .clk = i2s_cfg.bclk,
+                        .invert_flags =
+                            {
+                                .clk_inv = false,
+                            },
                     },
-                },
             };
             ret = i2s_channel_init_pdm_rx_mode(i2s_keep[port]->rx_handle, &pdm_cfg);
             ESP_LOGI(TAG, "Input init pdm ret %d", ret);
@@ -259,26 +265,26 @@ static int _i2s_init(uint8_t port, esp_codec_dev_type_t dev_type, codec_init_cfg
     }
 #else
     i2s_config_t i2s_config = {
-        .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_RX),
-        .sample_rate = 44100,
-        .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
-        .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
+        .mode                 = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_RX),
+        .sample_rate          = 44100,
+        .bits_per_sample      = I2S_BITS_PER_SAMPLE_16BIT,
+        .channel_format       = I2S_CHANNEL_FMT_RIGHT_LEFT,
         .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2 | ESP_INTR_FLAG_IRAM,
-        .dma_buf_count = 3,
-        .dma_buf_len = 300,
-        .use_apll = true,
-        .tx_desc_auto_clear = true,
-        .fixed_mclk = 0
+        .intr_alloc_flags     = ESP_INTR_FLAG_LEVEL2 | ESP_INTR_FLAG_IRAM,
+        .dma_buf_count        = 3,
+        .dma_buf_len          = 300,
+        .use_apll             = true,
+        .tx_desc_auto_clear   = true,
+        .fixed_mclk           = 0
         //.mclk_multiple = 256,
     };
-    int ret = i2s_driver_install(port, &i2s_config, 0, NULL);
+    int ret                      = i2s_driver_install(port, &i2s_config, 0, NULL);
     i2s_pin_config_t i2s_pin_cfg = {
-        .mck_io_num = i2s_cfg.mclk,
-        .bck_io_num = i2s_cfg.bclk,
-        .ws_io_num = i2s_cfg.ws,
+        .mck_io_num   = i2s_cfg.mclk,
+        .bck_io_num   = i2s_cfg.bclk,
+        .ws_io_num    = i2s_cfg.ws,
         .data_out_num = i2s_cfg.dout,
-        .data_in_num = i2s_cfg.din,
+        .data_in_num  = i2s_cfg.din,
     };
     i2s_set_pin(port, &i2s_pin_cfg);
 #endif
@@ -347,10 +353,10 @@ int init_codec(codec_init_cfg_t *cfg)
         ESP_LOGI(TAG, "Already initialized");
         return 0;
     }
-    codec_cfg_t out_cfg = { 0 };
-    codec_cfg_t in_cfg = { 0 };
-    bool has_out = false;
-    bool has_in = false;
+    codec_cfg_t out_cfg = {0};
+    codec_cfg_t in_cfg  = {0};
+    bool has_out        = false;
+    bool has_in         = false;
     // Get codec configuration
     if (get_out_codec_cfg(&out_cfg) == 0) {
         has_out = true;
@@ -415,33 +421,33 @@ int init_codec(codec_init_cfg_t *cfg)
         // TODO add other codec support
         switch (out_cfg.codec_type) {
             case CODEC_TYPE_ES8311: {
-                i2c_cfg.addr = out_cfg.i2c_addr ? out_cfg.i2c_addr : ES8311_CODEC_DEFAULT_ADDR;
-                codec_res.out_ctrl_if = audio_codec_new_i2c_ctrl(&i2c_cfg);
+                i2c_cfg.addr                  = out_cfg.i2c_addr ? out_cfg.i2c_addr : ES8311_CODEC_DEFAULT_ADDR;
+                codec_res.out_ctrl_if         = audio_codec_new_i2c_ctrl(&i2c_cfg);
                 es8311_codec_cfg_t es8311_cfg = {
-                    .codec_mode = same_codec ? ESP_CODEC_DEV_WORK_MODE_BOTH : ESP_CODEC_DEV_WORK_MODE_DAC,
-                    .ctrl_if = codec_res.out_ctrl_if,
-                    .gpio_if = codec_res.gpio_if,
-                    .pa_pin = out_cfg.pa_pin,
-                    .use_mclk = out_cfg.use_mclk,
+                    .codec_mode      = same_codec ? ESP_CODEC_DEV_WORK_MODE_BOTH : ESP_CODEC_DEV_WORK_MODE_DAC,
+                    .ctrl_if         = codec_res.out_ctrl_if,
+                    .gpio_if         = codec_res.gpio_if,
+                    .pa_pin          = out_cfg.pa_pin,
+                    .use_mclk        = out_cfg.use_mclk,
                     .hw_gain.pa_gain = out_cfg.pa_gain,
                 };
                 codec_res.out_codec_if = es8311_codec_new(&es8311_cfg);
             } break;
             case CODEC_TYPE_ES8388: {
-                i2c_cfg.addr = out_cfg.i2c_addr ? out_cfg.i2c_addr : ES8388_CODEC_DEFAULT_ADDR;
-                codec_res.out_ctrl_if = audio_codec_new_i2c_ctrl(&i2c_cfg);
+                i2c_cfg.addr                  = out_cfg.i2c_addr ? out_cfg.i2c_addr : ES8388_CODEC_DEFAULT_ADDR;
+                codec_res.out_ctrl_if         = audio_codec_new_i2c_ctrl(&i2c_cfg);
                 es8388_codec_cfg_t es8388_cfg = {
-                    .codec_mode = same_codec ? ESP_CODEC_DEV_WORK_MODE_BOTH : ESP_CODEC_DEV_WORK_MODE_DAC,
-                    .ctrl_if = codec_res.out_ctrl_if,
-                    .gpio_if = codec_res.gpio_if,
-                    .pa_pin = out_cfg.pa_pin,
+                    .codec_mode      = same_codec ? ESP_CODEC_DEV_WORK_MODE_BOTH : ESP_CODEC_DEV_WORK_MODE_DAC,
+                    .ctrl_if         = codec_res.out_ctrl_if,
+                    .gpio_if         = codec_res.gpio_if,
+                    .pa_pin          = out_cfg.pa_pin,
                     .hw_gain.pa_gain = out_cfg.pa_gain,
                 };
                 codec_res.out_codec_if = es8388_codec_new(&es8388_cfg);
             } break;
             case CODEC_TYPE_DUMMY: {
                 dummy_codec_cfg_t dummy_cfg = {
-                    .gpio_if = codec_res.gpio_if,
+                    .gpio_if     = codec_res.gpio_if,
                     .enable_gpio = out_cfg.pa_pin,
                 };
                 codec_res.out_codec_if = dummy_codec_new(&dummy_cfg);
@@ -452,7 +458,7 @@ int init_codec(codec_init_cfg_t *cfg)
         }
         esp_codec_dev_cfg_t dev_cfg = {
             .codec_if = codec_res.out_codec_if,
-            .data_if = codec_res.data_if,
+            .data_if  = codec_res.data_if,
             .dev_type = ESP_CODEC_DEV_TYPE_OUT,
         };
         if (same_codec && cfg->reuse_dev) {
@@ -464,7 +470,7 @@ int init_codec(codec_init_cfg_t *cfg)
                 codec_res.record_dev = codec_res.play_dev;
             } else {
                 // separate record from playback so that can set different fs
-                dev_cfg.dev_type = ESP_CODEC_DEV_TYPE_IN;
+                dev_cfg.dev_type     = ESP_CODEC_DEV_TYPE_IN;
                 codec_res.record_dev = esp_codec_dev_new(&dev_cfg);
             }
         }
@@ -489,10 +495,15 @@ int init_codec(codec_init_cfg_t *cfg)
         // TODO add other codec support
         switch (in_cfg.codec_type) {
             case CODEC_TYPE_ES7210: {
-                i2c_cfg.addr = in_cfg.i2c_addr ? in_cfg.i2c_addr : ES7210_CODEC_DEFAULT_ADDR;
-                codec_res.in_ctrl_if = audio_codec_new_i2c_ctrl(&i2c_cfg);
+#ifdef CONFIG_LCEDA_SZP_BOARD
+#define ES7210_CODEC_ADDR_USR_SET 0x82
+#else
+#define ES7210_CODEC_ADDR_USR_SET ES7210_CODEC_DEFAULT_ADDR
+#endif
+                i2c_cfg.addr                  = in_cfg.i2c_addr ? in_cfg.i2c_addr : ES7210_CODEC_ADDR_USR_SET;
+                codec_res.in_ctrl_if          = audio_codec_new_i2c_ctrl(&i2c_cfg);
                 es7210_codec_cfg_t es7210_cfg = {
-                    .ctrl_if = codec_res.in_ctrl_if,
+                    .ctrl_if      = codec_res.in_ctrl_if,
                     .mic_selected = ES7120_SEL_MIC1 | ES7120_SEL_MIC3,
                 };
                 if (cfg->in_use_tdm || (cfg->in_mode == CODEC_I2S_MODE_TDM)) {
@@ -502,8 +513,8 @@ int init_codec(codec_init_cfg_t *cfg)
             } break;
 
             case CODEC_TYPE_ES7243: {
-                i2c_cfg.addr = in_cfg.i2c_addr ? in_cfg.i2c_addr : ES7243_CODEC_DEFAULT_ADDR;
-                codec_res.in_ctrl_if = audio_codec_new_i2c_ctrl(&i2c_cfg);
+                i2c_cfg.addr                  = in_cfg.i2c_addr ? in_cfg.i2c_addr : ES7243_CODEC_DEFAULT_ADDR;
+                codec_res.in_ctrl_if          = audio_codec_new_i2c_ctrl(&i2c_cfg);
                 es7243_codec_cfg_t es7243_cfg = {
                     .ctrl_if = codec_res.in_ctrl_if,
                 };
@@ -512,7 +523,7 @@ int init_codec(codec_init_cfg_t *cfg)
 
             case CODEC_TYPE_DUMMY: {
                 dummy_codec_cfg_t dummy_cfg = {
-                    .gpio_if = codec_res.gpio_if,
+                    .gpio_if     = codec_res.gpio_if,
                     .enable_gpio = out_cfg.pa_pin,
                 };
                 codec_res.in_codec_if = dummy_codec_new(&dummy_cfg);
@@ -522,7 +533,7 @@ int init_codec(codec_init_cfg_t *cfg)
         }
         esp_codec_dev_cfg_t dev_cfg = {
             .codec_if = codec_res.in_codec_if,
-            .data_if = same_i2s ? codec_res.data_if : codec_res.data_in_if,
+            .data_if  = same_i2s ? codec_res.data_if : codec_res.data_in_if,
             .dev_type = ESP_CODEC_DEV_TYPE_IN,
         };
         codec_res.record_dev = esp_codec_dev_new(&dev_cfg);
@@ -614,7 +625,7 @@ static void enable_mmc_phy_power(void)
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0)
 #if CONFIG_IDF_TARGET_ESP32P4
     esp_ldo_channel_config_t ldo_cfg = {
-        .chan_id = 4,
+        .chan_id    = 4,
         .voltage_mv = 3300,
     };
     esp_ldo_channel_handle_t ldo_phy_chan;
@@ -627,8 +638,8 @@ static void enable_mmc_phy_power(void)
 static void sdmmc_get_slot(const int slot, sdmmc_slot_config_t *config)
 {
     memset(config, 0, sizeof(sdmmc_slot_config_t));
-    config->cd = SDMMC_SLOT_NO_CD;
-    config->wp = SDMMC_SLOT_NO_WP;
+    config->cd    = SDMMC_SLOT_NO_CD;
+    config->wp    = SDMMC_SLOT_NO_WP;
     config->width = 4;
     config->flags = 0;
 }
@@ -636,7 +647,7 @@ static void sdmmc_get_slot(const int slot, sdmmc_slot_config_t *config)
 
 int mount_sdcard(void)
 {
-    sdcard_cfg_t cfg = { 0 };
+    sdcard_cfg_t cfg = {0};
     enable_mmc_phy_power();
     int ret = get_sdcard_config(&cfg);
     if (ret != 0) {
@@ -646,10 +657,10 @@ int mount_sdcard(void)
 #if defined CONFIG_IDF_TARGET_ESP32
     gpio_config_t sdcard_pwr_pin_cfg = {
         .pin_bit_mask = 1UL << GPIO_NUM_13,
-        .mode = GPIO_MODE_OUTPUT,
-        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .mode         = GPIO_MODE_OUTPUT,
+        .pull_up_en   = GPIO_PULLUP_DISABLE,
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
-        .intr_type = GPIO_INTR_DISABLE,
+        .intr_type    = GPIO_INTR_DISABLE,
     };
     gpio_config(&sdcard_pwr_pin_cfg);
     gpio_set_level(GPIO_NUM_13, 0);
@@ -658,7 +669,7 @@ int mount_sdcard(void)
 #if SOC_SDMMC_HOST_SUPPORTED
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
         .format_if_mount_failed = false,
-        .max_files = 5,
+        .max_files              = 5,
     };
     sdmmc_host_t host = SDMMC_HOST_DEFAULT();
 #if CONFIG_IDF_TARGET_ESP32P4
@@ -668,22 +679,22 @@ int mount_sdcard(void)
     host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
 #endif
     sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
-    slot_config.width = cfg.d3 ? 4 : 1;
+    slot_config.width               = cfg.d3 ? 4 : 1;
 #if SOC_SDMMC_USE_GPIO_MATRIX
     slot_config.width = cfg.d3 ? 4 : 1;
     slot_config.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
-    slot_config.d4 = -1;
-    slot_config.d5 = -1;
-    slot_config.d6 = -1;
-    slot_config.d7 = -1;
-    slot_config.cd = -1;
-    slot_config.wp = -1;
+    slot_config.d4  = -1;
+    slot_config.d5  = -1;
+    slot_config.d6  = -1;
+    slot_config.d7  = -1;
+    slot_config.cd  = -1;
+    slot_config.wp  = -1;
     slot_config.clk = cfg.clk;
     slot_config.cmd = cfg.cmd;
-    slot_config.d0 = cfg.d0;
-    slot_config.d1 = cfg.d1 ? cfg.d1 : -1;
-    slot_config.d2 = cfg.d2 ? cfg.d2 : -1;
-    slot_config.d3 = cfg.d3 ? cfg.d3 : -1;
+    slot_config.d0  = cfg.d0;
+    slot_config.d1  = cfg.d1 ? cfg.d1 : -1;
+    slot_config.d2  = cfg.d2 ? cfg.d2 : -1;
+    slot_config.d3  = cfg.d3 ? cfg.d3 : -1;
 #endif /* SOC_SDMMC_USE_GPIO_MATRIX */
 #if CONFIG_IDF_TARGET_ESP32P4
     sdmmc_get_slot(0, &slot_config);

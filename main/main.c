@@ -24,6 +24,7 @@
 #include "freertos/task.h"
 #include "nvs_flash.h"
 #include "time.h"
+ #include "twetalk_app.h"
 
 // 使用SPIFFS作为文件系统，否则使用SD卡
 #define USE_SPIFFS
@@ -43,6 +44,44 @@ static void log_clear(void)
     esp_log_level_set("*", ESP_LOG_INFO);
 }
 
+static void spiffs_init(void)
+{
+    esp_vfs_spiffs_conf_t conf = {
+        .base_path = "/sdcard", .partition_label = "storage", .max_files = 4, .format_if_mount_failed = true};
+
+    esp_err_t ret = esp_vfs_spiffs_register(&conf);
+    if (ret != ESP_OK) {
+        if (ret == ESP_FAIL) {
+            ESP_LOGE(TAG, "Failed to mount or format filesystem");
+        } else if (ret == ESP_ERR_NOT_FOUND) {
+            ESP_LOGE(TAG, "Failed to find SPIFFS partition");
+        } else {
+            ESP_LOGE(TAG, "Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
+        }
+        return;
+    }
+
+    size_t total = 0, used = 0;
+    ret = esp_spiffs_info(NULL, &total, &used);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to get SPIFFS partition information (%s)", esp_err_to_name(ret));
+    } else {
+        ESP_LOGI(TAG, "Partition size: total: %d Kbytes, used: %d Kbytes", total >> 10, used >> 10);
+    }
+#if 0
+    // check file exist
+    DIR* dir = opendir("/sdcard/model");
+    assert(dir != NULL);
+    while (true) {
+        struct dirent* pe = readdir(dir);
+        if (!pe)
+            break;
+        ESP_LOGI(__FUNCTION__, "d_name=%s d_ino=%d d_type=%x", pe->d_name, pe->d_ino, pe->d_type);
+    }
+    closedir(dir);
+#endif
+}
+
 void app_main(void)
 {
     log_clear();
@@ -52,6 +91,15 @@ void app_main(void)
         ESP_ERROR_CHECK(nvs_flash_erase());
         ESP_ERROR_CHECK(nvs_flash_init());
     }
+    spiffs_init();
+    extern int HAL_Wifi_StartStaConnect(const char *ssid, const char *passwd, uint32_t timeout_ms);
+    err = HAL_Wifi_StartStaConnect(CONFIG_EXAMPLE_WIFI_SSID, CONFIG_EXAMPLE_WIFI_PASSWORD, 10000);
+    if(err != ESP_OK) {
+        ESP_LOGE(TAG, "Wifi connect failed");
+        return;
+    }
+
+    tc_twetalk_init();
 
     // esp_gmf_app_sys_monitor_start();
     // while (1) {
