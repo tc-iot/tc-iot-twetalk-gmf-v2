@@ -35,4 +35,3 @@ if(EXISTS ${IOT_SDK_SOURCE_DIR}/CMakeLists.txt)
     )
 endif()
 
-

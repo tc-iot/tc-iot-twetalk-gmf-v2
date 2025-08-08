@@ -340,7 +340,7 @@ menuconfig → ESP Speech Recognition → use wakenet → Select wake words
 
 **使用方法**：
 ```
-说出唤醒词 → 听到提示音 → 开始对话
+说出唤醒词 → 听到提示音 → 开始对话 后续一段时间内无需唤醒可以直接连续对话
 ```
 
 </details>
@@ -576,54 +576,100 @@ INF|4289|twetalk_app.c|twetalk_thread_entry(380): Cloud Device Construct Success
 项目成功运行后，您将在串口监控中看到类似的启动日志：
 
 ```log
-INF|2690|mqtt_client.c|_qcloud_iot_mqtt_client_init(217): SDK_Ver: 4.1.0-fadbc92b544b4921dbb6d8951f99fb5cccfa3eaf, Product_ID: 7EJ1UNEKC9, Device_Name: xph001
-I (3706) ESP_GMF_AENC: Open, type:OPUS, acquire in frame: 1920, out frame: 280
-I (3707) ESP_GMF_TASK: One times job is complete, del[wk:0x3c3c8fa4, ctx:0x3c36c684, label:aud_enc_open]
-INF|4206|network_interface.c|_network_tcp_connect(63): connected with TCP server: 7EJ1UNEKC9.iotcloud.tencentdevices.com:1883
-INF|4288|mqtt_client.c|IOT_MQTT_Construct(325): mqtt connect with id: 3Reh3 success
-INF|4289|twetalk_app.c|twetalk_thread_entry(380): Cloud Device Construct Success
-DBG|4294|mqtt_client_subscribe.c|qcloud_iot_mqtt_subscribe(350): subscribe topic_name=$thing/down/property/7EJ1UNEKC9/xph001|packet_id=59484
-INF|4448|twetalk_app.c|_mqtt_event_handler(212): subscribe success, packet-id=59484
-DBG|4511|mqtt_client_subscribe.c|qcloud_iot_mqtt_subscribe(350): subscribe topic_name=$thing/down/action/7EJ1UNEKC9/xph001|packet_id=59485
-INF|4653|twetalk_app.c|_mqtt_event_handler(212): subscribe success, packet-id=59485
-DBG|4717|mqtt_client_subscribe.c|qcloud_iot_mqtt_subscribe(350): subscribe topic_name=$twecall/down/service/7EJ1UNEKC9/xph001|packet_id=59486
-INF|4774|twetalk_app.c|_mqtt_event_handler(212): subscribe success, packet-id=59486
-DBG|4922|mqtt_client_publish.c|qcloud_iot_mqtt_publish(264): publish qos=1|packet_id=59487|topic_name=$twecall/up/service/7EJ1UNEKC9/xph001|payload={"method":"query_websocket_url","clientToken":"ws-4","params":{}}
-DBG|4932|twetalk_mqtt.c|IOT_TWeCall_QueryWSURL(196): wait query_websocket_url reply....
-INF|4987|twetalk_app.c|_mqtt_event_handler(236): publish success, packet-id=59487
-DBG|5209|twetalk_mqtt.c|_twecall_message_cb(55): twecall message arrived: {"method":"query_websocket_url_reply","clientToken":"ws-4","code":0,"status":"","params":{"token":"8bfef20b739211f0a8b252540077cf75","websocket_url":"ws://iot-twetalk.tencentiotcloud.com/ws","websocket_port":80}}
-
-INF|5341|twetalk.c|tc_twetalk_ws_init(265): ws url is ws://stress-test.tencentiotcloud.com/ws?role_id=QQ_hard 80
-DBG|5342|twetalk_ws.c|_ws_request(259): ws url:ws://stress-test.tencentiotcloud.com/ws?role_id=QQ_hard, port:80
-INF|5511|network_interface.c|_network_tcp_connect(63): connected with TCP server: stress-test.tencentiotcloud.com:80
-INF|5971|twetalk.c|_ws_recv_thread_entry(92): ws recv thread start
-INF|5976|twetalk.c|tc_twetalk_ws_init(351): ai talk init success(0)
-DBG|5977|data_template_config.c|iot_data_template_property_value_set(219): set property battery :0 >>> 100
-INF|5984|twetalk_call.c|tc_twetalk_call_event_type_print(128): 👤 [03] USR_TRANSCRIPTION - 用户字幕
-INF|5994|twetalk_app.c|_twetalk_recv_event_cb(314): usr: this is TranscriptionFrame
-DBG|6004|mqtt_client_publish.c|qcloud_iot_mqtt_publish(264): publish qos=0|packet_id=0|topic_name=$thing/up/property/7EJ1UNEKC9/xph001|payload={"method":"report","params":{"battery":100,"volume":0},"clientToken":"clear-control-6"}
-DBG|6024|data_template_config.c|iot_data_template_property_value_set(219): set property volume :0 >>> 80
-DBG|6034|mqtt_client_publish.c|qcloud_iot_mqtt_publish(264): publish qos=0|packet_id=0|topic_name=$thing/up/property/7EJ1UNEKC9/xph001|payload={"method":"report","params":{"volume":80},"clientToken":"clear-control-6"}
-DBG|6133|data_template_property.c|data_template_property_message_handler(211): receive property message:{"method":"report_reply","clientToken":"clear-control-6","code":0,"status":"success"}
-DBG|6205|data_template_property.c|data_template_property_message_handler(211): receive property message:{"method":"report_reply","clientToken":"clear-control-6","code":0,"status":"success"}
-W (7160) ESP_GMF_ASMP_DEC: Not enough memory for out, need:1920, old: 1024, new: 1920
-I (7163) ESP_GMF_TASK: One times job is complete, del[wk:0x3c30df28, ctx:0x3c3c91ec, label:aud_bit_cvt_open]
-I (7167) ESP_GMF_TASK: One times job is complete, del[wk:0x3c3fd8cc, ctx:0x3c30db08, label:aud_rate_cvt_open]
-INF|6239|twetalk_call.c|tc_twetalk_call_event_type_print(119): 🎤 [00] BOT_START_SPEAKING - 机器人开始说话
-I (7176) ESP_GMF_TASK: One times job is complete, del[wk:0x3c3f55ec, ctx:0x3c30dc5c, label:aud_ch_cvt_open]
-INF|6265|twetalk_app.c|_twetalk_recv_event_cb(298): bot start speaking
-INF|6862|twetalk_call.c|tc_twetalk_call_event_type_print(125): 🤖 [02] BOT_TRANSCRIPTION - 机器人字幕
-INF|6862|twetalk_app.c|_twetalk_recv_event_cb(308): bot: this is LLMTextFrame\u4f60\u597d\u5440\uff0c\u6211\u662fQQ\u9e45\u4ed4\uff0c\u662f\u4e00\u4e2a\u966a\u4f34\u4f60\u7684AI\u73a9\u5076\u3002
-INF|7156|twetalk_call.c|tc_twetalk_call_event_type_print(125): 🤖 [02] BOT_TRANSCRIPTION - 机器人字幕
-INF|7156|twetalk_app.c|_twetalk_recv_event_cb(308): bot: \u6211\u53ef\u4ee5\u7528\u6e29\u67d4\u4f53\u8d34\u3001\u98ce\u8da3\u5e7d\u9ed8\u7684\u65b9\u5f0f\u548c\u4f60\u804a\u5929\uff0c\u4e5f\u4f1a\u5c3d\u529b\u5e2e\u52a9\u4f60\u89e3\u51b3\u95ee\u9898\u3002
-INF|7500|twetalk_call.c|tc_twetalk_call_event_type_print(125): 🤖 [02] BOT_TRANSCRIPTION - 机器人字幕
-INF|7500|twetalk_app.c|_twetalk_recv_event_cb(308): bot: \u4f60\u53ef\u4ee5\u548c\u6211\u5206\u4eab\u4f60\u7684\u60f3\u6cd5\u3001\u5fc3\u60c5\uff0c\u6216\u8005\u8ba9\u6211\u5e2e\u4f60\u505a\u4e9b\u4e8b\u60c5\uff0c\u6bd4\u5982\u64ad\u653e\u97f3\u4e50\u3001\u67e5\u8be2\u5929\u6c14\u7b49\u7b49\u3002
-INF|7603|twetalk_call.c|tc_twetalk_call_event_type_print(125): 🤖 [02] BOT_TRANSCRIPTION - 机器人字幕
-INF|7603|twetalk_app.c|_twetalk_recv_event_cb(308): bot: \u5e0c\u671b\u6211\u4eec\u53ef\u4ee5\u6210\u4e3a\u597d\u670b\u53cb\uff01
-INF|25882|twetalk_ws.c|ws_recv(474): Received Ping, auto-replied Pong (payload len:1010821420 data len : 4)
-INF|44083|twetalk_call.c|tc_twetalk_call_event_type_print(122): 🔇 [01] BOT_STOP_SPEAKING - 机器人停止说话
-INF|44083|twetalk_app.c|_twetalk_recv_event_cb(303): bot stop speaking
-INF|46032|twetalk_ws.c|ws_recv(474): Received Ping, auto-replied Pong (payload len:1010821420 data len : 4)
+INF|4204|network_interface.c|_network_tcp_connect(63): connected with TCP server: 7EJ1UNEKC9.iotcloud.tencentdevices.com:1883
+INF|4274|mqtt_client.c|IOT_MQTT_Construct(325): mqtt connect with id: 3Reh3 success
+INF|4274|twetalk_app.c|twetalk_thread_entry(386): Cloud Device Construct Success
+DBG|4280|mqtt_client_subscribe.c|qcloud_iot_mqtt_subscribe(350): subscribe topic_name=$thing/down/property/7EJ1UNEKC9/xph001|packet_id=59484
+INF|4427|twetalk_app.c|_mqtt_event_handler(212): subscribe success, packet-id=59484
+DBG|4496|mqtt_client_subscribe.c|qcloud_iot_mqtt_subscribe(350): subscribe topic_name=$thing/down/action/7EJ1UNEKC9/xph001|packet_id=59485
+INF|4637|twetalk_app.c|_mqtt_event_handler(212): subscribe success, packet-id=59485
+DBG|4701|mqtt_client_subscribe.c|qcloud_iot_mqtt_subscribe(350): subscribe topic_name=$twecall/down/service/7EJ1UNEKC9/xph001|packet_id=59486
+INF|4776|twetalk_app.c|_mqtt_event_handler(212): subscribe success, packet-id=59486
+DBG|4906|mqtt_client_publish.c|qcloud_iot_mqtt_publish(264): publish qos=1|packet_id=59487|topic_name=$twecall/up/service/7EJ1UNEKC9/xph001|payload={"method":"query_websocket_url","clientToken":"ws-4","params":{}}
+DBG|4916|twetalk_mqtt.c|IOT_TWeCall_QueryWSURL(196): wait query_websocket_url reply....
+INF|4978|twetalk_app.c|_mqtt_event_handler(236): publish success, packet-id=59487
+INF|5493|network_interface.c|_network_tcp_connect(63): connected with TCP server: stress-test.tencentiotcloud.com:80
+INF|5759|twetalk.c|_ws_recv_thread_entry(92): ws recv thread start
+INF|5763|twetalk.c|tc_twetalk_ws_init(351): ai talk init success(0)
+DBG|5763|data_template_config.c|iot_data_template_property_value_set(219): set property battery :0 >>> 100
+DBG|5773|mqtt_client_publish.c|qcloud_iot_mqtt_publish(264): publish qos=0|packet_id=0|topic_name=$thing/up/property/7EJ1UNEKC9/xph001|payload={"method":"report","params":{"battery":100,"volume":0},"clientToken":"clear-control-5"}
+DBG|5795|data_template_config.c|iot_data_template_property_value_set(219): set property volume :0 >>> 80
+DBG|5803|mqtt_client_publish.c|qcloud_iot_mqtt_publish(264): publish qos=0|packet_id=0|topic_name=$thing/up/property/7EJ1UNEKC9/xph001|payload={"method":"report","params":{"volume":80},"clientToken":"clear-control-5"}
+DBG|5901|data_template_property.c|data_template_property_message_handler(211): receive property message:{"method":"report_reply","clientToken":"clear-control-5","code":0,"status":"success"}
+DBG|5950|data_template_property.c|data_template_property_message_handler(211): receive property message:{"method":"report_reply","clientToken":"clear-control-5","code":0,"status":"success"}
+INF|6396|twetalk_call.c|tc_twetalk_call_event_type_print(127): 🎤 [00] BOT_START_SPEAKING - 机器人开始说话
+INF|6396|twetalk_app.c|_twetalk_recv_event_cb(298): bot start speaking
+W (7345) ESP_GMF_ASMP_DEC: Not enough memory for out, need:1920, old: 1024, new: 1920
+I (7348) ESP_GMF_TASK: One times job is complete, del[wk:0x3c30df3c, ctx:0x3c30da68, label:aud_bit_cvt_open]
+I (7353) ESP_GMF_TASK: One times job is complete, del[wk:0x3c3f49a8, ctx:0x3c30db54, label:aud_rate_cvt_open]
+I (7362) ESP_GMF_TASK: One times job is complete, del[wk:0x3c3fb5f4, ctx:0x3c30dc80, label:aud_ch_cvt_open]
+INF|16827|twetalk_call.c|tc_twetalk_call_event_type_print(130): 🔇 [01] BOT_STOP_SPEAKING - 机器人停止说话
+INF|16828|twetalk_app.c|_twetalk_recv_event_cb(303): bot stop speaking
+I (22543) TWETALK: wakeup start
+I (22544) AUDIO_PROCESSOR: Starting prompt playback: file://sdcard/System/dong.aac
+I (22545) ESP_GMF_TASK: Waiting to run... [tsk:TSK_0x3c283360-0x3c283360, wk:0x3c3fc7ac, run:0]
+I (22551) ESP_GMF_FILE: Open, dir:1, uri:file://sdcard/System/dong.aac
+I (22589) ESP_GMF_FILE: File size: 1488 byte, file position: 0
+I (22592) AUDIO_PROCESSOR: WAKEUP_START [1 : 2]
+I (22594) ESP_GMF_TASK: One times job is complete, del[wk:0x3c3fc7ac, ctx:0x3c3fc198, label:aud_dec_open]
+I (22599) ESP_GMF_PORT: ACQ IN, new self payload:0x3c3fc7ac, port:0x3c3fc6f8, el:0x3c3fc198-aud_dec
+W (22608) ESP_GMF_ASMP_DEC: Not enough memory for out, need:4096, old: 1024, new: 4096
+I (22617) ESP_GMF_TASK: One times job is complete, del[wk:0x3c412238, ctx:0x3c3fc274, label:aud_rate_cvt_open]
+I (22626) ESP_GMF_TASK: One times job is complete, del[wk:0x3c412330, ctx:0x3c3fc3c8, label:aud_ch_cvt_open]
+I (22636) AUDIO_PROCESSOR: Get info, rate:16000, channels:2, bits:32
+I (22640) AUDIO_PROCESSOR: Get State, 1,ESP_AUD_SIMPLE_PLAYER_RUNNING
+I (22648) ESP_GMF_TASK: One times job is complete, del[wk:0x3c4123a0, ctx:0x3c3fc518, label:aud_bit_cvt_open]
+I (22622) TWETALK: vad start
+I (22708) ESP_GMF_FILE: No more data, ret: 0
+I (22842) ESP_GMF_FILE: No more data, ret: 0
+I (22843) ESP_GMF_TASK: Job is done, [tsk:TSK_0x3c283360-0x3c283360, wk:0x3c4055e4, job:0x3c3fc198-aud_dec_proc]
+I (22845) ESP_GMF_TASK: Job is done, [tsk:TSK_0x3c283360-0x3c283360, wk:0x3c41225c, job:0x3c3fc274-aud_rate_cvt_proc]
+I (22856) ESP_GMF_TASK: Job is done, [tsk:TSK_0x3c283360-0x3c283360, wk:0x3c412368, job:0x3c3fc3c8-aud_ch_cvt_proc]
+I (22866) ESP_GMF_TASK: Job is done, [tsk:TSK_0x3c283360-0x3c283360, wk:0x3c4123dc, job:0x3c3fc518-aud_bit_cvt_proc]
+I (22876) ESP_GMF_FILE: CLose, 0x3c3fc664, pos = 1488/1488
+I (22882) ESP_GMF_TASK: One times job is complete, del[wk:0x3c4055e4, ctx:0x3c3fc198, label:aud_dec_close]
+I (22892) ESP_GMF_TASK: One times job is complete, del[wk:0x3c41263c, ctx:0x3c3fc274, label:aud_rate_cvt_close]
+I (22902) ESP_GMF_TASK: One times job is complete, del[wk:0x3c412368, ctx:0x3c3fc3c8, label:aud_ch_cvt_close]
+I (22911) ESP_GMF_TASK: One times job is complete, del[wk:0x3c4123f4, ctx:0x3c3fc518, label:aud_bit_cvt_close]
+I (22921) AUDIO_PROCESSOR: Get State, 4,ESP_AUD_SIMPLE_PLAYER_FINISHED
+I (22927) ESP_GMF_TASK: Waiting to run... [tsk:TSK_0x3c283360-0x3c283360, wk:0x0, run:0]
+I (22935) ESP_GMF_TASK: Waiting to run... [tsk:TSK_0x3c283360-0x3c283360, wk:0x0, run:0]
+I (23616) TWETALK: vad end
+I (24006) TWETALK: vad start
+INF|23595|twetalk_call.c|tc_twetalk_call_event_type_print(136): 👤 [03] USR_TRANSCRIPTION - 用户字幕
+INF|23595|twetalk_app.c|_twetalk_recv_event_cb(314): usr: 刘
+INF|23962|twetalk_call.c|tc_twetalk_call_event_type_print(136): 👤 [03] USR_TRANSCRIPTION - 用户字幕
+INF|23962|twetalk_app.c|_twetalk_recv_event_cb(314): usr: 周杰伦
+INF|24285|twetalk_call.c|tc_twetalk_call_event_type_print(136): 👤 [03] USR_TRANSCRIPTION - 用户字幕
+INF|24285|twetalk_app.c|_twetalk_recv_event_cb(314): usr: 周杰伦故事
+INF|24623|twetalk_call.c|tc_twetalk_call_event_type_print(136): 👤 [03] USR_TRANSCRIPTION - 用户字幕
+INF|24623|twetalk_app.c|_twetalk_recv_event_cb(314): usr: 给我讲个故事
+I (25745) TWETALK: vad end
+INF|25627|twetalk_call.c|tc_twetalk_call_event_type_print(133): 🤖 [02] BOT_TRANSCRIPTION - 机器人字幕
+INF|25627|twetalk_app.c|_twetalk_recv_event_cb(308): bot: 好的，我来给你讲个故事吧。
+INF|25659|twetalk_ws.c|ws_recv(474): Received Ping, auto-replied Pong (payload len:1010817028 data len : 4)
+INF|25741|twetalk_call.c|tc_twetalk_call_event_type_print(133): 🤖 [02] BOT_TRANSCRIPTION - 机器人字幕
+INF|25741|twetalk_app.c|_twetalk_recv_event_cb(308): bot: 从前，有一只可爱的小鹅，它叫QQ鹅仔。
+INF|26204|twetalk_call.c|tc_twetalk_call_event_type_print(127): 🎤 [00] BOT_START_SPEAKING - 机器人开始说话
+INF|26204|twetalk_app.c|_twetalk_recv_event_cb(298): bot start speaking
+INF|26222|twetalk_call.c|tc_twetalk_call_event_type_print(133): 🤖 [02] BOT_TRANSCRIPTION - 机器人字幕
+INF|26222|twetalk_app.c|_twetalk_recv_event_cb(308): bot: QQ鹅仔住在一片美丽的湖边，每天都在湖边玩耍、游泳，和朋友们一起度过快乐的时光。\n\n
+INF|26419|twetalk_call.c|tc_twetalk_call_event_type_print(133): 🤖 [02] BOT_TRANSCRIPTION - 机器人字幕
+INF|26419|twetalk_app.c|_twetalk_recv_event_cb(308): bot: 有一天，QQ鹅仔决定去探险，看看湖的另一边有什么。
+INF|26546|twetalk_call.c|tc_twetalk_call_event_type_print(133): 🤖 [02] BOT_TRANSCRIPTION - 机器人字幕
+INF|26546|twetalk_app.c|_twetalk_recv_event_cb(308): bot: 它游啊游，遇到了许多有趣的朋友，比如小鱼、小虾和小乌龟。
+INF|26763|twetalk_call.c|tc_twetalk_call_event_type_print(133): 🤖 [02] BOT_TRANSCRIPTION - 机器人字幕
+INF|26763|twetalk_app.c|_twetalk_recv_event_cb(308): bot: 它们一起玩耍，分享故事，度过了愉快的一天。\n\n
+INF|26818|twetalk_call.c|tc_twetalk_call_event_type_print(133): 🤖 [02] BOT_TRANSCRIPTION - 机器人字幕
+INF|26818|twetalk_app.c|_twetalk_recv_event_cb(308): bot: 当太阳下山时，QQ鹅仔感到有点累了，它决定回家。
+INF|26893|twetalk_call.c|tc_twetalk_call_event_type_print(133): 🤖 [02] BOT_TRANSCRIPTION - 机器人字幕
+INF|26894|twetalk_app.c|_twetalk_recv_event_cb(308): bot: 它沿着湖边慢慢游回去，心里充满了快乐和满足。
+INF|27134|twetalk_call.c|tc_twetalk_call_event_type_print(133): 🤖 [02] BOT_TRANSCRIPTION - 机器人字幕
+INF|27134|twetalk_app.c|_twetalk_recv_event_cb(308): bot: 从那以后，QQ鹅仔经常去探险，结交新朋友，过着快乐的生活。\n\n
+INF|27293|twetalk_call.c|tc_twetalk_call_event_type_print(133): 🤖 [02] BOT_TRANSCRIPTION - 机器人字幕
+INF|27293|twetalk_app.c|_twetalk_recv_event_cb(308): bot: 这就是QQ鹅仔的故事，希望你喜欢。
+INF|27324|twetalk_call.c|tc_twetalk_call_event_type_print(133): 🤖 [02] BOT_TRANSCRIPTION - 机器人字幕
+INF|27324|twetalk_app.c|_twetalk_recv_event_cb(308): bot: 如果你还想听更多故事，随时告诉我哦！
 ```
 
 ### 🎮 基本使用流程
