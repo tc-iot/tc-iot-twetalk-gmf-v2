@@ -2,7 +2,6 @@ build
 .vscode
 managed_components
 *.bin
-spiffs
 .DS_Store
 CLAUDE.md 
 .claude 

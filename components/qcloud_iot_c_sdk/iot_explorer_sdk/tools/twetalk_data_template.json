@@ -1,0 +1,43 @@
+{
+  "version": "1.0",
+  "properties": [
+    {
+      "id": "battery",
+      "name": "电量",
+      "desc": "电池电量0-100",
+      "mode": "r",
+      "define": {
+        "type": "int",
+        "min": "0",
+        "max": "100",
+        "start": "0",
+        "step": "1",
+        "unit": ""
+      },
+      "required": false,
+      "from": "custom"
+    },
+    {
+      "id": "volume",
+      "name": "音量",
+      "desc": "通过AI控制音量",
+      "mode": "rw",
+      "define": {
+        "type": "int",
+        "min": "0",
+        "max": "100",
+        "start": "0",
+        "step": "1",
+        "unit": ""
+      },
+      "required": false,
+      "from": "custom"
+    }
+  ],
+  "events": [],
+  "actions": [],
+  "profile": {
+    "ProductId": "7EJ1UNEKC9",
+    "CategoryId": "1"
+  }
+}
