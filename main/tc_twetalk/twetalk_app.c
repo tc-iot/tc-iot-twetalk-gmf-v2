@@ -325,6 +325,11 @@ static int _twetalk_recv_event_cb(TWeTalkEventType type, TWeTalkEventMsg *msg, v
             // 拒接
         } break;
 
+        /**< 小程序呼叫设备，发生错误❌ */
+        case TWETALK_EVENT_DEVICE_ERROR: {
+            Log_e("code: %d", msg->DeviceError.code);
+        }break;
+
         /**< 设备呼叫小程序，小程序接听 */
         case TWETALK_EVENT_RECV_USR_ANSWER: {
             Log_i("user answer called: %.*s openid: %.*s", msg->UserAnswer.called.value_len,
@@ -335,6 +340,10 @@ static int _twetalk_recv_event_cb(TWeTalkEventType type, TWeTalkEventMsg *msg, v
         case TWETALK_EVENT_RECV_USR_HANGUP: {
             Log_i("user hangup called: %.*s openid: %.*s", msg->UserHangup.called.value_len,
                   msg->UserHangup.called.value, msg->UserHangup.openid.value_len, msg->UserHangup.openid.value);
+        } break;
+        /**< 设备呼叫小程序，发生错误❌ */
+        case TWETALK_EVENT_RECV_USR_ERROR: {
+            Log_w("code : %d", msg->UserError.code);
         } break;
 
         /**< 接收错误 */  // TODO : 错误处理
