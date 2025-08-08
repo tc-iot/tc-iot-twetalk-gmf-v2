@@ -37,22 +37,16 @@ typedef enum {
     TWETALK_EVENT_USR_TRANSCRIPTION,      /**< 用户字幕 */
 
     /** 设备呼叫小程序事件 */
-    TWETALK_EVENT_RECV_USR_ANSWER,   /**< 设备呼叫小程序，小程序接听 */
-    TWETALK_EVENT_RECV_USR_CALLING,  /**< 设备呼叫小程序,正在通话中 */
-    TWETALK_EVENT_RECV_USR_REJECT,   /**< 设备呼叫小程序，小程序拒绝 */
-    TWETALK_EVENT_RECV_USR_HANGUP,   /**< 设备呼叫小程序，小程序主动挂断 */
-    TWETALK_EVENT_RECV_USR_BEHANGUP, /**< 设备呼叫小程序，设备主动挂断 */
-    TWETALK_EVENT_RECV_USR_ERROR,    /**< 设备呼叫小程序，发生错误❌ */
+    TWETALK_EVENT_RECV_USR_ANSWER, /**< 设备呼叫小程序，小程序接听 */
+    TWETALK_EVENT_RECV_USR_REJECT, /**< 设备呼叫小程序，小程序拒绝 */
+    TWETALK_EVENT_RECV_USR_HANGUP, /**< 设备呼叫小程序，小程序主动挂断 */
+    TWETALK_EVENT_RECV_USR_ERROR,  /**< 设备呼叫小程序，发生错误❌ */
 
     /** 小程序呼叫设备事件 */
-    TWETALK_EVENT_RECV_ROOMID,     /**< 收到呼叫 */
-    TWETALK_EVENT_DEVICE_ANSWER,   /**< 小程序呼叫设备，设备接听 */
-    TWETALK_EVENT_DEVICE_CALLING,  /**< 小程序呼叫设备，正在通话中 */
-    TWETALK_EVENT_DEVICE_REJECT,   /**< 小程序呼叫设备，设备拒绝 */
-    TWETALK_EVENT_DEVICE_HANGUP,   /**< 小程序呼叫设备，设备主动挂断 */
-    TWETALK_EVENT_DEVICE_BEHANGUP, /**< 小程序呼叫设备，小程序主动挂断 */
-    TWETALK_EVENT_DEVICE_BECANCEL, /**< 小程序呼叫设备，小程序取消呼叫 */
-    TWETALK_EVENT_DEVICE_ERROR,    /**< 小程序呼叫设备，发生错误❌ */
+    TWETALK_EVENT_RECV_ROOMID,   /**< 收到呼叫 */
+    TWETALK_EVENT_DEVICE_ANSWER, /**< 小程序呼叫设备，设备接听 */
+    TWETALK_EVENT_DEVICE_REJECT, /**< 小程序呼叫设备，设备拒绝 */
+    TWETALK_EVENT_DEVICE_HANGUP, /**< 小程序呼叫设备，设备主动挂断 */
 
     TWETALK_EVENT_RECV_ERROR, /**< 接收错误 */
     TWETALK_EVENT_BOT_MAX,
@@ -85,12 +79,7 @@ typedef union {
     } UserAnswer;
 
     struct {
-        UtilsJsonValue called;
-        UtilsJsonValue openid;
-        int            duration;
-    } UserCalling;
-
-    struct {
+        UtilsJsonValue stream;
         UtilsJsonValue called;
         UtilsJsonValue openid;
     } UserHangup;
@@ -206,19 +195,23 @@ int tc_twetalk_ws_send_audio(void *handle, uint8_t *audio, uint32_t len);
 int tc_twetalk_call_sync_openids(void *handle, TWeCallOpenids openids[], uint32_t count);
 
 /**
- * @brief 小程序呼叫设备，设备可以做出应答
+ * @brief 设备对当前通话状态的回复，有如下几种情况：
+ *  tc_twetalk_call_response(twetalk_handle, TWETALK_EVENT_DEVICE_ANSWER, roomid); // 小程序呼叫设备：设备应答
+ *  tc_twetalk_call_response(twetalk_handle, TWETALK_EVENT_DEVICE_REJECT, roomid); // 小程序呼叫设备：设备拒绝
+ *  tc_twetalk_call_response(twetalk_handle, TWETALK_EVENT_DEVICE_HANGUP, roomid); // 小程序呼叫设备：设备主动挂断
+ *  tc_twetalk_call_response(twetalk_handle, TWETALK_EVENT_DEVICE_HANGUP, NULL);   // 设备呼叫小程序，设备主动挂断
  *
  * @param handle twetalk init时返回的句柄
  * @param type  @see TWeTalkEventType 只支持 TWETALK_EVENT_DEVICE_*
- * @param roomid 呼叫请求房间id
+ * @param roomid 呼叫请求房间id，如果是设备主动挂断，则roomid为NULL
  * @return 0 for success, negative for error
  */
 int tc_twetalk_call_response(void *handle, TWeTalkEventType type, UtilsJsonValue *roomid);
 
 /**
  * @brief 打印收到的事件类型
- * 
- * @param type 
+ *
+ * @param type
  */
 void tc_twetalk_call_event_type_print(TWeTalkEventType type);
 

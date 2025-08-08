@@ -216,14 +216,14 @@ idf.py --version
 <table>
 <tr>
 <td align="center" width="50%">
-<img src="https://via.placeholder.com/300x200/4CAF50/FFFFFF?text=ESP32-S3" alt="ESP32-S3"/>
+<img src="https://image.lceda.cn/kfb/file/d482cbb82cf74c57875e67afe8b9898c.png" alt="ESP32-S3"/>
 <br>
 <strong>立创·实战派 ESP32-S3</strong>
 <br>
 <a href="https://lckfb.com/project/detail/lckfb-esp32-s3-va?param=baseInfo&collection=71ac02fcf595444eb5dbbc45ae4ffda8">🔗 查看详情</a>
 </td>
 <td align="center" width="50%">
-<img src="https://via.placeholder.com/300x200/2196F3/FFFFFF?text=更多平台" alt="其他平台"/>
+<img src="https://docs.espressif.com/projects/esp-adf/en/latest/_images/esp32-s3-korvo-2-v3.0.png" alt="其他平台"/>
 <br>
 <strong>其他支持平台</strong>
 <br>
@@ -438,6 +438,10 @@ cd /path/to/tc-iot-twetalk-esp-gmf-v2
 
 # 设置目标芯片（以 ESP32-S3 为例）
 idf.py set-target esp32s3
+
+# 使用esp32s3 default配置
+cp sdkconfig.defaults.esp32s3 sdkconfig
+
 ```
 
 #### Step 3: 参数配置
