@@ -19,7 +19,6 @@ idf_component_register(SRCS ${src_explorer_sdk} ${src_port}
     PRIV_REQUIRES freertos lwip mbedtls bt nvs_flash
 )
 
-
 # 生成twetalk lib
 if(EXISTS ${IOT_SDK_SOURCE_DIR}/CMakeLists.txt)
     file(GLOB src_twetalk ${IOT_SDK_SOURCE_DIR}/component/twetalk/src/*.c)
@@ -34,4 +33,3 @@ if(EXISTS ${IOT_SDK_SOURCE_DIR}/CMakeLists.txt)
         OUTPUT_NAME "tc_twetalk"    
     )
 endif()
-

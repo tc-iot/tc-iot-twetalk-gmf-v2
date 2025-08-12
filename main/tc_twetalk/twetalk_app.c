@@ -258,7 +258,6 @@ static void _mqtt_event_handler(void *client, void *handle_context, MQTTEventMsg
 static void _setup_connect_init_params(MQTTInitParams *init_params, DeviceInfo *device_info)
 {
     init_params->device_info = device_info;
-    // init_params->host              = "pre.ap-guangzhou.iothub.tencentdevices.com";  //"183.47.110.23";  // test
     init_params->event_handle.h_fp = _mqtt_event_handler;
 }
 
@@ -361,13 +360,6 @@ static void twetalk_thread_entry(void *param)
     // init log level
     LogHandleFunc func = DEFAULT_LOG_HANDLE_FUNCS;
     utils_log_init(func, LOG_LEVEL_DEBUG, 2048);
-
-    // DeviceInfo device_info = {
-    //     .product_id     = "3SDVJQ3YR8",
-    //     .device_name    = "d1",
-    //     .device_secret  = "dj3kK9jWZc/h/bRYNeahVg==",
-    //     .device_version = "1.0.0",
-    // };
 
     DeviceInfo device_info = {
         .product_id     = CONFIG_QCLOUD_PRODUCT_ID,
