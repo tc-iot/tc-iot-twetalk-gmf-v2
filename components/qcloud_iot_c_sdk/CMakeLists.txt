@@ -1,6 +1,7 @@
 message("make iot_c_sdk src")
 set(IOT_SDK_SOURCE_DIR ${COMPONENT_DIR}/iot_c_sdk)
 
+
 if(EXISTS ${IOT_SDK_SOURCE_DIR}/CMakeLists.txt)
     # 将代码提取到iot_c_sdk目录下
     message(STATUS "extract src code ")
@@ -13,10 +14,10 @@ file(GLOB src_port ${COMPONENT_DIR}/port/*.c)
 
 set(inc_explorer_sdk ${COMPONENT_DIR}/iot_explorer_sdk/inc)
 
-# register iot_video_sdk
+# register twetalk sdk
 idf_component_register(SRCS ${src_explorer_sdk} ${src_port}
     INCLUDE_DIRS ${inc_explorer_sdk}
-    PRIV_REQUIRES freertos lwip mbedtls bt nvs_flash
+    PRIV_REQUIRES freertos lwip mbedtls bt nvs_flash app_update nvs_flash spi_flash
 )
 
 # 生成twetalk lib
@@ -33,3 +34,4 @@ if(EXISTS ${IOT_SDK_SOURCE_DIR}/CMakeLists.txt)
         OUTPUT_NAME "tc_twetalk"    
     )
 endif()
+

@@ -25,7 +25,7 @@ static DataTemplate *sg_data_template;
 
 static void _handle_property_callback(void *client, int is_get_status)
 {
-    for (UsrPropertyIndex i = USR_PROPERTY_INDEX_VOLUME; i <= USR_PROPERTY_INDEX_BATTERY; i++) {
+    for (UsrPropertyIndex i = USR_PROPERTY_INDEX_VOLUME; i <= USR_PROPERTY_INDEX_VOLUME; i++) {
         if (iot_data_template_property_status_get(sg_data_template, i)) {
             DataTemplatePropertyValue value;
             switch ((int)i) {
@@ -33,6 +33,9 @@ static void _handle_property_callback(void *client, int is_get_status)
                     value = iot_data_template_property_value_get(sg_data_template, i);
                     Log_d("recv %s:%d", iot_data_template_property_key_get(sg_data_template, i), value.value_int);
                     // TODO 处理音量变化
+                    extern void audio_set_volume(int volume);
+                    audio_set_volume(value.value_int);
+                    usr_report_volume(client, value.value_int);
                     break;
             }
             iot_data_template_property_status_reset(sg_data_template, i);

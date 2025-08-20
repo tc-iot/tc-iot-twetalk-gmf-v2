@@ -9,6 +9,7 @@ idf_component_register(
                             tc_twetalk/button_key.c
                             tc_twetalk/twetalk_app.c 
                             tc_twetalk/data_template_app.c 
+                            tc_twetalk/ota_downloader.c
                             tc_twetalk/pca9557.c
                        INCLUDE_DIRS "." "./audio_process" "./tc_twetalk"
                        REQUIRES easy_button espressif__gmf_app_utils tempotian__codec_board qcloud_iot_c_sdk

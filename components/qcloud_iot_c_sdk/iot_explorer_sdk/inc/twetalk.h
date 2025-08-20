@@ -48,7 +48,9 @@ typedef enum {
     TWETALK_EVENT_DEVICE_REJECT, /**< 小程序呼叫设备，设备拒绝 */
     TWETALK_EVENT_DEVICE_HANGUP, /**< 小程序呼叫设备，设备主动挂断 */
 
-    TWETALK_EVENT_RECV_ERROR, /**< 接收错误 */
+    TWETALK_EVENT_RECV_DISCONNECT, /**< 收到断开连接 */
+    TWETALK_EVENT_RECV_ERROR,      /**< 接收错误 */
+    TWETALK_EVENT_RECV_CLOSE,      /**< WebSocket连接关闭 */
     TWETALK_EVENT_BOT_MAX,
 } TWeTalkEventType;
 
@@ -135,12 +137,13 @@ typedef struct {
     void                 *context;                  /**< 透传给recv_audio_cb和recv_event_cb的参数 */
     int         ringbuffer_size; /**< 接收环形缓冲区大小，单位字节，传0表示不需要缓冲，直接传递给recv_audio_cb */
     IotBool     auto_reconnect;  /**< 是否自动重连 TODO ：待实现 */
+    IotBool     is_encrypt;      /**< 是否加密传输 TODO : 待实现 */
     const char *wxa_appid;       /**< 微信通话的微信小程序appid，NULL表示不使用微信通话 */
     const char *wxa_modelid;     /**< 微信通话的微信小程序modelid， NULL表示不使用微信通话 */
 } TWeTalkWsInitParams;
 
 #define DEFAULT_TWETALK_WS_INIT_PARAMS \
-    {TWETALK_AUDIO_TYPE_OPUS, 60, 60, NULL, NULL, NULL, NULL, 90 * 180, 1, NULL, NULL}
+    {TWETALK_AUDIO_TYPE_OPUS, 60, 60, NULL, NULL, NULL, NULL, 90 * 180, 1, 0, NULL, NULL}
 
 /**
  * @brief 初始化AI对话
@@ -156,16 +159,6 @@ void *tc_twetalk_ws_init(TWeTalkWsInitParams *params);
  * @return int:error code
  */
 int tc_twetalk_ws_exit(void *handle);
-
-/**
- * @brief 接收AI对话数据，需在某个线程中循环调用
- *
- * @param data 接收数据的缓冲区
- * @param len 接收数据缓冲区的最大长度
- * @param is_text 接收到的数据是否为文本
- * @return int: 大于等于0接收到的字节数，小于0错误
- */
-int tc_twetalk_ws_recv(void *handle, uint8_t *data, uint32_t len, uint32_t *is_text);
 
 /**
  * @brief 发送文本数据
@@ -207,6 +200,31 @@ int tc_twetalk_call_sync_openids(void *handle, TWeCallOpenids openids[], uint32_
  * @return 0 for success, negative for error
  */
 int tc_twetalk_call_response(void *handle, TWeTalkEventType type, UtilsJsonValue *roomid);
+
+/**
+ * @brief 断开ws连接，有以下情况：
+ * 2. 当ws发生错误时，也就是收到 TWETALK_EVENT_RECV_ERROR 时需要主动断开，调用此函数
+ *
+ * @param handle twetalk init时返回的句柄
+ * @return 0 for success, negative for error
+ */
+int tc_twetalk_ws_disconnect(void *handle);
+
+/**
+ * @brief 重新连接ws，当需要重启对话时调用此函数
+ *
+ * @param handle twetalk init时返回的句柄
+ * @return 0 for success, negative for error
+ */
+int tc_twetalk_ws_reconnect(void *handle);
+
+/**
+ * @brief 获取ws连接状态
+ *
+ * @param handle twetalk init时返回的句柄
+ * @return 1:connected, 0:not connected, negative for error
+ */
+int twetalk_ws_is_connected(void *handle);
 
 /**
  * @brief 打印收到的事件类型

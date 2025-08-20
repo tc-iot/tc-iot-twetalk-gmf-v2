@@ -75,11 +75,13 @@ int llsync_data_init(uint8_t mac[6], DeviceInfo *dev_info)
 {
     int rc = 0;
     memset(&sg_llsync_data, 0, sizeof(BLELLsyncData));
+#if BLE_QIOT_LLSYNC_STANDARD
     // 1. get core data
     rc = HAL_File_Read(BLE_LLSYNC_CORE_DATA_FILEPATH, &sg_llsync_data.core_data, sizeof(BLELLsyncCoreData), 0);
     if (!rc) {
         Log_w("The device has not been bound.");
     }
+#endif // BLE_QIOT_LLSYNC_STANDARD
     // 2. get device info
     sg_llsync_data.dev_info = dev_info;
     // 3. get mac
@@ -157,7 +159,7 @@ int iot_llsync_creat_adv_data(uint8_t adv_data_raw[32])
         case E_LLSYNC_BIND_IDLE:
         case E_LLSYNC_BIND_WAIT: {
 #if BLE_QIOT_LLSYNC_CONFIG_NET && !BLE_QIOT_LLSYNC_DUAL_COM
-            llsync_adv_data[index++] = BLE_QIOT_LLSYNC_PROTOCOL_VERSION;
+            // llsync_adv_data[index++] = BLE_QIOT_LLSYNC_PROTOCOL_VERSION;
 #endif  // BLE_QIOT_LLSYNC_CONFIG_NET
         // 1 bytes state + 6 bytes mac + 10 bytes product id
             memcpy(llsync_adv_data + index, sg_llsync_data.mac, 6);
@@ -663,6 +665,7 @@ int ble_unbind_get_authcode(const char *unbind_data, uint16_t data_len, char *ou
 
     return ret_len;
 }
+#endif  // BLE_QIOT_LLSYNC_STANDARD
 
 /**
  * @brief get device name
@@ -685,4 +688,4 @@ int ble_get_device_version(char *output_version)
     return (int)strlen(sg_llsync_data.dev_info->device_version);
 }
 
-#endif  // BLE_QIOT_LLSYNC_STANDARD
+

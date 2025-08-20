@@ -30,7 +30,7 @@
 #include "qcloud_iot_llsync.h"
 #include "ble_llsync_device_info.h"
 #include "ble_llsync_service.h"
-#ifdef BLE_QIOT_LLSYNC_GATEWAY
+#if BLE_QIOT_LLSYNC_GATEWAY
 #include "ble_llsync_to_lltlv.h"
 #endif // BLE_QIOT_LLSYNC_GATEWAY
 #include "utils_crc.h"
@@ -1325,9 +1325,22 @@ int iot_llsync_get_ota_buffer(uint8_t **buffer, uint32_t *buffer_size)
 
 #endif  // BLE_QIOT_SUPPORT_OTA
 
+#else 
+
+static int ble_lldata_msg_handle(const char *in_buf, int in_len)
+{
+    return QCLOUD_RET_SUCCESS;
+}
+
+static int ble_ota_msg_handle(const char *buf, uint16_t len) 
+{
+    return QCLOUD_RET_SUCCESS;
+}
+
 #endif  // BLE_QIOT_LLSYNC_STANDARD
 
-#ifdef BLE_QIOT_LLSYNC_GATEWAY
+#if BLE_QIOT_LLSYNC_GATEWAY
+
 typedef enum {
     TYPE_LLSYNC_SUBDEV_CTRL = 0,
     TYPE_LLSYNC_GROUP_CTRL  = 1,

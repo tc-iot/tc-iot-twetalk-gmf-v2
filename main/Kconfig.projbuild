@@ -303,5 +303,10 @@ config TWETALK_CALLING_OPENID
    string "TWETALK_CALLING_OPENID"
    default "oOMCN5CR14xUh7vBmxRQdSYjsLek"
   
+config TWETALK_USE_NETCONFIG
+   bool "TWETALK_USE_NETCONFIG"
+   help
+     Enable network configuration for the application.
+   default n
 
 endmenu

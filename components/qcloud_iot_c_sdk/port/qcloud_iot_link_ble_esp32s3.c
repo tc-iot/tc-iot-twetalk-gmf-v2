@@ -120,7 +120,11 @@ static const uint8_t heart_measurement_ccc[2] = {0x00, 0x00};
 /* service_uuid and Characteristic_uuid*/
 static uint8_t sg_llsync_uuid[][16] = {
     // service
+#if BLE_QIOT_LLSYNC_CONFIG_NET
+    [IDX_SVC] = {0xe2, 0xa4, 0x1b, 0x54, 0x93, 0xe4, 0x6a, 0xb5, 0x20, 0x4e, 0xd0, 0x65, 0xf0, 0xff, 0x00, 0x00,},
+#else 
     [IDX_SVC] = {0xe2, 0xa4, 0x1b, 0x54, 0x93, 0xe4, 0x6a, 0xb5, 0x20, 0x4e, 0xd0, 0x65, 0xe8, 0xff, 0x00, 0x00},
+#endif
     // device info
     [IDX_CHAR_VAL_A] = {0xe2, 0xa4, 0x1b, 0x54, 0x93, 0xe4, 0x6a, 0xb5, 0x20, 0x4e, 0xd0, 0x65, 0xe1, 0xff, 0x00, 0x00},
     // data
@@ -398,6 +402,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
             break;
         case ESP_GATTS_MTU_EVT:
             ESP_LOGI(LLSYNC_LOG_TAG, "ESP_GATTS_MTU_EVT, MTU %d", param->mtu.mtu);
+            param->mtu.mtu = ESP_GATT_DEF_BLE_MTU_SIZE;
             sg_link_ble.callback.sync_mtu_callback(sg_link_ble.usr_data, param->mtu.mtu);
             sg_link_ble.mtu = param->mtu.mtu;
             break;
@@ -567,6 +572,10 @@ void *qcloud_iot_link_ble_init(IotLinkCallback callback, void *usr_data)
 
 void qcloud_iot_link_ble_deinit(void *handle)
 {
+    esp_bluedroid_disable();
+    esp_bluedroid_deinit();
+    esp_bt_controller_disable();
+    esp_bt_controller_deinit();
     memset(&sg_link_ble, 0, sizeof(sg_link_ble));
 }
 

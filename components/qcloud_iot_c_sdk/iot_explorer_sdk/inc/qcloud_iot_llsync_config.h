@@ -42,9 +42,9 @@ extern "C" {
 
 // choose the ability you used, set 1 with BLE_QIOT_LLSYNC_STANDARD and BLE_QIOT_LLSYNC_CONFIG_NET will enable dual-mode
 // communication
-#define BLE_QIOT_LLSYNC_STANDARD   1  // support llsync standard
+#define BLE_QIOT_LLSYNC_STANDARD   0  // support llsync standard
 #define BLE_QIOT_LLSYNC_CONFIG_NET 1  // support llsync configure network
-// #define BLE_QIOT_LLSYNC_GATEWAY    1  // support llsync gateway
+#define BLE_QIOT_LLSYNC_GATEWAY    0  // support llsync gateway
 
 #if (1 == BLE_QIOT_LLSYNC_STANDARD) && (1 == BLE_QIOT_LLSYNC_CONFIG_NET)
 #define BLE_QIOT_LLSYNC_DUAL_COM 1  // support llsync dual communication, do not use ble ota under the mode

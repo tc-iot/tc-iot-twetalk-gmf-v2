@@ -44,6 +44,9 @@ static ebtn_btn_t btns[] = {
     EBTN_BUTTON_INIT(USER_BUTTON_0, &defaul_ebtn_param),
 };
 
+static esp_gmf_oal_thread_t button_thread;
+
+static int sg_button_thread_exit = 0;  // 0: not exit, 1: exit
 
 /**
  * \brief           Get input state callback
@@ -61,10 +64,11 @@ uint8_t prv_btn_get_state(struct ebtn_btn *btn)
 
 static void button_key_thread_entry(void *arg)
 {
-    while (1) {
+    while (!sg_button_thread_exit) {
         ebtn_process(HAL_Timer_CurrentMs());
         HAL_SleepMs(10);
     }
+    esp_gmf_oal_thread_delete(button_thread); 
 }
 
 int button_key_init(ebtn_evt_fn event_cb)
@@ -96,7 +100,12 @@ int button_key_init(ebtn_evt_fn event_cb)
     //     return -1;
     // }
     // gpio_set_level(LED_PIN, 1);  // off
-    static esp_gmf_oal_thread_t button_thread;
-    return esp_gmf_oal_thread_create(&button_thread, "button_key", button_key_thread_entry, (void *)NULL, 4 * 1024, 2,
-                                     true, 1);
+    sg_button_thread_exit = 0;
+    return esp_gmf_oal_thread_create(&button_thread, "button_key", button_key_thread_entry, (void *)button_thread, 4 * 1024, 2,
+                                     false, 1);
+}
+
+void button_key_deinit(void)
+{
+    sg_button_thread_exit = true;
 }

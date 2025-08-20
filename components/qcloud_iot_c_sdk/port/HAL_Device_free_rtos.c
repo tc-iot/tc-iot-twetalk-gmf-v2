@@ -34,7 +34,7 @@
 
 #include "qcloud_iot_params_check.h"
 
-#define DEFAULT_DEVICE_INFO_FILEPATH "/data/device_info.txt"
+#define DEFAULT_DEVICE_INFO_FILEPATH "/sdcard/device_info.txt"
 
 /**
  * @brief product Id

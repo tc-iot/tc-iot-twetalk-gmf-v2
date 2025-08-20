@@ -57,7 +57,6 @@ size_t HAL_File_Write(const char *filename, const void *buf, size_t write_len, s
     if (!rc) {
         len = fwrite(buf, 1, write_len, fp);
     }
-    fflush(fp);
     fclose(fp);
     return len;
 }

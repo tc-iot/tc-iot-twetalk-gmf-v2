@@ -46,17 +46,18 @@
 
 static const char *TAG = "HAL wifi";
 
-#define EXAMPLE_ESP_MAXIMUM_RETRY 10
+#define WIFI_CONNECTED_BIT        BIT0
+#define WIFI_FAIL_BIT             BIT1
+#define EXAMPLE_ESP_MAXIMUM_RETRY 20
 
-static int      sg_retry_num    = 0;
-static IotBool  sg_gotip_flag   = IOT_BOOL_FALSE;
-static uint32_t local_ipv4_addr = 0xC0A80401;  // 192.168.4.1
+static EventGroupHandle_t s_wifi_event_group;
+static int                sg_retry_num    = 0;
+static uint32_t           local_ipv4_addr = 0xC0A80401;  // 192.168.4.1
 
-static esp_err_t save_wifi_info(const uint8_t *ssid, const uint8_t *password)
+static esp_err_t save_wifi_info(const char *ssid, size_t ssid_len, const char *password, size_t passwd_len)
 {
     nvs_handle_t my_handle;
     esp_err_t    err;
-
     // open
     err = nvs_open("wifi_info", NVS_READWRITE, &my_handle);
     if (err != ESP_OK) {
@@ -70,49 +71,81 @@ static esp_err_t save_wifi_info(const uint8_t *ssid, const uint8_t *password)
     return err;
 }
 
-static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
+static esp_err_t get_wifi_info(char *ssid, char *password)
 {
-    wifi_config_t cfg;
-    // sta
-    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED) {
-        esp_wifi_get_config(WIFI_IF_STA, &cfg);
-        ESP_LOGI(TAG, "connect to the AP[%s/%s]", cfg.sta.ssid, cfg.sta.password);
-    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        esp_wifi_get_config(WIFI_IF_STA, &cfg);
-        if (sg_retry_num < EXAMPLE_ESP_MAXIMUM_RETRY) {
-            sg_retry_num++;
-            ESP_LOGI(TAG, "retry to connect to the AP[%s/%s]", cfg.sta.ssid, cfg.sta.password);
-        } else {
-            ESP_LOGI(TAG, "connect to the AP fail[%s/%s]", cfg.sta.ssid, cfg.sta.password);
-        }
-    } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
-        esp_wifi_get_config(WIFI_IF_STA, &cfg);
-        save_wifi_info(cfg.sta.ssid, cfg.sta.password);
-        ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
-        ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
-        sg_retry_num    = 0;
-        sg_gotip_flag   = IOT_BOOL_TRUE;
-        local_ipv4_addr = event->ip_info.ip.addr;
+    nvs_handle_t my_handle;
+    esp_err_t    err;
+    size_t       length;
+    // open
+    err = nvs_open("wifi_info", NVS_READWRITE, &my_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE(__func__, "Error (%s) opening NVS handle!\n", esp_err_to_name(err));
+    } else {
+        length = 32;
+        err    = nvs_get_str(my_handle, "ssid", ssid, &length);
+        length = 64;
+        err |= nvs_get_str(my_handle, "password", password, &length);
+        nvs_close(my_handle);
     }
-    // soft ap
-    if (event_id == WIFI_EVENT_AP_STACONNECTED) {
-        wifi_event_ap_staconnected_t *event = (wifi_event_ap_staconnected_t *)event_data;
-        ESP_LOGI(TAG, "station " MACSTR " join, AID=%d", MAC2STR(event->mac), event->aid);
-    } else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
-        wifi_event_ap_stadisconnected_t *event = (wifi_event_ap_stadisconnected_t *)event_data;
-        ESP_LOGI(TAG, "station " MACSTR " leave, AID=%d", MAC2STR(event->mac), event->aid);
+    return err;
+}
+
+void erase_wifi_info(void)
+{
+    // 只清除WiFi信息，而不是整个NVS分区
+    esp_err_t err;
+    nvs_handle_t handle;
+
+    // 打开WiFi信息命名空间
+    err = nvs_open("wifi_info", NVS_READWRITE, &handle);
+    if (err == ESP_OK) {
+        // 清除ssid和password
+        nvs_erase_key(handle, "ssid");
+        nvs_erase_key(handle, "password");
+
+        // 提交更改
+        err = nvs_commit(handle);
+        if (err == ESP_OK) {
+            ESP_LOGI(TAG, "WiFi info cleared successfully");
+        } else {
+            ESP_LOGE(TAG, "Failed to commit NVS changes: %s", esp_err_to_name(err));
+        }
+        nvs_close(handle);
+    } else {
+        ESP_LOGE(TAG, "Failed to open NVS wifi_info namespace: %s", esp_err_to_name(err));
     }
 }
 
-int HAL_Wifi_Init(void)
+static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
-    static IotBool init_flag = IOT_BOOL_FALSE;
-    if (init_flag) {
-        return QCLOUD_RET_SUCCESS;
+    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
+        esp_wifi_connect();
+    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        if (sg_retry_num < EXAMPLE_ESP_MAXIMUM_RETRY) {
+            esp_wifi_connect();
+            sg_retry_num++;
+            ESP_LOGI(TAG, "retry to connect to the AP");
+        } else {
+            xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
+        }
+        ESP_LOGI(TAG, "connect to the AP fail");
+    } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
+        ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
+        ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
+        sg_retry_num = 0;
+        xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
     }
+}
+
+static int connect_wifi(const char *ssid, const char *password, uint32_t timeout_ms)
+{
+    esp_err_t err = ESP_OK;
+    s_wifi_event_group = xEventGroupCreate();
+
     ESP_ERROR_CHECK(esp_netif_init());
 
     ESP_ERROR_CHECK(esp_event_loop_create_default());
+    esp_netif_create_default_wifi_sta();
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
@@ -123,62 +156,68 @@ int HAL_Wifi_Init(void)
         esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL, &instance_any_id));
     ESP_ERROR_CHECK(
         esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, NULL, &instance_got_ip));
-    // ESP_ERROR_CHECK(esp_wifi_start());
 
-    ESP_LOGI(TAG, "wifi init finished.");
-    init_flag = IOT_BOOL_TRUE;
+    wifi_config_t wifi_config = {
+        .sta =
+            {
+                .threshold.authmode = WIFI_AUTH_WPA2_PSK,
+                .pmf_cfg            = {.capable = true, .required = false},
+            },
+    };
+    memcpy(wifi_config.sta.ssid, ssid, strlen(ssid));
+    memcpy(wifi_config.sta.password, password, strlen(password));
+
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_start());
+
+    /* Waiting until either the connection is established (WIFI_CONNECTED_BIT) or connection failed for the maximum
+     * number of re-tries (WIFI_FAIL_BIT). The bits are set by event_handler() (see above) */
+    EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group, WIFI_CONNECTED_BIT | WIFI_FAIL_BIT, pdFALSE, pdFALSE,
+                                           timeout_ms / portTICK_PERIOD_MS);
+
+    /* xEventGroupWaitBits() returns the bits before the call returned, hence we can test which event actually
+     * happened. */
+    if (bits & WIFI_CONNECTED_BIT) {
+        ESP_LOGI(TAG, "connected to ap SSID:%s password:%s", ssid, password);
+        err = ESP_OK;
+    } else if (bits & WIFI_FAIL_BIT) {
+        ESP_LOGE(TAG, "Failed to connect to SSID:%s, password:%s", ssid, password);
+        err = ESP_FAIL;
+    } else {
+        ESP_LOGE(TAG, "UNEXPECTED EVENT");
+        err = ESP_FAIL;
+    }
+    return err;
+}
+
+int HAL_Wifi_Init(void)
+{
     return 0;
 }
 
 int HAL_Wifi_ModeSet(TCIoTWifiMode mode)
 {
-    if (mode == TC_IOT_WIFI_MODE_STA) {
-        esp_netif_create_default_wifi_sta();
-    } else if (mode == TC_IOT_WIFI_MODE_AP) {
-        esp_netif_create_default_wifi_ap();
-    }
-    ESP_ERROR_CHECK(esp_wifi_set_mode(mode));
     return 0;
 }
 
 int HAL_Wifi_StaInfoSet(const char *ssid, uint8_t ssid_len, const char *passwd, uint8_t passwd_len)
 {
-    wifi_config_t wifi_config = {
-        .sta =
-            {
-                .threshold.authmode = WIFI_AUTH_WPA2_PSK,
-                .pmf_cfg            = {.capable = IOT_BOOL_TRUE, .required = IOT_BOOL_FALSE},
-            },
-    };
-
-    ESP_LOGI(TAG, "wifi info set");
-    memset(wifi_config.sta.ssid, 0, sizeof(wifi_config.sta.ssid));
-    memset(wifi_config.sta.password, 0, sizeof(wifi_config.sta.password));
-    memcpy(wifi_config.sta.ssid, ssid, ssid_len);
-    memcpy(wifi_config.sta.password, passwd, passwd_len);
-    ESP_LOGI(TAG, "wifi info ssid: %s, password: %s", wifi_config.sta.ssid, wifi_config.sta.password);
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
-    ESP_ERROR_CHECK(esp_wifi_start());
+    save_wifi_info(ssid, ssid_len, passwd, passwd_len);
     return 0;
 }
 
 int HAL_Wifi_StaConnect(uint32_t timeout_ms)
 {
-    int rc        = 0;
-    sg_gotip_flag = IOT_BOOL_FALSE;
-    QcloudIotTimer timer;
-    IOT_Timer_CountdownMs(&timer, timeout_ms);
-    ESP_LOGI(TAG, "wifi connect");
-    ESP_ERROR_CHECK(esp_wifi_connect());
-    while (!IOT_Timer_Expired(&timer)) {
-        ESP_LOGI(TAG, "wait wifi connect ...%d", rc++);
-        if (sg_gotip_flag) {
-            rc = QCLOUD_RET_SUCCESS;
-            break;
-        }
-        HAL_SleepMs(500);
+    char      ssid[32]     = {0};
+    char      password[64] = {0};
+    esp_err_t err          = get_wifi_info(ssid, password);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to get WiFi info");
+        return err;
     }
-    return rc;
+    err = connect_wifi(ssid, password, timeout_ms);
+    return err;
 }
 
 int HAL_Wifi_LogGet(void)
@@ -199,22 +238,18 @@ size_t HAL_Wifi_MacGet(uint8_t *mac)
 
 int HAL_Wifi_StartStaConnect(const char *ssid, const char *passwd, uint32_t timeout_ms)
 {
-    int rc = 0;
-    rc     = HAL_Wifi_Init();
-    if (rc != 0) {
-        return rc;
+    esp_err_t err;
+    if (ssid == NULL && passwd == NULL) {
+        char ssid1[32]     = {0};
+        char password1[64] = {0};
+        err                = get_wifi_info(ssid1, password1);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to get WiFi info");
+            return err;
+        }
+        err = connect_wifi(ssid1, password1, timeout_ms);
+        return err;
     }
-    rc = HAL_Wifi_ModeSet(TC_IOT_WIFI_MODE_STA);
-    if (rc != 0) {
-        return rc;
-    }
-    rc = HAL_Wifi_StaInfoSet(ssid, strlen(ssid), passwd, strlen(passwd));
-    if (rc != 0) {
-        return rc;
-    }
-    rc = HAL_Wifi_StaConnect(timeout_ms);
-    if (rc != 0) {
-        return rc;
-    }
-    return rc;
+
+    return connect_wifi(ssid, passwd, timeout_ms);
 }

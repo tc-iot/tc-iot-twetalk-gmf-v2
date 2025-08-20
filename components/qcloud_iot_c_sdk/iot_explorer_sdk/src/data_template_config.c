@@ -131,21 +131,31 @@ DataTemplate* iot_data_template_create(size_t property_count, size_t property_da
     }
     memset(data_template, 0, sizeof(DataTemplate));
 
-    data_template->property = HAL_Malloc(sizeof(DataTemplateProperty) * property_count);
-    memset(data_template->property, 0, sizeof(DataTemplateProperty) * property_count);
-    data_template->property_count = property_count;
-    data_template->property_data  = HAL_Malloc(property_data_size);
-    memset(data_template->property_data, 0, property_data_size);
+    if (property_count) {
+        data_template->property = HAL_Malloc(sizeof(DataTemplateProperty) * property_count);
+        memset(data_template->property, 0, sizeof(DataTemplateProperty) * property_count);
+        data_template->property_count = property_count;
+    }
+    if (property_data_size) {
+        data_template->property_data  = HAL_Malloc(property_data_size);
+        memset(data_template->property_data, 0, property_data_size);
+    }
 
-    data_template->event = HAL_Malloc(sizeof(DataTemplateEvent) * event_count);
-    memset(data_template->event, 0, sizeof(DataTemplateEvent) * event_count);
-    data_template->event_count = event_count;
+    if (event_count) {
+        data_template->event = HAL_Malloc(sizeof(DataTemplateEvent) * event_count);
+        memset(data_template->event, 0, sizeof(DataTemplateEvent) * event_count);
+        data_template->event_count = event_count;
+    }
 
-    data_template->action = HAL_Malloc(sizeof(DataTemplateAction) * action_count);
-    memset(data_template->action, 0, sizeof(DataTemplateAction) * action_count);
-    data_template->action_count = action_count;
-    data_template->action_data  = HAL_Malloc(action_data_size);
-    memset(data_template->action_data, 0, action_data_size);
+    if (action_count) {
+        data_template->action = HAL_Malloc(sizeof(DataTemplateAction) * action_count);
+        memset(data_template->action, 0, sizeof(DataTemplateAction) * action_count);
+        data_template->action_count = action_count;
+    }
+    if (action_data_size) {
+        data_template->action_data  = HAL_Malloc(action_data_size);
+        memset(data_template->action_data, 0, action_data_size);
+    }
 
     if ((!data_template->property && property_count) || (!data_template->property_data && property_data_size) ||
         (!data_template->event && event_count) || (!data_template->action && action_count) ||

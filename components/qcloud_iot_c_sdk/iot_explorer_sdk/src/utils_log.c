@@ -160,6 +160,11 @@ LogLevel utils_log_get_level(void)
  */
 void utils_log_gen(const char *file, const char *func, const int line, const LogLevel level, const char *fmt, ...)
 {
+    // check if log deinit
+    if (!sg_log_handle.log_buffer) {
+        return;
+    }
+
     if (level > sg_log_handle.log_print_level) {
         return;
     }
@@ -255,6 +260,11 @@ static void _hex_dump(const void *pdata, int len)
 void utils_log_hex_dump(const char *file, const char *func, const int line, const char *name, void *array,
                         size_t array_len)
 {
+    // check if log deinit
+    if (!sg_log_handle.log_buffer) {
+        return;
+    }
+
     if (sg_log_handle.log_mutex) {
         sg_log_handle.log_handle_func.log_mutex_lock(sg_log_handle.log_mutex);
     }

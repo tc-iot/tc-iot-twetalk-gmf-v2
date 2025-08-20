@@ -124,7 +124,23 @@ typedef enum {
     QCLOUD_ERR_TWETALK_NOT_INIT                 = -705, /**< twetalk not init */
     QCLOUD_ERR_TWETALK_SEND_FAIL                = -706, /**< twetalk send fail */
     QCLOUD_ERR_TWETALK_MALLOC_FAIL              = -707, /**< twetalk malloc fail */
-    QCLOUD_ERR_TWETALK_UNKNOW_TYPE              = -708, /**< twetalk unknow type */
+    QCLOUD_ERR_TWETALK_CREATE_SEM_FAIL          = -708, /**< twetalk create sem fail */
+    QCLOUD_ERR_TWETALK_NOT_CONNECTED            = -709, /**< twetalk not connected */
+    QCLOUD_ERR_TWETALK_UNKNOW_TYPE              = -710, /**< twetalk unknow type */
+
+    QCLOUD_ERR_WS_CLOSE_NORMAL                     = -1000, /**< websocket close normal */
+    QCLOUD_ERR_WS_CLOSE_GOING_AWAY                 = -1001, /**< websocket close going away */
+    QCLOUD_ERR_WS_CLOSE_PROTOCOL_ERROR             = -1002, /**< websocket close protocol error */
+    QCLOUD_ERR_WS_CLOSE_UNSUPPORTED_DATA           = -1003, /**< websocket close unsupported data */
+    QCLOUD_ERR_WS_CLOSE_NO_STATUS_RECEIVED         = -1005, /**< websocket close no status received */
+    QCLOUD_ERR_WS_CLOSE_ABNORMAL_CLOSURE           = -1006, /**< websocket close abnormal closure */
+    QCLOUD_ERR_WS_CLOSE_INVALID_FRAME_PAYLOAD_DATA = -1007, /**< websocket close invalid frame payload data */
+    QCLOUD_ERR_WS_CLOSE_POLICY_VIOLATION           = -1008, /**< websocket close policy violation */
+    QCLOUD_ERR_WS_CLOSE_MESSAGE_TOO_BIG            = -1009, /**< websocket close message too big */
+    QCLOUD_ERR_WS_CLOSE_MANDATORY_EXT              = -1010, /**< websocket close mandatory extension */
+    QCLOUD_ERR_WS_CLOSE_INTERNAL_SERVER_ERROR      = -1011, /**< websocket close internal server error */
+    QCLOUD_ERR_WS_CLOSE_TLS_HANDSHAKE              = -1015, /**< websocket close tls handshake */
+
 } IotReturnCode;
 
 #ifdef __cplusplus

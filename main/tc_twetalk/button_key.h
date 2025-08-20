@@ -24,4 +24,5 @@
 
 int button_key_init(ebtn_evt_fn event_cb);
 
+void button_key_deinit(void);
 

@@ -51,39 +51,34 @@
 #include "esp_gmf_oal_sys.h"
 #include "esp_gmf_oal_thread.h"
 #include "esp_heap_caps.h"
+#include "ota_downloader.h"
 #include "pca9557.h"
+#include "qcloud_iot_wifi_config.h"
 #include "twetalk_app.h"
 
 #define TAG "TWETALK"
 
-#define DEFAULT_BUFFER_SIZE (4096)  // 4096
+#define DEFAULT_BUFFER_SIZE (4096)       // 4096
+#define WAKEUP_TIMEOUT      (30 * 1000)  // 30s
 
-#define JOY_ROLE "QQ_hard"  // QQ_hard QQ_soft pleasant_goat
+static int sg_vad_start             = 0;
+static int sg_wakeup_start          = 0;
+static int sg_key_pressed           = 0;
+static int sg_key_record_mode       = 0;
+static int sg_ota_download_finished = 0;
+static void *sg_twetalk_handle      = NULL;
+static int sg_main_exit             = 0;
+static int sg_twetalk_error         = 0;
+static int sg_is_net_connected      = 0;
+static int sg_check_twetalk_connect = 0;
 
-#define WAKEUP_TIMEOUT (30 * 1000)  // 30s
-
-typedef enum
-{
-    TWETALK_WS_INIT  = 0,       // 初始化
-    TWETALK_WS_START = 1,       // 启动
-    TWETALK_WS_EXIT,            // 退出
-    TWETALK_WS_NEED_RECONNECT,  // 掉线重连
-    TWETALK_WS_ERROR,           // 错误
-    TWETALK_WS_RUNNING,         // 运行中
-} twetalk_ws_state_e;
-
-static twetalk_ws_state_e sg_twetalk_ws_state = 0;
-static int sg_vad_start                       = 0;
-static int sg_wakeup_start                    = 0;
-static int sg_key_pressed                     = 0;
-static int sg_key_record_mode                 = 0;
-static void *sg_twetalk_handle                = NULL;
+static esp_gmf_oal_thread_t twetalk_thread;
+static esp_gmf_oal_thread_t read_thread;
+static esp_gmf_oal_thread_t ota_thread;
 
 // ------------------------------------------------------------
 // audio process
 // ------------------------------------------------------------
-
-static uint32_t sg_wakeup_countdown = WAKEUP_TIMEOUT;
 
 const char *tone_uri[] = {
     "file://sdcard/System/connecting.aac",     "file://sdcard/System/connected.aac",
@@ -92,35 +87,21 @@ const char *tone_uri[] = {
     "file://sdcard/System/enter_key_mode.wav", "file://sdcard/System/exit_key_mode.wav",
 };
 
-static void reload_wakeup_count(void)
-{
-    sg_wakeup_countdown = WAKEUP_TIMEOUT;
-}
-
 static void audio_data_read_task(void *pv)
 {
     uint8_t *data = esp_gmf_oal_calloc(1, DEFAULT_BUFFER_SIZE);
 
     int ret = 0;
-    while (true) {
-#if defined CONFIG_KEY_PRESS_DIALOG_MODE
-        xEventGroupWaitBits(coze_chat.data_evt_group, BUTTON_REC_READING, pdFALSE, pdFALSE, portMAX_DELAY);
-        ret = audio_recorder_read_data(data, DEFAULT_BUFFER_SIZE);
-        if (ret > 0) {
-            esp_coze_chat_send_audio_data(coze_chat.chat, (char *)data, ret);
-        }
-
-#elif defined CONFIG_VOICE_WAKEUP_MODE
+    while (!sg_main_exit) {
         // TODO 发送本地音频
         ret = audio_recorder_read_data(data, DEFAULT_BUFFER_SIZE);
-        if (sg_wakeup_start && sg_vad_start) {
+        if (sg_key_record_mode == 0 && sg_wakeup_start && sg_vad_start) {  // 唤醒对话模式
+            tc_twetalk_ws_send_audio(sg_twetalk_handle, data, ret);
+        } else if (sg_key_record_mode == 1 && sg_key_pressed) {  // 按键对话模式
             tc_twetalk_ws_send_audio(sg_twetalk_handle, data, ret);
         }
-#else
-        ret = audio_recorder_read_data(data, DEFAULT_BUFFER_SIZE);
-        // esp_coze_chat_send_audio_data(coze_chat.chat, (char *)data, ret);
-#endif /* CONFIG_KEY_PRESS_DIALOG_MODE */
     }
+    esp_gmf_oal_thread_delete(read_thread);
 }
 
 #ifndef CONFIG_KEY_PRESS_DIALOG_MODE
@@ -130,12 +111,9 @@ static void recorder_event_callback_fn(void *event, void *ctx)
     switch (afe_evt->type) {
         case ESP_GMF_AFE_EVT_WAKEUP_START:
             ESP_LOGI(TAG, "wakeup start");
-            sg_wakeup_start = 1;
-            reload_wakeup_count();
+            sg_wakeup_start          = 1;
+            sg_check_twetalk_connect = 1;
             audio_prompt_play(tone_uri[LOCALPLAY_DONG]);
-            if (sg_twetalk_ws_state == TWETALK_WS_NEED_RECONNECT) {
-                sg_twetalk_ws_state = TWETALK_WS_START;
-            }
             break;
         case ESP_GMF_AFE_EVT_WAKEUP_END:
             ESP_LOGI(TAG, "wakeup end");
@@ -257,14 +235,29 @@ static void _mqtt_event_handler(void *client, void *handle_context, MQTTEventMsg
  */
 static void _setup_connect_init_params(MQTTInitParams *init_params, DeviceInfo *device_info)
 {
-    init_params->device_info = device_info;
+    init_params->device_info       = device_info;
     init_params->event_handle.h_fp = _mqtt_event_handler;
+}
+
+// ----------------------------------------------------------------------------
+// OTA callback
+// ----------------------------------------------------------------------------
+
+int _on_download_finish(const char *version, size_t total_len)
+{
+    Log_d("download firmware: version[%s]|file_size[%d]", version, total_len);
+    sg_ota_download_finished = 1;
+    return 0;
+}
+
+const char *_get_firmware_version(void)
+{
+    return "esp32s3_v1.0.0";
 }
 
 // ----------------------------------------------------------------------------
 // Main
 // ----------------------------------------------------------------------------
-static int sg_main_exit = 0;
 
 /**
  * @brief 收到音频数据回调
@@ -276,6 +269,9 @@ static int sg_main_exit = 0;
  */
 static int _twetalk_recv_audio_cb(uint8_t *recv_data, int recv_len, void *context)
 {
+    if (sg_key_record_mode && sg_key_pressed) {
+        return 0;  // key mode ignore
+    }
     audio_playback_feed_data(recv_data, recv_len);
     return 0;
 }
@@ -345,13 +341,28 @@ static int _twetalk_recv_event_cb(TWeTalkEventType type, TWeTalkEventMsg *msg, v
         /**< 接收错误 */  // TODO : 错误处理
         case TWETALK_EVENT_RECV_ERROR: {
             Log_e("recv error: %d", msg->RecvError.code);
-            sg_main_exit = 1;
+            sg_twetalk_error = msg->RecvError.code;
         } break;
         default:
             Log_w("unknown event type: %d", type);
             break;
     }
     return 0;
+}
+
+static int _ota_task_init(void *client)
+{
+    IotOtaInitParams params = {
+        .on_download_finish   = _on_download_finish,
+        .get_firmware_version = _get_firmware_version,
+    };
+
+    int rc = iot_ota_init(client, &params);
+    if (rc) {
+        return rc;
+    }
+
+    return esp_gmf_oal_thread_create(&ota_thread, "ota_thread", iot_ota_process, (void *)ota_thread, 4096, 2, false, 0);
 }
 
 static void twetalk_thread_entry(void *param)
@@ -361,12 +372,26 @@ static void twetalk_thread_entry(void *param)
     LogHandleFunc func = DEFAULT_LOG_HANDLE_FUNCS;
     utils_log_init(func, LOG_LEVEL_DEBUG, 2048);
 
-    DeviceInfo device_info = {
-        .product_id     = CONFIG_QCLOUD_PRODUCT_ID,
-        .device_name    = CONFIG_QCLOUD_DEVICE_NAME,
-        .device_secret  = CONFIG_QCLOUD_DEVICE_SECRET,
-        .device_version = "1.0.0",
+    static DeviceInfo device_info = {
+        .product_id    = CONFIG_QCLOUD_PRODUCT_ID,
+        .device_name   = CONFIG_QCLOUD_DEVICE_NAME,
+        .device_secret = CONFIG_QCLOUD_DEVICE_SECRET,
     };
+    HAL_SetDevInfo(&device_info);
+    HAL_Printf("\r\n\r\ncurrent version: %s\r\nbuild time : %s %s\r\ndevice_id : %s_%s \r\n\r\n",
+               _get_firmware_version(), __DATE__, __TIME__, device_info.product_id, device_info.device_name);
+
+    if (sg_is_net_connected == 0) {
+        ESP_LOGW(TAG, "net not connect");
+        IotWifiConfigParams params = {0};
+        rc                         = iot_wifi_config(IOT_WIFI_BIND_TYPE_LLSYNC_BLE, &params, 5 * 60 * 1000);
+        if (rc) {
+            Log_e("wifi config failed: %d", rc);
+        }
+        audio_prompt_play(tone_uri[LOCALPLAY_CONNECTING]);
+        HAL_SleepMs(5000);
+        esp_restart();
+    }
 
     // init connection
     MQTTInitParams init_params = DEFAULT_MQTT_INIT_PARAMS;
@@ -406,6 +431,16 @@ static void twetalk_thread_entry(void *param)
         IOT_MQTT_Destroy(&client);
         goto ret;
     }
+
+    // init ota
+    rc = _ota_task_init(client);
+    if (rc) {
+        Log_e("ota task init failed: %d", rc);
+        usr_data_template_deinit(client);
+        IOT_MQTT_Destroy(&client);
+        goto ret;
+    }
+
     // TODO 根据实际情况来更新物模型
     usr_report_battery(client, 100);
     usr_report_volume(client, 80);
@@ -425,14 +460,36 @@ static void twetalk_thread_entry(void *param)
             Log_e("exit with error: %d", rc);
             break;
         }
+        if (sg_ota_download_finished) {
+            ESP_LOGI(TAG, "ota download finished");
+            sg_main_exit = 1;
+            break;  // 退出循环
+        }
+        if (sg_twetalk_error) {
+            tc_twetalk_ws_disconnect(sg_twetalk_handle);
+            sg_twetalk_error = 0;
+        }
+        if (sg_check_twetalk_connect) {
+            sg_check_twetalk_connect = 0;
+            // 长时间无对话后台会切掉websocket，所以如果断线需要重新连接
+            if (twetalk_ws_is_connected(sg_twetalk_handle) != 1) {
+                tc_twetalk_ws_reconnect(sg_twetalk_handle);
+            }
+        }
     } while (!sg_main_exit);
     rc |= tc_twetalk_ws_exit(sg_twetalk_handle);
     rc |= usr_data_template_deinit(client);
+    iot_ota_deinit();
     rc |= IOT_MQTT_Destroy(&client);
 ret:
     Log_w("twetalk thread exit with error: %d", rc);
+    button_key_deinit();
+    if (sg_ota_download_finished) {
+        extern int HAL_OTA_SwitchToNewFirmware(void);
+        HAL_OTA_SwitchToNewFirmware();
+    }
     utils_log_deinit();
-    vTaskDelete(NULL);
+    esp_gmf_oal_thread_delete(twetalk_thread);
     return;
 }
 
@@ -444,7 +501,6 @@ static void btn_event_process(struct ebtn_btn *btn, ebtn_evt_t evt)
         if (cnt == 2) {
             if (sg_key_record_mode == 0) {
                 sg_key_record_mode = 1;
-                audio_set_volume(100);
                 ESP_LOGW(TAG, "enter key record mode");
                 audio_prompt_play(tone_uri[LOCALPLAY_ENTER_KEY_MODE]);
             } else {
@@ -463,30 +519,37 @@ static void btn_event_process(struct ebtn_btn *btn, ebtn_evt_t evt)
         // 长按5s清除wifi信息
         if (cnt == 10 && sg_key_record_mode == 0) {
             ESP_LOGW(TAG, "clear wifi info");
+            extern void erase_wifi_info(void);
+            erase_wifi_info();
             audio_prompt_play(tone_uri[LOCALPLAY_CLEAR_NETWORK]);
             HAL_SleepMs(6000);
             esp_restart();
         }
     } else if (evt == EBTN_EVT_ONPRESS) {
         sg_key_pressed = 1;
+        if (sg_key_record_mode) {
+            sg_check_twetalk_connect = 1;
+        }
     } else if (evt == EBTN_EVT_ONRELEASE) {
         sg_key_pressed = 0;
     }
 }
 
-int tc_twetalk_init(void)
+int tc_twetalk_init(int is_net_connected)
 {
-    static esp_gmf_oal_thread_t twewtalk_thread;
-    static esp_gmf_oal_thread_t read_thread;
 #ifdef CONFIG_LCEDA_SZP_BOARD
     // enable audio pa
     pca9557_init();
     pa_en(1);
 #endif /* CONFIG_LCEDA_SZP_BOARD */
     audio_pipe_open();
+    if (is_net_connected == 0) {
+        audio_prompt_play(tone_uri[LOCALPLAY_PAIR_NETWORK]);
+    }
+    sg_is_net_connected = is_net_connected;
     button_key_init(btn_event_process);
     esp_gmf_oal_thread_create(&read_thread, "audio_data_read_task", audio_data_read_task, (void *)NULL, 4096, 12, true,
                               1);
-    return esp_gmf_oal_thread_create(&twewtalk_thread, "twetalk_ws", twetalk_thread_entry, (void *)NULL, 20 * 1024, 5,
-                                     true, 1);
+    return esp_gmf_oal_thread_create(&twetalk_thread, "twetalk_ws", twetalk_thread_entry, (void *)NULL, 20 * 1024, 5,
+                                     false, 1);
 }
