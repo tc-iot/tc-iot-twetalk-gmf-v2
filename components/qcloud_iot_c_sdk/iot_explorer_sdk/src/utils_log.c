@@ -170,17 +170,20 @@ void utils_log_gen(const char *file, const char *func, const int line, const Log
     }
 
     if (sg_log_handle.log_mutex) {
-        sg_log_handle.log_handle_func.log_mutex_lock(sg_log_handle.log_mutex);
+        sg_log_handle.log_handle_func.log_mutex_lock(sg_log_handle.log_mutex, 0);
     }
 
     /* format log content */
     const char *file_name = _get_filename(file);
     char       *o         = sg_log_handle.log_buffer;
 
+    char time_str[30];
+
     memset(sg_log_handle.log_buffer, 0, sg_log_handle.log_max_size);
 
     o += snprintf(sg_log_handle.log_buffer, sg_log_handle.log_max_size, "%s|%s|%s|%s(%d): ", LEVEL_STR[level],
-                  sg_log_handle.log_handle_func.log_get_current_time_str(), file_name, func, line);
+                  sg_log_handle.log_handle_func.log_get_current_time_str(time_str, sizeof(time_str)), file_name, func,
+                  line);
 
     va_list ap;
     va_start(ap, fmt);
@@ -265,14 +268,17 @@ void utils_log_hex_dump(const char *file, const char *func, const int line, cons
         return;
     }
 
+    char time_str[30];
+
     if (sg_log_handle.log_mutex) {
-        sg_log_handle.log_handle_func.log_mutex_lock(sg_log_handle.log_mutex);
+        sg_log_handle.log_handle_func.log_mutex_lock(sg_log_handle.log_mutex, 0);
     }
 
     const char *file_name = _get_filename(file);
-    sg_log_handle.log_handle_func.log_printf("%s|%s|%s(%d) %s length : %ld, data : \r\n",
-                                             sg_log_handle.log_handle_func.log_get_current_time_str(), file_name, func,
-                                             line, name, array_len);
+    sg_log_handle.log_handle_func.log_printf(
+        "%s|%s|%s(%d) %s length : %ld, data : \r\n",
+        sg_log_handle.log_handle_func.log_get_current_time_str(time_str, sizeof(time_str)), file_name, func, line, name,
+        array_len);
     if (array && array_len) {
         sg_log_handle.log_handle_func.log_printf("offset: 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15\r\n");
         sg_log_handle.log_handle_func.log_printf("======================================================\r\n");

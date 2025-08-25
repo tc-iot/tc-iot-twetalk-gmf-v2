@@ -38,6 +38,8 @@ extern "C" {
 #include <stdint.h>
 #include <string.h>
 
+#include "qcloud_iot_platform.h"
+
 /**
  * @brief SDK log print/upload level.
  *
@@ -55,15 +57,15 @@ typedef enum {
  *
  */
 typedef struct {
-    void *(*log_malloc)(size_t len);
+    void *(*log_malloc)(uint32_t len);
     void (*log_free)(void *val);
     void (*log_handle)(const char *message);
     void (*log_upload)(LogLevel log_level, const char *message);
     void (*log_printf)(const char *fmt, ...);
-    char *(*log_get_current_time_str)(void);
+    char *(*log_get_current_time_str)(char *time_str, size_t time_str_len);
     void *(*log_mutex_create)(void);
-    void (*log_mutex_lock)(void *mutex);
-    void (*log_mutex_unlock)(void *mutex);
+    int (*log_mutex_lock)(void *mutex, int try_flag);
+    int (*log_mutex_unlock)(void *mutex);
     void (*log_mutex_destroy)(void *mutex);
     int (*log_snprintf)(char *str, const int len, const char *fmt, ...);
 } LogHandleFunc;
@@ -72,11 +74,18 @@ typedef struct {
  * @brief Default log func
  *
  */
-#define DEFAULT_LOG_HANDLE_FUNCS                                                                         \
-    {                                                                                                    \
-        HAL_Malloc, HAL_Free, NULL, NULL, HAL_Printf, HAL_Timer_Current, HAL_MutexCreate, HAL_MutexLock, \
-            HAL_MutexUnlock, HAL_MutexDestroy, HAL_Snprintf                                              \
-    }
+#define DEFAULT_LOG_HANDLE_FUNCS \
+    {HAL_Malloc,                 \
+     HAL_Free,                   \
+     NULL,                       \
+     NULL,                       \
+     HAL_Printf,                 \
+     HAL_GetLocalTime,           \
+     HAL_RecursiveMutexCreate,   \
+     HAL_RecursiveMutexLock,     \
+     HAL_RecursiveMutexUnLock,   \
+     HAL_RecursiveMutexDestroy,  \
+     HAL_Snprintf}
 
 /**
  * @brief Init log with func, log level, max log size.

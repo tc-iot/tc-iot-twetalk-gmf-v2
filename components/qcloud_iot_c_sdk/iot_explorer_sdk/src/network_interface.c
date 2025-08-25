@@ -49,8 +49,8 @@ static int _network_tcp_init(IotNetwork *network)
 static int _network_tcp_connect(IotNetwork *network)
 {
     POINTER_SANITY_CHECK(network, QCLOUD_ERR_INVAL);
-
-    network->fd = HAL_TCP_Connect(network->host, network->port);
+    uint16_t port_int = atoi(network->port);
+    network->fd = HAL_TCP_Connect(network->host, port_int);
 
     if (network->fd < 0) {
         Log_e("fail to connect with TCP server: %s:%s", STRING_PTR_PRINT_SANITY_CHECK(network->host),
@@ -97,7 +97,8 @@ static int _network_tcp_read(IotNetwork *network, unsigned char *data, size_t da
 static int _network_tcp_write(IotNetwork *network, unsigned char *data, size_t datalen, uint32_t timeout_ms)
 {
     POINTER_SANITY_CHECK(network, QCLOUD_ERR_INVAL);
-    return HAL_TCP_Write(network->fd, data, datalen, timeout_ms);
+    size_t write_len = 0;
+    return HAL_TCP_Write(network->fd, data, datalen, timeout_ms, &write_len);
 }
 
 /**

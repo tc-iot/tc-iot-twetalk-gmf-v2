@@ -1,4 +1,0 @@
-[submodule "components/qcloud_iot_c_sdk/iot_c_sdk"]
-	path = components/qcloud_iot_c_sdk/iot_c_sdk
-	url = https://git.woa.com/qcloud-iot-terminal/C-SDK/iot-hub-device-c-sdk.git
-	branch = twetalk

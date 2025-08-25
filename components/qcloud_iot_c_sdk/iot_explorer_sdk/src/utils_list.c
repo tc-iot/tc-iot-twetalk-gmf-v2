@@ -62,10 +62,10 @@ typedef struct {
  *
  * @param[in] list pointer to list
  */
-static inline void _list_lock(List *list)
+static inline void _list_lock(List *list, int try_flag)
 {
     if (list->lock) {
-        list->func.list_lock(list->lock);
+        list->func.list_lock(list->lock, try_flag);
     }
 }
 
@@ -123,7 +123,7 @@ static int _list_process(void *list, UtilsListDirection direction, OnNodeProcess
         return -1;
     }
 
-    _list_lock(self);
+    _list_lock(self, 0);
 
     if (!utils_list_len_get(list)) {
         _list_unlock(self);
@@ -250,7 +250,7 @@ void utils_list_clear(void *list)
         return;
     }
 
-    _list_lock(self);
+    _list_lock(self, 0);
 
     ListNode *next;
     ListNode *curr = self->head;
@@ -297,7 +297,7 @@ int utils_list_push(void *list, size_t val_size, void *usr_data,
         return -1;
     }
 
-    _list_lock(self);
+    _list_lock(self, 0);
 
     if (!val_size || self->len >= self->max_len) {
         _list_unlock(self);
@@ -361,7 +361,7 @@ void *utils_list_pop(void *list)
     if (!self) {
         return NULL;
     }
-    _list_lock(self);
+    _list_lock(self, 0);
 
     if (!self->len) {
         _list_unlock(self);
@@ -410,7 +410,7 @@ void utils_list_remove(void *list, void *val)
     if (!self) {
         return;
     }
-    _list_lock(self);
+    _list_lock(self, 0);
     _list_remove(self, list_container_of(val, ListNode, val));
     _list_unlock(self);
 }

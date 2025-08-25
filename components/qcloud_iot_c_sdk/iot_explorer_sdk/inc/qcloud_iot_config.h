@@ -35,7 +35,7 @@
 extern "C" {
 #endif
 
-#define QCLOUD_IOT_DEVICE_SDK_VERSION "4.1.0-221b3e5eeefd233e22ab52826710dba6a24a7bd6"
+#define QCLOUD_IOT_DEVICE_SDK_VERSION "4.1.0-9e3e26629eea085781d1feebe36aa1cd7da6a2c2"
 /* #undef AUTH_MODE_CERT */
 #define AUTH_MODE_KEY
 #define AUTH_WITH_NO_TLS

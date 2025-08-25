@@ -58,7 +58,6 @@ static void _lower(char md5_lower[33], const char md5[33])
     md5_lower[32] = '\0';
 }
 
-#ifdef AUTH_WITH_NO_TLS
 /**
  * @brief 32-bit integer manipulation macros (little endian)
  *
@@ -349,60 +348,3 @@ int utils_md5_compare(IotMd5Context *ctx, const char md5sum[33])
     _lower(md5sum_lower, md5sum);
     return strncmp(ctx->md5sum, md5sum_lower, 32);
 }
-#else
-
-/**
- * @brief Reset MD5 context.
- *
- * @param[in,out] ctx MD5 context
- */
-void utils_md5_reset(IotMd5Context *ctx)
-{
-    memset(ctx, 0, sizeof(IotMd5Context));
-    mbedtls_md5_init(&ctx->ctx);
-    mbedtls_md5_starts_ret(&ctx->ctx);
-}
-
-/**
- * @brief MD5 update.
- *
- * @param[in,out] ctx MD5 context
- * @param[in] input input data
- * @param[in] ilen data length
- */
-void utils_md5_update(IotMd5Context *ctx, const uint8_t *input, size_t ilen)
-{
-    mbedtls_md5_update(&ctx->ctx, input, ilen);
-}
-
-/**
- * @brief Finish MD5 calculation, result will store in md5sum.
- *
- * @param[in,out] ctx MD5 context
- */
-void utils_md5_finish(IotMd5Context *ctx)
-{
-    int i;
-    mbedtls_md5_finish(&ctx->ctx, ctx->md5sum_str);
-    for (i = 0; i < 16; ++i) {
-        ctx->md5sum[i * 2]     = _hb2hex(ctx->md5sum_str[i] >> 4);
-        ctx->md5sum[i * 2 + 1] = _hb2hex(ctx->md5sum_str[i]);
-    }
-    ctx->md5sum[32]     = '\0';
-    ctx->md5sum_str[16] = '\0';
-}
-
-/**
- * @brief Compare md5sum with context.
- *
- * @param[in,out] ctx MD5 context
- * @param[in] md5sum md5sum to compare
- * @return 0 for the same
- */
-int utils_md5_compare(IotMd5Context *ctx, const char md5sum[33])
-{
-    char md5sum_lower[33];
-    _lower(md5sum_lower, md5sum);
-    return strncmp(ctx->md5sum, md5sum_lower, 32);
-}
-#endif

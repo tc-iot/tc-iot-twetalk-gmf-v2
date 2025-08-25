@@ -613,7 +613,7 @@ int IOT_HTTP_Recv(void *client, uint8_t *buf, int buf_len, uint32_t timeout_ms)
  */
 IotBool IOT_HTTP_IsRecvFinished(void *client)
 {
-    POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
+    POINTER_SANITY_CHECK(client, IOT_BOOL_FALSE);
     IotHTTPClient *http_client = (IotHTTPClient *)client;
     return http_client->response.need_recv_len == 0 ? IOT_BOOL_TRUE : IOT_BOOL_FALSE;
 }

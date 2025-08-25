@@ -306,7 +306,17 @@ config TWETALK_CALLING_OPENID
 config TWETALK_USE_NETCONFIG
    bool "TWETALK_USE_NETCONFIG"
    help
-     Enable network configuration for the application.
+     是否使用标准BLE LLsync辅助配网功能
    default n
+
+config TWETALK_USE_DYNAMIC_REGISTER
+   bool "TWETALK_USE_DYNAMIC_REGISTER"
+   help
+     是否使用动态注册功能，适用于量产阶段
+
+config QCLOUD_PRODUCT_SECRET
+   string "QCLOUD_PRODUCT_SECRET"
+   default "YOUR_PRODUCT_SECRET"
+   depends on TWETALK_USE_DYNAMIC_REGISTER
 
 endmenu

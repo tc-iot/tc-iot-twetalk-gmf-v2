@@ -88,6 +88,13 @@ uint64_t IOT_Timer_CurrentSec(void);
  */
 int IOT_Timer_GetRandomNumber(void);
 
+/**
+ * @brief Get time of ms
+ *
+ * @return time
+ */
+uint64_t HAL_Timer_CurrentMs(void);
+
 #ifdef __cplusplus
 }
 #endif

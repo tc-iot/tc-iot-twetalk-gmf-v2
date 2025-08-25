@@ -28,6 +28,7 @@ extern "C" {
 
 #include "qcloud_iot_error.h"
 #include "utils_json.h"
+#include "qcloud_iot_config.h"
 
 typedef enum {
     /** AI对话相关事件 */
@@ -142,9 +143,13 @@ typedef struct {
     const char *wxa_modelid;     /**< 微信通话的微信小程序modelid， NULL表示不使用微信通话 */
 } TWeTalkWsInitParams;
 
+#ifdef AUTH_WITH_NO_TLS
 #define DEFAULT_TWETALK_WS_INIT_PARAMS \
     {TWETALK_AUDIO_TYPE_OPUS, 60, 60, NULL, NULL, NULL, NULL, 90 * 180, 1, 0, NULL, NULL}
-
+#else
+#define DEFAULT_TWETALK_WS_INIT_PARAMS \
+    {TWETALK_AUDIO_TYPE_OPUS, 60, 60, NULL, NULL, NULL, NULL, 90 * 180, 1, 1, NULL, NULL}
+#endif 
 /**
  * @brief 初始化AI对话
  *

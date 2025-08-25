@@ -36,6 +36,8 @@ extern "C" {
 #include <stdint.h>
 #include <string.h>
 
+#include "qcloud_iot_platform.h"
+
 /**
  * @brief ListNode iterator direction.
  *
@@ -59,12 +61,12 @@ typedef enum {
  *
  */
 typedef struct {
-    void *(*list_malloc)(size_t len);
+    void *(*list_malloc)(uint32_t len);
     void (*list_free)(void *val);
 
     void *(*list_lock_init)(void);
-    void (*list_lock)(void *lock);
-    void (*list_unlock)(void *lock);
+    int (*list_lock)(void *lock, int try_flag);
+    int (*list_unlock)(void *lock);
     void (*list_lock_deinit)(void *lock);
 } UtilsListFunc;
 
@@ -72,19 +74,19 @@ typedef struct {
  * @brief Default list func
  *
  */
-#define DEFAULT_LIST_FUNCS                                                                      \
-    {                                                                                           \
-        HAL_Malloc, HAL_Free, HAL_MutexCreate, HAL_MutexLock, HAL_MutexUnlock, HAL_MutexDestroy \
-    }
+#define DEFAULT_LIST_FUNCS     \
+    {HAL_Malloc,               \
+     HAL_Free,                 \
+     HAL_RecursiveMutexCreate, \
+     HAL_RecursiveMutexLock,   \
+     HAL_RecursiveMutexUnLock, \
+     HAL_RecursiveMutexDestroy}
 
 /**
  * @brief Default list func
  *
  */
-#define DEFAULT_UNLOCK_LIST_FUNCS                    \
-    {                                                \
-        HAL_Malloc, HAL_Free, NULL, NULL, NULL, NULL \
-    }
+#define DEFAULT_UNLOCK_LIST_FUNCS {HAL_Malloc, HAL_Free, NULL, NULL, NULL, NULL}
 
 /**
  * @brief Node process handle called by utils_list_process.

@@ -37,7 +37,7 @@
  */
 IotBool IOT_Timer_Expired(QcloudIotTimer *timer)
 {
-    return HAL_Timer_CurrentMs() >= *timer ? 1 : 0;
+    return HAL_GetTicksTimeMs() >= *timer ? 1 : 0;
 }
 
 /**
@@ -48,7 +48,7 @@ IotBool IOT_Timer_Expired(QcloudIotTimer *timer)
  */
 void IOT_Timer_CountdownMs(QcloudIotTimer *timer, uint32_t timeout_ms)
 {
-    *timer = HAL_Timer_CurrentMs() + timeout_ms;
+    *timer = HAL_GetTicksTimeMs() + timeout_ms;
 }
 
 /**
@@ -60,7 +60,7 @@ void IOT_Timer_CountdownMs(QcloudIotTimer *timer, uint32_t timeout_ms)
 void IOT_Timer_Countdown(QcloudIotTimer *timer, uint32_t timeout)
 {
     uint64_t timeout_ms = (uint64_t)timeout * 1000;
-    *timer              = HAL_Timer_CurrentMs() + timeout_ms;
+    *timer              = HAL_GetTicksTimeMs() + timeout_ms;
 }
 
 /**
@@ -71,7 +71,7 @@ void IOT_Timer_Countdown(QcloudIotTimer *timer, uint32_t timeout)
  */
 uint64_t IOT_Timer_Remain(QcloudIotTimer *timer)
 {
-    uint64_t current_ms = HAL_Timer_CurrentMs();
+    uint64_t current_ms = HAL_GetTicksTimeMs();
     return *timer <= current_ms ? 0 : *timer - current_ms;
 }
 
@@ -82,7 +82,7 @@ uint64_t IOT_Timer_Remain(QcloudIotTimer *timer)
  */
 uint64_t IOT_Timer_CurrentSec(void)
 {
-    return HAL_Timer_CurrentMs() / 1000;
+    return HAL_GetTicksTimeMs() / 1000;
 }
 
 /**
@@ -92,9 +92,10 @@ uint64_t IOT_Timer_CurrentSec(void)
  */
 int IOT_Timer_GetRandomNumber(void)
 {
-    static uint8_t is_srand;
-    if (!is_srand) {
-        srand(HAL_Timer_CurrentMs());
-    }
-    return rand();
+    return (int)HAL_Random();
+}
+
+uint64_t HAL_Timer_CurrentMs(void)
+{
+    return HAL_GetTimeMs();
 }

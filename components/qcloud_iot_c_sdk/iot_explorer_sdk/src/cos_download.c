@@ -240,7 +240,7 @@ int IOT_COS_DownloadFetch(void *handle, uint8_t *buf, uint32_t buf_len, uint32_t
  */
 IotBool IOT_COS_DownloadIsFinished(void *handle)
 {
-    POINTER_SANITY_CHECK(handle, QCLOUD_ERR_INVAL);
+    POINTER_SANITY_CHECK(handle, IOT_BOOL_FALSE);
     HTTPCosDownloadHandle *download_handle = (HTTPCosDownloadHandle *)handle;
     return download_handle->download_size == download_handle->params.file_size ? IOT_BOOL_TRUE : IOT_BOOL_FALSE;
 }

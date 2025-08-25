@@ -61,6 +61,8 @@
 #define DEFAULT_BUFFER_SIZE (4096)       // 4096
 #define WAKEUP_TIMEOUT      (30 * 1000)  // 30s
 
+#define DEVICEINFO_NVS_NAMESPACE "device_info"
+
 static int sg_vad_start             = 0;
 static int sg_wakeup_start          = 0;
 static int sg_key_pressed           = 0;
@@ -75,6 +77,10 @@ static int sg_check_twetalk_connect = 0;
 static esp_gmf_oal_thread_t twetalk_thread;
 static esp_gmf_oal_thread_t read_thread;
 static esp_gmf_oal_thread_t ota_thread;
+
+extern int HAL_NVS_Write(const char *key, const uint8_t *value, uint32_t length);
+extern int HAL_NVS_Read(const char *key, uint8_t *value, uint32_t *length);
+extern int HAL_NVS_Erase(const char *key);
 
 // ------------------------------------------------------------
 // audio process
@@ -272,6 +278,7 @@ static int _twetalk_recv_audio_cb(uint8_t *recv_data, int recv_len, void *contex
     if (sg_key_record_mode && sg_key_pressed) {
         return 0;  // key mode ignore
     }
+    // ESP_LOGI("recv","%d", recv_len);
     audio_playback_feed_data(recv_data, recv_len);
     return 0;
 }
@@ -372,14 +379,40 @@ static void twetalk_thread_entry(void *param)
     LogHandleFunc func = DEFAULT_LOG_HANDLE_FUNCS;
     utils_log_init(func, LOG_LEVEL_DEBUG, 2048);
 
-    static DeviceInfo device_info = {
-        .product_id    = CONFIG_QCLOUD_PRODUCT_ID,
-        .device_name   = CONFIG_QCLOUD_DEVICE_NAME,
-        .device_secret = CONFIG_QCLOUD_DEVICE_SECRET,
-    };
+    static DeviceInfo device_info;
+    memset(&device_info, 0, sizeof(device_info));
+    strncpy(device_info.device_version, _get_firmware_version(), sizeof(device_info.device_version) - 1);
+#ifndef CONFIG_TWETALK_USE_DYNAMIC_REGISTER
+    strncpy(device_info.product_id, CONFIG_QCLOUD_PRODUCT_ID, sizeof(CONFIG_QCLOUD_PRODUCT_ID) - 1);
+    strncpy(device_info.device_name, CONFIG_QCLOUD_DEVICE_NAME, sizeof(CONFIG_QCLOUD_DEVICE_NAME) - 1);
+    strncpy(device_info.device_secret, CONFIG_QCLOUD_DEVICE_SECRET, sizeof(CONFIG_QCLOUD_DEVICE_SECRET) - 1);
+#else
+    uint32_t read_len = sizeof(device_info);
+    rc                = HAL_NVS_Read(DEVICEINFO_NVS_NAMESPACE, (uint8_t *)&device_info, &read_len);
+    if (rc != ESP_OK) {
+        ESP_LOGW(TAG, "Failed to read device info from NVS, use default");
+        // TODO : 使用动态注册
+        strncpy(device_info.product_id, CONFIG_QCLOUD_PRODUCT_ID, sizeof(CONFIG_QCLOUD_PRODUCT_ID) - 1);
+        strncpy(device_info.product_secret, CONFIG_QCLOUD_PRODUCT_SECRET, sizeof(CONFIG_QCLOUD_PRODUCT_SECRET) - 1);
+        // ! MAC地址做设备名称,
+        // ! 注意⚠️：需要先在物联网开发平台预创建完设备，才可以在这里使用动态注册功能。
+        uint8_t mac[6] = {0};
+        HAL_GetMAC(mac, 6);
+        HAL_Snprintf(device_info.device_name, sizeof(device_info.device_name), "%02X%02X%02X%02X%02X%02X", mac[0],
+                     mac[1], mac[2], mac[3], mac[4], mac[5]);
+        HAL_Snprintf(device_info.device_secret, sizeof(device_info.device_secret), "%s", "IOT_PSK");
+    }
+#endif  // CONFIG_TWETALK_USE_DYNAMIC_REGISTER
+
     HAL_SetDevInfo(&device_info);
-    HAL_Printf("\r\n\r\ncurrent version: %s\r\nbuild time : %s %s\r\ndevice_id : %s_%s \r\n\r\n",
-               _get_firmware_version(), __DATE__, __TIME__, device_info.product_id, device_info.device_name);
+
+    HAL_Printf("\r\n\r\n");
+    HAL_Printf("==================================================\r\n");
+    HAL_Printf("current version: %s\r\n", _get_firmware_version());
+    HAL_Printf("build time     : %s %s\r\n", __DATE__, __TIME__);
+    HAL_Printf("device_id      : %s_%s\r\n", device_info.product_id, device_info.device_name);
+    HAL_Printf("==================================================\r\n");
+    HAL_Printf("\r\n\r\n");
 
     if (sg_is_net_connected == 0) {
         ESP_LOGW(TAG, "net not connect");
@@ -389,6 +422,9 @@ static void twetalk_thread_entry(void *param)
             Log_e("wifi config failed: %d", rc);
         }
         audio_prompt_play(tone_uri[LOCALPLAY_CONNECTING]);
+        // TODO: 配网的时候可能执行了动态注册，所以这里再保存一次,保证下次可以正常读取到设备密钥
+        HAL_GetDevInfo(&device_info);
+        HAL_NVS_Write(DEVICEINFO_NVS_NAMESPACE, (const uint8_t *)&device_info, sizeof(device_info));
         HAL_SleepMs(5000);
         esp_restart();
     }
@@ -419,7 +455,7 @@ static void twetalk_thread_entry(void *param)
     twetalk_params.recv_event_cb            = _twetalk_recv_event_cb;
     twetalk_params.context                  = NULL;
     twetalk_params.audio_type               = TWETALK_AUDIO_TYPE_OPUS;
-    twetalk_params.push_recv_frame_interval = 50;
+    twetalk_params.push_recv_frame_interval = 40;
     // p2p player 测试小程序信息，自有小程序请替换为自己的小程序信息
     twetalk_params.wxa_appid   = "wx9e8fbc98ceac2628";
     twetalk_params.wxa_modelid = "DYEbVE9kfjAONqnWsOhXgw";
@@ -447,8 +483,8 @@ static void twetalk_thread_entry(void *param)
 
     TWeCallOpenids openids[1];  // 如果有更多联系人则扩大数组，最多支持10个联系人
     memset(openids, 0, sizeof(openids));
-    strcpy(openids[0].name, CONFIG_TWETALK_CALLING_NAME);
-    strcpy(openids[0].open_id, CONFIG_TWETALK_CALLING_OPENID);
+    strcpy(openids[0].name, CONFIG_TWETALK_CALLING_NAME);       // CONFIG_TWETALK_CALLING_NAME
+    strcpy(openids[0].open_id, CONFIG_TWETALK_CALLING_OPENID);  // CONFIG_TWETALK_CALLING_OPENID
     tc_twetalk_call_sync_openids(sg_twetalk_handle, openids, 1);
 
     do {

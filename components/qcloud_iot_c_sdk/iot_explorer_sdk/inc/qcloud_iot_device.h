@@ -112,6 +112,7 @@ typedef struct {
 #endif
 } DeviceInfo;
 
+
 #ifdef __cplusplus
 }
 #endif

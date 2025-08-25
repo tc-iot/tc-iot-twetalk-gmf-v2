@@ -36,13 +36,14 @@ extern "C" {
 #include <stdint.h>
 #include <stddef.h>
 
-typedef struct {
-    void *(*ringbuffer_malloc)(size_t len);
-    void (*ringbuffer_free)(void *val);
+#include "qcloud_iot_platform.h"
 
+typedef struct {
+    void *(*ringbuffer_malloc)(uint32_t len);
+    void (*ringbuffer_free)(void *val);
     void *(*ringbuffer_lock_init)(void);
-    void (*ringbuffer_lock)(void *lock);
-    void (*ringbuffer_unlock)(void *lock);
+    int (*ringbuffer_lock)(void *lock, int try_flag);
+    int (*ringbuffer_unlock)(void *lock);
     void (*ringbuffer_lock_deinit)(void *lock);
 } UtilsRingBufferFunc;
 
@@ -50,17 +51,21 @@ typedef struct {
  * @brief Default ring buffer functions with lock support
  */
 #define DEFAULT_RINGBUFFER_FUNCS \
-    { HAL_Malloc, HAL_Free, HAL_MutexCreate, HAL_MutexLock, HAL_MutexUnlock, HAL_MutexDestroy }
+    {HAL_Malloc,                 \
+     HAL_Free,                   \
+     HAL_RecursiveMutexCreate,   \
+     HAL_RecursiveMutexLock,     \
+     HAL_RecursiveMutexUnLock,   \
+     HAL_RecursiveMutexDestroy}
 
 /**
  * @brief Default ring buffer functions without lock support
  */
-#define DEFAULT_UNLOCK_RINGBUFFER_FUNCS \
-    { HAL_Malloc, HAL_Free, NULL, NULL, NULL, NULL }
+#define DEFAULT_UNLOCK_RINGBUFFER_FUNCS {HAL_Malloc, HAL_Free, NULL, NULL, NULL, NULL}
 
 /**
  * @brief Create a ring buffer
- * 
+ *
  * @param[in] func Function pointers for memory and lock operations
  * @param[in] total_size Total size of the ring buffer
  * @return void* Pointer to created ring buffer, NULL on failure
@@ -69,14 +74,14 @@ void *utils_ringbuffer_create(UtilsRingBufferFunc func, uint32_t total_size, int
 
 /**
  * @brief Destroy a ring buffer
- * 
+ *
  * @param[in] rb Pointer to ring buffer to destroy
  */
 void utils_ringbuffer_destroy(void *rb);
 
 /**
  * @brief Get the total size of the ring buffer
- * 
+ *
  * @param[in] rb Pointer to ring buffer
  * @return uint32_t Total size of the buffer
  */
@@ -84,7 +89,7 @@ uint32_t utils_ringbuffer_total_size(void *rb);
 
 /**
  * @brief Check if ring buffer is empty
- * 
+ *
  * @param[in] rb Pointer to ring buffer
  * @return int 1 if empty, 0 otherwise
  */
@@ -92,7 +97,7 @@ int utils_ringbuffer_is_empty(void *rb);
 
 /**
  * @brief Get used size of ring buffer
- * 
+ *
  * @param[in] rb Pointer to ring buffer
  * @return uint32_t Used size in bytes
  */
@@ -100,7 +105,7 @@ uint32_t utils_ringbuffer_used_size(void *rb);
 
 /**
  * @brief Get free size of ring buffer
- * 
+ *
  * @param[in] rb Pointer to ring buffer
  * @return uint32_t Free size in bytes
  */
@@ -108,7 +113,7 @@ uint32_t utils_ringbuffer_reserve_size(void *rb);
 
 /**
  * @brief Check if ring buffer is full
- * 
+ *
  * @param[in] rb Pointer to ring buffer
  * @return int 1 if full, 0 otherwise
  */
@@ -116,7 +121,7 @@ int utils_ringbuffer_is_full(void *rb);
 
 /**
  * @brief Put data into the ring buffer
- * 
+ *
  * @param[in] rb Pointer to the ring buffer
  * @param[in] buffer Data to put into the buffer
  * @param[in] len Length of data to put
@@ -126,7 +131,7 @@ uint32_t utils_ringbuffer_put(void *rb, uint8_t *buffer, uint32_t len);
 
 /**
  * @brief Get data from the ring buffer
- * 
+ *
  * @param[in] rb Pointer to the ring buffer
  * @param[out] buffer Buffer to store the data
  * @param[in] len Length of data to get
@@ -136,7 +141,7 @@ uint32_t utils_ringbuffer_get(void *rb, uint8_t *buffer, uint32_t len);
 
 /**
  * @brief Get idle rate of the ring buffer
- * 
+ *
  * @param[in] rb Pointer to the ring buffer
  * @return int Idle rate (0-100), -1 on error
  */

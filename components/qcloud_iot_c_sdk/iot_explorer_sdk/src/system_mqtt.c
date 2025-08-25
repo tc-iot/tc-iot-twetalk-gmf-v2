@@ -334,7 +334,7 @@ int IOT_Sys_SyncNTPTime(void *client)
     local_ntptime =
         (result->time.ntptime2 + result->time.ntptime1 + result->result_recv_time - local_publish_before) / 2;
 
-    rc = HAL_Timer_SetSystimeMs(local_ntptime);
+    rc = HAL_SetTimeMs(local_ntptime);
     if (rc) {
         Log_e("set systime ms failed, timestamp %lld, please check permission or other ret :%d", local_ntptime, rc);
     } else {

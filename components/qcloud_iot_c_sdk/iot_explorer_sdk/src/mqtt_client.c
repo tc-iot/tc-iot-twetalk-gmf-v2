@@ -113,7 +113,7 @@ static void _mqtt_client_network_init(QcloudIotClient *client, const MQTTInitPar
 #else
     client->network_stack.ssl_connect_params.psk        = (char *)client->device_secret_decode;
     client->network_stack.ssl_connect_params.psk_length = client->device_secret_decode_len;
-    client->network_stack.ssl_connect_params.psk_id     = client->client_id;
+    memcpy(client->network_stack.ssl_connect_params.psk_id, client->client_id, MAX_SIZE_OF_CLIENT_ID);
     client->network_stack.ssl_connect_params.ca_crt     = NULL;
     client->network_stack.ssl_connect_params.ca_crt_len = 0;
 #endif
@@ -562,7 +562,7 @@ int IOT_MQTT_SubscribeSync(void *client, const char *topic_filter, const Subscri
  */
 IotBool IOT_MQTT_IsConnected(void *client)
 {
-    POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
+    POINTER_SANITY_CHECK(client, IOT_BOOL_FALSE);
     QcloudIotClient *mqtt_client = (QcloudIotClient *)client;
     return get_client_conn_state(mqtt_client);
 }

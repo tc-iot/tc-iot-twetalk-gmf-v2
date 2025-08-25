@@ -13,53 +13,51 @@
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @file qcloud_iot_platform.h
- * @brief hal interface
+ * @file qcloud_iot_device.c
+ * @brief Get and set device info
  * @author fancyxu (fancyxu@tencent.com)
  * @version 1.0
- * @date 2021-05-28
+ * @date 2021-05-31
  *
  * @par Change Log:
  * <table>
  * <tr><th>Date       <th>Version <th>Author    <th>Description
- * <tr><td>2021-05-28 <td>1.0     <td>fancyxu   <td>first commit
- * <tr><td>2021-07-09 <td>1.1     <td>fancyxu   <td>support tls and change port to str format
+ * <tr><td>2021-05-31 <td>1.0     <td>fancyxu   <td>first commit
+ * <tr><td>2021-07-09 <td>1.1     <td>fancyxu   <td>fix code standard of IotReturnCode
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_IOT_PLATFORM_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_IOT_PLATFORM_H_
-
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
-#include <inttypes.h>
+#include <memory.h>
 #include <stdarg.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-// common header file
-#include "qcloud_iot_debug.h"
-#include "qcloud_iot_device.h"
-#include "qcloud_iot_error.h"
-#include "qcloud_iot_params_check.h"
 #include "qcloud_iot_platform.h"
-#include "qcloud_iot_timer.h"
 
-// config header file
-#include "qcloud_iot_config.h"
-#include "qcloud_iot_host.h"
-#include "qcloud_iot_variables.h"
+static DeviceInfo sg_dev_info;
 
-#include "tc_iot_hal.h"
-
-int HAL_SetDevInfo(DeviceInfo *device_info);
-int HAL_GetDevInfo(DeviceInfo *device_info);
-
-#if defined(__cplusplus)
+/**
+ * @brief Save device info
+ *
+ * @param[in] device_info @see DeviceInfo
+ * @return @see IotReturnCode
+ */
+int HAL_SetDevInfo(DeviceInfo *device_info)
+{
+    POINTER_SANITY_CHECK(device_info, QCLOUD_ERR_DEV_INFO);
+    memcpy(&sg_dev_info, device_info, sizeof(DeviceInfo));
+    return QCLOUD_RET_SUCCESS;
 }
-#endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_IOT_PLATFORM_H_
+/**
+ * @brief Get device info
+ *
+ * @param[in] device_info @see DeviceInfo
+ * @return @see IotReturnCode
+ */
+int HAL_GetDevInfo(DeviceInfo *device_info)
+{
+    POINTER_SANITY_CHECK(device_info, QCLOUD_ERR_DEV_INFO);
+    memcpy(device_info, &sg_dev_info, sizeof(DeviceInfo));
+    return QCLOUD_RET_SUCCESS;
+}

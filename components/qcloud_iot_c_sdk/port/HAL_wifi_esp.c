@@ -30,18 +30,17 @@
 #include <string.h>
 #include <sys/time.h>
 
+#include "esp_event.h"
+#include "esp_log.h"
+#include "esp_mac.h"
+#include "esp_system.h"
+#include "esp_wifi.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
 #include "freertos/task.h"
 #include "freertos/timers.h"
-#include "freertos/event_groups.h"
-#include "esp_system.h"
-#include "esp_event.h"
-#include "esp_mac.h"
-#include "esp_wifi.h"
-#include "esp_log.h"
-#include "nvs_flash.h"
 #include "nvs.h"
-
+#include "nvs_flash.h"
 #include "qcloud_iot_platform.h"
 
 static const char *TAG = "HAL wifi";
@@ -50,70 +49,40 @@ static const char *TAG = "HAL wifi";
 #define WIFI_FAIL_BIT             BIT1
 #define EXAMPLE_ESP_MAXIMUM_RETRY 20
 
-static EventGroupHandle_t s_wifi_event_group;
-static int                sg_retry_num    = 0;
-static uint32_t           local_ipv4_addr = 0xC0A80401;  // 192.168.4.1
+#define WIFI_NVS_NAMESPACE "wifi_info"
 
-static esp_err_t save_wifi_info(const char *ssid, size_t ssid_len, const char *password, size_t passwd_len)
+static EventGroupHandle_t s_wifi_event_group;
+static int sg_retry_num         = 0;
+static uint32_t local_ipv4_addr = 0xC0A80401;  // 192.168.4.1
+
+typedef struct {
+    char ssid[32];
+    char password[64];
+} HAL_Wifi_t;
+
+extern int HAL_NVS_Write(const char *key, const uint8_t *value, uint32_t length);
+extern int HAL_NVS_Read(const char *key, uint8_t *value, uint32_t *length);
+extern int HAL_NVS_Erase(const char *key);
+
+static esp_err_t save_wifi_info(const HAL_Wifi_t *wifi_info)
 {
-    nvs_handle_t my_handle;
-    esp_err_t    err;
-    // open
-    err = nvs_open("wifi_info", NVS_READWRITE, &my_handle);
-    if (err != ESP_OK) {
-        ESP_LOGE(__func__, "Error (%s) opening NVS handle!\n", esp_err_to_name(err));
-    } else {
-        nvs_set_str(my_handle, "ssid", (const char *)ssid);
-        nvs_set_str(my_handle, "password", (const char *)password);
-        nvs_commit(my_handle);
-        nvs_close(my_handle);
-    }
-    return err;
+    return HAL_NVS_Write(WIFI_NVS_NAMESPACE, (const uint8_t *)wifi_info, sizeof(HAL_Wifi_t));
 }
 
-static esp_err_t get_wifi_info(char *ssid, char *password)
+static esp_err_t get_wifi_info(HAL_Wifi_t *wifi_info)
 {
-    nvs_handle_t my_handle;
-    esp_err_t    err;
-    size_t       length;
-    // open
-    err = nvs_open("wifi_info", NVS_READWRITE, &my_handle);
+    esp_err_t err;
+    uint32_t length = sizeof(HAL_Wifi_t);
+    err = HAL_NVS_Read(WIFI_NVS_NAMESPACE, (uint8_t *)wifi_info, &length);
     if (err != ESP_OK) {
-        ESP_LOGE(__func__, "Error (%s) opening NVS handle!\n", esp_err_to_name(err));
-    } else {
-        length = 32;
-        err    = nvs_get_str(my_handle, "ssid", ssid, &length);
-        length = 64;
-        err |= nvs_get_str(my_handle, "password", password, &length);
-        nvs_close(my_handle);
+        return err;
     }
-    return err;
+    return ESP_OK;
 }
 
 void erase_wifi_info(void)
 {
-    // 只清除WiFi信息，而不是整个NVS分区
-    esp_err_t err;
-    nvs_handle_t handle;
-
-    // 打开WiFi信息命名空间
-    err = nvs_open("wifi_info", NVS_READWRITE, &handle);
-    if (err == ESP_OK) {
-        // 清除ssid和password
-        nvs_erase_key(handle, "ssid");
-        nvs_erase_key(handle, "password");
-
-        // 提交更改
-        err = nvs_commit(handle);
-        if (err == ESP_OK) {
-            ESP_LOGI(TAG, "WiFi info cleared successfully");
-        } else {
-            ESP_LOGE(TAG, "Failed to commit NVS changes: %s", esp_err_to_name(err));
-        }
-        nvs_close(handle);
-    } else {
-        ESP_LOGE(TAG, "Failed to open NVS wifi_info namespace: %s", esp_err_to_name(err));
-    }
+    HAL_NVS_Erase(WIFI_NVS_NAMESPACE);
 }
 
 static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
@@ -137,9 +106,9 @@ static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_
     }
 }
 
-static int connect_wifi(const char *ssid, const char *password, uint32_t timeout_ms)
+static int connect_wifi(const HAL_Wifi_t *wifi_info, uint32_t timeout_ms)
 {
-    esp_err_t err = ESP_OK;
+    esp_err_t err      = ESP_OK;
     s_wifi_event_group = xEventGroupCreate();
 
     ESP_ERROR_CHECK(esp_netif_init());
@@ -164,8 +133,10 @@ static int connect_wifi(const char *ssid, const char *password, uint32_t timeout
                 .pmf_cfg            = {.capable = true, .required = false},
             },
     };
-    memcpy(wifi_config.sta.ssid, ssid, strlen(ssid));
-    memcpy(wifi_config.sta.password, password, strlen(password));
+    memcpy(wifi_config.sta.ssid, wifi_info->ssid, strlen(wifi_info->ssid));
+    memcpy(wifi_config.sta.password, wifi_info->password, strlen(wifi_info->password));
+
+    ESP_LOGI(TAG, "connect to %s/%s", wifi_info->ssid, wifi_info->password);
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
@@ -179,10 +150,10 @@ static int connect_wifi(const char *ssid, const char *password, uint32_t timeout
     /* xEventGroupWaitBits() returns the bits before the call returned, hence we can test which event actually
      * happened. */
     if (bits & WIFI_CONNECTED_BIT) {
-        ESP_LOGI(TAG, "connected to ap SSID:%s password:%s", ssid, password);
+        ESP_LOGI(TAG, "connected to ap SSID:%s password:%s", wifi_info->ssid, wifi_info->password);
         err = ESP_OK;
     } else if (bits & WIFI_FAIL_BIT) {
-        ESP_LOGE(TAG, "Failed to connect to SSID:%s, password:%s", ssid, password);
+        ESP_LOGE(TAG, "Failed to connect to SSID:%s, password:%s", wifi_info->ssid, wifi_info->password);
         err = ESP_FAIL;
     } else {
         ESP_LOGE(TAG, "UNEXPECTED EVENT");
@@ -203,20 +174,22 @@ int HAL_Wifi_ModeSet(TCIoTWifiMode mode)
 
 int HAL_Wifi_StaInfoSet(const char *ssid, uint8_t ssid_len, const char *passwd, uint8_t passwd_len)
 {
-    save_wifi_info(ssid, ssid_len, passwd, passwd_len);
-    return 0;
+    HAL_Wifi_t wifi_info;
+    memset(&wifi_info, 0, sizeof(wifi_info));
+    memcpy(wifi_info.ssid, ssid, ssid_len);
+    memcpy(wifi_info.password, passwd, passwd_len);
+    return save_wifi_info(&wifi_info);
 }
 
 int HAL_Wifi_StaConnect(uint32_t timeout_ms)
 {
-    char      ssid[32]     = {0};
-    char      password[64] = {0};
-    esp_err_t err          = get_wifi_info(ssid, password);
+    HAL_Wifi_t wifi_info;
+    esp_err_t err     = get_wifi_info(&wifi_info);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to get WiFi info");
         return err;
     }
-    err = connect_wifi(ssid, password, timeout_ms);
+    err = connect_wifi(&wifi_info, timeout_ms);
     return err;
 }
 
@@ -239,17 +212,19 @@ size_t HAL_Wifi_MacGet(uint8_t *mac)
 int HAL_Wifi_StartStaConnect(const char *ssid, const char *passwd, uint32_t timeout_ms)
 {
     esp_err_t err;
+    HAL_Wifi_t wifi_info;
+    memset(&wifi_info, 0, sizeof(wifi_info));
     if (ssid == NULL && passwd == NULL) {
-        char ssid1[32]     = {0};
-        char password1[64] = {0};
-        err                = get_wifi_info(ssid1, password1);
+        err = get_wifi_info(&wifi_info);
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "Failed to get WiFi info");
             return err;
         }
-        err = connect_wifi(ssid1, password1, timeout_ms);
+        err = connect_wifi(&wifi_info, timeout_ms);
         return err;
     }
 
-    return connect_wifi(ssid, passwd, timeout_ms);
+    memcpy(wifi_info.ssid, ssid, strlen(ssid));
+    memcpy(wifi_info.password, passwd, strlen(passwd));
+    return connect_wifi(&wifi_info, timeout_ms);
 }

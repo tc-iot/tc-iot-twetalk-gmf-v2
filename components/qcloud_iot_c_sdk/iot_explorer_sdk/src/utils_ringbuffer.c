@@ -58,10 +58,10 @@ typedef struct {
  *
  * @param[in] rb Pointer to ring buffer
  */
-static inline void _ringbuffer_lock(RingBuffer *rb)
+static inline void _ringbuffer_lock(RingBuffer *rb, int try_flag)
 {
     if (rb->func.ringbuffer_lock) {
-        rb->func.ringbuffer_lock(rb->lock);
+        rb->func.ringbuffer_lock(rb->lock, try_flag);
     }
 }
 
@@ -146,7 +146,7 @@ uint32_t utils_ringbuffer_total_size(void *ringbuffer)
     if (rb == NULL) {
         return 0;
     }
-    _ringbuffer_lock(rb);
+    _ringbuffer_lock(rb, 0);
     uint32_t total_size = rb->total_size;
     _ringbuffer_unlock(rb);
     return total_size;
@@ -163,7 +163,7 @@ static inline void utils_ringbuffer_reset(void *ringbuffer)
     if (rb == NULL) {
         return;
     }
-    _ringbuffer_lock(rb);
+    _ringbuffer_lock(rb, 0);
     rb->write_index = 0;
     rb->read_index  = 0;
     rb->used_count  = 0;
@@ -182,7 +182,7 @@ int utils_ringbuffer_is_empty(void *ringbuffer)
     if (rb == NULL) {
         return 1;  // Consider NULL as empty
     }
-    _ringbuffer_lock(rb);
+    _ringbuffer_lock(rb, 0);
     int rc = rb->used_count == 0;
     _ringbuffer_unlock(rb);
     return rc;
@@ -200,7 +200,7 @@ uint32_t utils_ringbuffer_used_size(void *ringbuffer)
     if (rb == NULL) {
         return 0;
     }
-    _ringbuffer_lock(rb);
+    _ringbuffer_lock(rb, 0);
     uint32_t used_size = rb->used_count;
     _ringbuffer_unlock(rb);
     return used_size;
@@ -218,7 +218,7 @@ uint32_t utils_ringbuffer_reserve_size(void *ringbuffer)
     if (rb == NULL) {
         return 0;
     }
-    _ringbuffer_lock(rb);
+    _ringbuffer_lock(rb, 0);
     uint32_t reserve_size = rb->total_size - rb->used_count;
     _ringbuffer_unlock(rb);
     return reserve_size;
@@ -236,7 +236,7 @@ int utils_ringbuffer_is_full(void *ringbuffer)
     if (rb == NULL) {
         return 0;  // Consider NULL as not full
     }
-    _ringbuffer_lock(rb);
+    _ringbuffer_lock(rb, 0);
     int is_full = rb->used_count == rb->total_size;
     _ringbuffer_unlock(rb);
     return is_full;
@@ -245,7 +245,7 @@ int utils_ringbuffer_is_full(void *ringbuffer)
 static uint32_t _ringbuffer_get(RingBuffer *rb, uint8_t *buffer, uint32_t len)
 {
     uint32_t l;
-    _ringbuffer_lock(rb);
+    _ringbuffer_lock(rb, 0);
     uint32_t rptr = RINGBUFFER_INDEX_TO_PTR(rb->read_index, rb->total_size);
 
     len = MIN(len, rb->used_count);
@@ -266,7 +266,7 @@ static uint32_t _ringbuffer_get(RingBuffer *rb, uint8_t *buffer, uint32_t len)
 static uint32_t _ringbuffer_put(RingBuffer *rb, uint8_t *buffer, uint32_t len)
 {
     uint32_t l;
-    _ringbuffer_lock(rb);
+    _ringbuffer_lock(rb, 0);
     uint32_t wptr = RINGBUFFER_INDEX_TO_PTR(rb->write_index, rb->total_size);
 
     len = MIN(len, rb->total_size - rb->used_count);
@@ -299,7 +299,7 @@ static uint32_t utils_ringbuffer_put_frame(void *ringbuffer, uint8_t *buffer, ui
         return 0;
     }
 
-    _ringbuffer_lock(rb);
+    _ringbuffer_lock(rb, 0);
 
     // 帧头: 2字节长度信息
     uint8_t header[2] = {
@@ -342,7 +342,7 @@ static uint32_t utils_ringbuffer_get_frame(void *ringbuffer, uint8_t *buffer, ui
         return 0;
     }
 
-    _ringbuffer_lock(rb);
+    _ringbuffer_lock(rb, 0);
 
     // 读取帧头
     uint8_t  header[2];
@@ -424,7 +424,7 @@ int utils_ringbuffer_idle_rate(void *ringbuffer)
     if (rb == NULL || rb->total_size == 0) {
         return -1;  // Invalid ring buffer or size is 0
     }
-    _ringbuffer_lock(rb);
+    _ringbuffer_lock(rb, 0);
     uint32_t reserve_size = rb->total_size - rb->used_count;
     int      idle_rate    = (int)((reserve_size * 100) / rb->total_size);
     _ringbuffer_unlock(rb);

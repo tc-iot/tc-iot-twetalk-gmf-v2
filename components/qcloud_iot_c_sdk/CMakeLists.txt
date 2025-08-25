@@ -1,6 +1,7 @@
 message("make iot_c_sdk src")
 set(IOT_SDK_SOURCE_DIR ${COMPONENT_DIR}/iot_c_sdk)
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -DPLATFORM_FREERTOS  -DPLATFORM_ESP_RTOS -DMBEDTLS_ALLOW_PRIVATE_ACCESS")
 
 if(EXISTS ${IOT_SDK_SOURCE_DIR}/CMakeLists.txt)
     # 将代码提取到iot_c_sdk目录下

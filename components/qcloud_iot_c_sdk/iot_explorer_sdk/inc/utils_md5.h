@@ -36,9 +36,6 @@ extern "C" {
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include "qcloud_iot_config.h"
-
-#ifdef AUTH_WITH_NO_TLS
 
 typedef struct {
     uint32_t total[2];       /**< number of bytes processed  */
@@ -47,15 +44,6 @@ typedef struct {
     char     md5sum[33];     /**< md5sum result in hex string */
     uint8_t  md5sum_str[17]; /**< md5sum result in string */
 } IotMd5Context;
-
-#else
-#include "mbedtls/md5.h"
-typedef struct {
-    mbedtls_md5_context ctx;
-    char                md5sum[33];     /**< md5sum result in hex string */
-    uint8_t             md5sum_str[17]; /**< md5sum result in string */
-} IotMd5Context;
-#endif
 
 /**
  * @brief Reset MD5 context.
