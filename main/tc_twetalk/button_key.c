@@ -101,7 +101,7 @@ int button_key_init(ebtn_evt_fn event_cb)
     // }
     // gpio_set_level(LED_PIN, 1);  // off
     sg_button_thread_exit = 0;
-    return esp_gmf_oal_thread_create(&button_thread, "button_key", button_key_thread_entry, (void *)button_thread, 4 * 1024, 2,
+    return esp_gmf_oal_thread_create(&button_thread, "button_key", button_key_thread_entry, (void *)button_thread, 10 * 1024, 2,
                                      false, 1);
 }
 

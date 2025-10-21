@@ -6,4 +6,4 @@ managed_components
 CLAUDE.md 
 .claude 
 sdkconfig
-components/qcloud_iot_c_sdk/iot_c_sdk
+components/qcloud_iot_c_sdk/iot-hub-device-c-sdk

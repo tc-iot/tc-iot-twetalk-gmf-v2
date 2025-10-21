@@ -35,10 +35,10 @@
 extern "C" {
 #endif
 
-#define QCLOUD_IOT_DEVICE_SDK_VERSION "4.1.0-9e3e26629eea085781d1feebe36aa1cd7da6a2c2"
+#define QCLOUD_IOT_DEVICE_SDK_VERSION "4.1.0-d055f7d937925b0c0d7e74773749713b9a3a245b"
 /* #undef AUTH_MODE_CERT */
 #define AUTH_MODE_KEY
-#define AUTH_WITH_NO_TLS
+/* #undef AUTH_WITH_NO_TLS */
 /* #undef GATEWAY_ENABLED */
 #define DEV_DYN_REG_ENABLED
 /* #undef LOG_UPLOAD */
@@ -49,7 +49,7 @@ extern "C" {
 /* #undef LOG_UPLOAD_TYPE_JSON */
 /* #undef LOG_UPLOAD_AES_ENCRYPT_POST */
 #define WIFI_CONFIG_ENABLE
-#define WIFI_CONFIG_SOFT_AP_USED
+/* #undef WIFI_CONFIG_SOFT_AP_USED */
 #define WIFI_CONFIG_BLE_LLSYNC_USED
 
 #ifdef __cplusplus

@@ -74,7 +74,7 @@
 #endif
 
 /* Audio volume setting */
-#define DEFAULT_PLAYBACK_VOLUME     (80)
+#define DEFAULT_PLAYBACK_VOLUME     (70)
 #define DEFAULT_RECORD_DB           (30.0)
 #define DEFAULT_RECOPRD_REF_DB      (0.0)
 #define DEFAULT_WAKEUP_END_TIME_MS  (60000)

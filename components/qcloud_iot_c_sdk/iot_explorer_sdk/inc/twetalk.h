@@ -128,8 +128,15 @@ typedef enum {
     TWETALK_AUDIO_TYPE_MAX,
 } TWeTalkAudioType;
 
+typedef enum {
+    TWETALK_LANGUAGE_TYPE_ZH,
+    TWETALK_LANGUAGE_TYPE_EN,
+    TWETALK_LANGUAGE_TYPE_MAX,
+} TWeTalkLanguageType;
+
 typedef struct {
     TWeTalkAudioType      audio_type;               /**< 音频类型，目前只支持opus */
+    TWeTalkLanguageType   language_type;            /**< 语言类型，目前只支持中文和英文 */
     int                   frame_interval;           /**< 帧间隔，目前固定60ms */
     int                   push_recv_frame_interval; /**< 推送接收的音频数据间隔，目前固定60ms */
     void                 *mqtt_client;              /**< mqtt handle */
@@ -145,11 +152,12 @@ typedef struct {
 
 #ifdef AUTH_WITH_NO_TLS
 #define DEFAULT_TWETALK_WS_INIT_PARAMS \
-    {TWETALK_AUDIO_TYPE_OPUS, 60, 60, NULL, NULL, NULL, NULL, 90 * 180, 1, 0, NULL, NULL}
+    {TWETALK_AUDIO_TYPE_OPUS, TWETALK_LANGUAGE_TYPE_ZH, 60, 60, NULL, NULL, NULL, NULL, 90 * 180, 1, 0, NULL, NULL}
 #else
 #define DEFAULT_TWETALK_WS_INIT_PARAMS \
-    {TWETALK_AUDIO_TYPE_OPUS, 60, 60, NULL, NULL, NULL, NULL, 90 * 180, 1, 1, NULL, NULL}
-#endif 
+    {TWETALK_AUDIO_TYPE_OPUS, TWETALK_LANGUAGE_TYPE_ZH, 60, 60, NULL, NULL, NULL, NULL, 90 * 180, 1, 1, NULL, NULL}
+#endif
+
 /**
  * @brief 初始化AI对话
  *
@@ -219,9 +227,10 @@ int tc_twetalk_ws_disconnect(void *handle);
  * @brief 重新连接ws，当需要重启对话时调用此函数
  *
  * @param handle twetalk init时返回的句柄
+ * @param type 语言类型 当前支持中英文
  * @return 0 for success, negative for error
  */
-int tc_twetalk_ws_reconnect(void *handle);
+int tc_twetalk_ws_reconnect(void *handle, TWeTalkLanguageType type);
 
 /**
  * @brief 获取ws连接状态

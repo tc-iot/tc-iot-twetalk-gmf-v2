@@ -25,7 +25,7 @@ static DataTemplate *sg_data_template;
 
 static void _handle_property_callback(void *client, int is_get_status)
 {
-    for (UsrPropertyIndex i = USR_PROPERTY_INDEX_VOLUME; i <= USR_PROPERTY_INDEX_VOLUME; i++) {
+    for (UsrPropertyIndex i = USR_PROPERTY_INDEX_BATTERY; i <= USR_PROPERTY_INDEX_VOLUME; i++) {
         if (iot_data_template_property_status_get(sg_data_template, i)) {
             DataTemplatePropertyValue value;
             switch ((int)i) {

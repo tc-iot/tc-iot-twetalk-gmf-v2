@@ -51,6 +51,8 @@
 #include "esp_gmf_oal_sys.h"
 #include "esp_gmf_oal_thread.h"
 #include "esp_heap_caps.h"
+#include "nvs.h"
+#include "nvs_flash.h"
 #include "ota_downloader.h"
 #include "pca9557.h"
 #include "qcloud_iot_wifi_config.h"
@@ -62,13 +64,14 @@
 #define WAKEUP_TIMEOUT      (30 * 1000)  // 30s
 
 #define DEVICEINFO_NVS_NAMESPACE "device_info"
+#define TWETALK_LANGUAGE_NVS_KEY "language"
 
 static int sg_vad_start             = 0;
 static int sg_wakeup_start          = 0;
 static int sg_key_pressed           = 0;
 static int sg_key_record_mode       = 0;
 static int sg_ota_download_finished = 0;
-static void *sg_twetalk_handle      = NULL;
+static void* sg_twetalk_handle      = NULL;
 static int sg_main_exit             = 0;
 static int sg_twetalk_error         = 0;
 static int sg_is_net_connected      = 0;
@@ -78,30 +81,31 @@ static esp_gmf_oal_thread_t twetalk_thread;
 static esp_gmf_oal_thread_t read_thread;
 static esp_gmf_oal_thread_t ota_thread;
 
-extern int HAL_NVS_Write(const char *key, const uint8_t *value, uint32_t length);
-extern int HAL_NVS_Read(const char *key, uint8_t *value, uint32_t *length);
-extern int HAL_NVS_Erase(const char *key);
+extern int HAL_NVS_Write(const char* key, const uint8_t* value, uint32_t length);
+extern int HAL_NVS_Read(const char* key, uint8_t* value, uint32_t* length);
+extern int HAL_NVS_Erase(const char* key);
 
 // ------------------------------------------------------------
 // audio process
 // ------------------------------------------------------------
 
-const char *tone_uri[] = {
+const char* tone_uri[] = {
     "file://sdcard/System/connecting.aac",     "file://sdcard/System/connected.aac",
     "file://sdcard/System/hello.aac",          "file://sdcard/System/dong.aac",
     "file://sdcard/System/pair_network.aac",   "file://sdcard/System/clear_connect.aac",
     "file://sdcard/System/enter_key_mode.wav", "file://sdcard/System/exit_key_mode.wav",
 };
 
-static void audio_data_read_task(void *pv)
+static void audio_data_read_task(void* pv)
 {
-    uint8_t *data = esp_gmf_oal_calloc(1, DEFAULT_BUFFER_SIZE);
+    uint8_t* data = esp_gmf_oal_calloc(1, DEFAULT_BUFFER_SIZE);
 
     int ret = 0;
     while (!sg_main_exit) {
         // TODO 发送本地音频
         ret = audio_recorder_read_data(data, DEFAULT_BUFFER_SIZE);
-        if (sg_key_record_mode == 0 && sg_wakeup_start && sg_vad_start) {  // 唤醒对话模式
+        // ESP_LOGI("send","%d",ret);
+        if (sg_key_record_mode == 0 && sg_wakeup_start) {  // 唤醒对话模式 && sg_vad_start
             tc_twetalk_ws_send_audio(sg_twetalk_handle, data, ret);
         } else if (sg_key_record_mode == 1 && sg_key_pressed) {  // 按键对话模式
             tc_twetalk_ws_send_audio(sg_twetalk_handle, data, ret);
@@ -111,9 +115,9 @@ static void audio_data_read_task(void *pv)
 }
 
 #ifndef CONFIG_KEY_PRESS_DIALOG_MODE
-static void recorder_event_callback_fn(void *event, void *ctx)
+static void recorder_event_callback_fn(void* event, void* ctx)
 {
-    esp_gmf_afe_evt_t *afe_evt = (esp_gmf_afe_evt_t *)event;
+    esp_gmf_afe_evt_t* afe_evt = (esp_gmf_afe_evt_t*)event;
     switch (afe_evt->type) {
         case ESP_GMF_AFE_EVT_WAKEUP_START:
             ESP_LOGI(TAG, "wakeup start");
@@ -169,9 +173,9 @@ static void audio_pipe_open(void)
  * @param[in] handle_context context
  * @param[in] msg msg
  */
-static void _mqtt_event_handler(void *client, void *handle_context, MQTTEventMsg *msg)
+static void _mqtt_event_handler(void* client, void* handle_context, MQTTEventMsg* msg)
 {
-    MQTTMessage *mqtt_message = (MQTTMessage *)msg->msg;
+    MQTTMessage* mqtt_message = (MQTTMessage*)msg->msg;
     uintptr_t packet_id       = (uintptr_t)msg->msg;
 
     switch (msg->event_type) {
@@ -190,7 +194,7 @@ static void _mqtt_event_handler(void *client, void *handle_context, MQTTEventMsg
         case MQTT_EVENT_PUBLISH_RECEIVED:
             Log_i("topic message arrived but without any related handle: topic=%.*s, topic_msg=%.*s",
                   mqtt_message->topic_len, STRING_PTR_PRINT_SANITY_CHECK(mqtt_message->topic_name),
-                  mqtt_message->payload_len, STRING_PTR_PRINT_SANITY_CHECK((char *)mqtt_message->payload));
+                  mqtt_message->payload_len, STRING_PTR_PRINT_SANITY_CHECK((char*)mqtt_message->payload));
             break;
         case MQTT_EVENT_SUBSCRIBE_SUCCESS:
             Log_i("subscribe success, packet-id=%u", (unsigned int)packet_id);
@@ -239,7 +243,7 @@ static void _mqtt_event_handler(void *client, void *handle_context, MQTTEventMsg
  * @param[in,out] initParams @see MQTTInitParams
  * @param[in] device_info @see DeviceInfo
  */
-static void _setup_connect_init_params(MQTTInitParams *init_params, DeviceInfo *device_info)
+static void _setup_connect_init_params(MQTTInitParams* init_params, DeviceInfo* device_info)
 {
     init_params->device_info       = device_info;
     init_params->event_handle.h_fp = _mqtt_event_handler;
@@ -249,16 +253,69 @@ static void _setup_connect_init_params(MQTTInitParams *init_params, DeviceInfo *
 // OTA callback
 // ----------------------------------------------------------------------------
 
-int _on_download_finish(const char *version, size_t total_len)
+int _on_download_finish(const char* version, size_t total_len)
 {
     Log_d("download firmware: version[%s]|file_size[%d]", version, total_len);
     sg_ota_download_finished = 1;
     return 0;
 }
 
-const char *_get_firmware_version(void)
+const char* _get_firmware_version(void)
 {
     return "esp32s3_v1.0.0";
+}
+
+static int get_twetalk_language(void)
+{
+    // 使用nvs实现
+    nvs_handle_t nvs_handle;
+    int language = 0;  // 默认语言
+    esp_err_t err;
+
+    err = nvs_open(DEVICEINFO_NVS_NAMESPACE, NVS_READONLY, &nvs_handle);
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "Failed to open NVS for reading language: %s", esp_err_to_name(err));
+        return language;
+    }
+
+    err = nvs_get_i32(nvs_handle, TWETALK_LANGUAGE_NVS_KEY, &language);
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "Failed to read language from NVS: %s", esp_err_to_name(err));
+        language = 0;  // 返回默认语言
+    }
+
+    nvs_close(nvs_handle);
+    return language;
+}
+
+static int set_twetalk_language(int language)
+{
+    // 使用nvs实现
+    nvs_handle_t nvs_handle;
+    esp_err_t err;
+
+    err = nvs_open(DEVICEINFO_NVS_NAMESPACE, NVS_READWRITE, &nvs_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to open NVS for writing language: %s", esp_err_to_name(err));
+        return -1;
+    }
+
+    err = nvs_set_i32(nvs_handle, TWETALK_LANGUAGE_NVS_KEY, language);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to write language to NVS: %s", esp_err_to_name(err));
+        nvs_close(nvs_handle);
+        return -1;
+    }
+
+    err = nvs_commit(nvs_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to commit language to NVS: %s", esp_err_to_name(err));
+        nvs_close(nvs_handle);
+        return -1;
+    }
+
+    nvs_close(nvs_handle);
+    return 0;
 }
 
 // ----------------------------------------------------------------------------
@@ -273,7 +330,7 @@ const char *_get_firmware_version(void)
  * @param context 用户上下文
  * @return int 0成功，非0失败
  */
-static int _twetalk_recv_audio_cb(uint8_t *recv_data, int recv_len, void *context)
+static int _twetalk_recv_audio_cb(uint8_t* recv_data, int recv_len, void* context)
 {
     if (sg_key_record_mode && sg_key_pressed) {
         return 0;  // key mode ignore
@@ -291,7 +348,7 @@ static int _twetalk_recv_audio_cb(uint8_t *recv_data, int recv_len, void *contex
  * @param[in] context 用户上下文
  * @return 0成功，非0失败
  */
-static int _twetalk_recv_event_cb(TWeTalkEventType type, TWeTalkEventMsg *msg, void *context)
+static int _twetalk_recv_event_cb(TWeTalkEventType type, TWeTalkEventMsg* msg, void* context)
 {
     tc_twetalk_call_event_type_print(type);
     switch (type) {
@@ -357,7 +414,7 @@ static int _twetalk_recv_event_cb(TWeTalkEventType type, TWeTalkEventMsg *msg, v
     return 0;
 }
 
-static int _ota_task_init(void *client)
+static int _ota_task_init(void* client)
 {
     IotOtaInitParams params = {
         .on_download_finish   = _on_download_finish,
@@ -369,26 +426,32 @@ static int _ota_task_init(void *client)
         return rc;
     }
 
-    return esp_gmf_oal_thread_create(&ota_thread, "ota_thread", iot_ota_process, (void *)ota_thread, 4096, 2, false, 0);
+    return esp_gmf_oal_thread_create(&ota_thread, "ota_thread", iot_ota_process, (void*)ota_thread, 4096, 2, false, 0);
 }
 
-static void twetalk_thread_entry(void *param)
+static void twetalk_thread_entry(void* param)
 {
     int rc;
     // init log level
     LogHandleFunc func = DEFAULT_LOG_HANDLE_FUNCS;
     utils_log_init(func, LOG_LEVEL_DEBUG, 2048);
-
-    static DeviceInfo device_info;
-    memset(&device_info, 0, sizeof(device_info));
+#if 0  // 测试用，正式使用请注释掉
+    static DeviceInfo device_info = {
+        .device_name   = "zhanxuan001",
+        .device_secret = "oTvCRKR9L5JhWU1gwaZVdA==",
+        .product_id    = "LTIHOHJW7F",
+    };
+    // memset(&device_info, 0, sizeof(device_info));
     strncpy(device_info.device_version, _get_firmware_version(), sizeof(device_info.device_version) - 1);
+#else
+    static DeviceInfo device_info = {0};
 #ifndef CONFIG_TWETALK_USE_DYNAMIC_REGISTER
     strncpy(device_info.product_id, CONFIG_QCLOUD_PRODUCT_ID, sizeof(CONFIG_QCLOUD_PRODUCT_ID) - 1);
     strncpy(device_info.device_name, CONFIG_QCLOUD_DEVICE_NAME, sizeof(CONFIG_QCLOUD_DEVICE_NAME) - 1);
     strncpy(device_info.device_secret, CONFIG_QCLOUD_DEVICE_SECRET, sizeof(CONFIG_QCLOUD_DEVICE_SECRET) - 1);
 #else
     uint32_t read_len = sizeof(device_info);
-    rc                = HAL_NVS_Read(DEVICEINFO_NVS_NAMESPACE, (uint8_t *)&device_info, &read_len);
+    rc                = HAL_NVS_Read(DEVICEINFO_NVS_NAMESPACE, (uint8_t*)&device_info, &read_len);
     if (rc != ESP_OK) {
         ESP_LOGW(TAG, "Failed to read device info from NVS, use default");
         // TODO : 使用动态注册
@@ -403,7 +466,7 @@ static void twetalk_thread_entry(void *param)
         HAL_Snprintf(device_info.device_secret, sizeof(device_info.device_secret), "%s", "IOT_PSK");
     }
 #endif  // CONFIG_TWETALK_USE_DYNAMIC_REGISTER
-
+#endif
     HAL_SetDevInfo(&device_info);
 
     HAL_Printf("\r\n\r\n");
@@ -424,7 +487,7 @@ static void twetalk_thread_entry(void *param)
         audio_prompt_play(tone_uri[LOCALPLAY_CONNECTING]);
         // TODO: 配网的时候可能执行了动态注册，所以这里再保存一次,保证下次可以正常读取到设备密钥
         HAL_GetDevInfo(&device_info);
-        HAL_NVS_Write(DEVICEINFO_NVS_NAMESPACE, (const uint8_t *)&device_info, sizeof(device_info));
+        HAL_NVS_Write(DEVICEINFO_NVS_NAMESPACE, (const uint8_t*)&device_info, sizeof(device_info));
         HAL_SleepMs(5000);
         esp_restart();
     }
@@ -434,7 +497,7 @@ static void twetalk_thread_entry(void *param)
     _setup_connect_init_params(&init_params, &device_info);
 
     // create MQTT client and connect with server
-    void *client = IOT_MQTT_Construct(&init_params);
+    void* client = IOT_MQTT_Construct(&init_params);
     if (client) {
         Log_i("Cloud Device Construct Success");
     } else {
@@ -456,9 +519,12 @@ static void twetalk_thread_entry(void *param)
     twetalk_params.context                  = NULL;
     twetalk_params.audio_type               = TWETALK_AUDIO_TYPE_OPUS;
     twetalk_params.push_recv_frame_interval = 40;
-    // p2p player 测试小程序信息，自有小程序请替换为自己的小程序信息
-    twetalk_params.wxa_appid   = "wx9e8fbc98ceac2628";
-    twetalk_params.wxa_modelid = "DYEbVE9kfjAONqnWsOhXgw";
+
+    twetalk_params.language_type = get_twetalk_language();  // 获取语言
+
+    // twetalk 测试小程序信息，自有小程序请替换为自己的小程序信息
+    twetalk_params.wxa_appid   = "wx7d65d685b7b00dae";
+    twetalk_params.wxa_modelid = "0yQruCUX6y6MC7isot282g";
 
     sg_twetalk_handle = tc_twetalk_ws_init(&twetalk_params);
     if (sg_twetalk_handle == NULL) {
@@ -483,8 +549,8 @@ static void twetalk_thread_entry(void *param)
 
     TWeCallOpenids openids[1];  // 如果有更多联系人则扩大数组，最多支持10个联系人
     memset(openids, 0, sizeof(openids));
-    strcpy(openids[0].name, CONFIG_TWETALK_CALLING_NAME);       // CONFIG_TWETALK_CALLING_NAME
-    strcpy(openids[0].open_id, CONFIG_TWETALK_CALLING_OPENID);  // CONFIG_TWETALK_CALLING_OPENID
+    strcpy(openids[0].name, CONFIG_TWETALK_CALLING_NAME);       //
+    strcpy(openids[0].open_id, CONFIG_TWETALK_CALLING_OPENID);  //
     tc_twetalk_call_sync_openids(sg_twetalk_handle, openids, 1);
 
     do {
@@ -509,7 +575,7 @@ static void twetalk_thread_entry(void *param)
             sg_check_twetalk_connect = 0;
             // 长时间无对话后台会切掉websocket，所以如果断线需要重新连接
             if (twetalk_ws_is_connected(sg_twetalk_handle) != 1) {
-                tc_twetalk_ws_reconnect(sg_twetalk_handle);
+                tc_twetalk_ws_reconnect(sg_twetalk_handle, 0);
             }
         }
     } while (!sg_main_exit);
@@ -529,7 +595,7 @@ ret:
     return;
 }
 
-static void btn_event_process(struct ebtn_btn *btn, ebtn_evt_t evt)
+static void btn_event_process(struct ebtn_btn* btn, ebtn_evt_t evt)
 {
     int cnt = ebtn_click_get_count(btn);
     if (evt == EBTN_EVT_ONCLICK) {
@@ -546,7 +612,15 @@ static void btn_event_process(struct ebtn_btn *btn, ebtn_evt_t evt)
                 audio_prompt_play(tone_uri[LOCALPLAY_EXIT_KEY_MODE]);
             }
         }
-        if (cnt == 5) {
+        if (cnt == 3) {
+            int language = get_twetalk_language();
+            if (language == 0) {
+                language = 1;
+            } else {
+                language = 0;
+            }
+            ESP_LOGW(TAG, "set twetalk language %d", language);
+            set_twetalk_language(language);
             esp_restart();
         }
     } else if (evt == EBTN_EVT_KEEPALIVE) {
@@ -584,8 +658,8 @@ int tc_twetalk_init(int is_net_connected)
     }
     sg_is_net_connected = is_net_connected;
     button_key_init(btn_event_process);
-    esp_gmf_oal_thread_create(&read_thread, "audio_data_read_task", audio_data_read_task, (void *)NULL, 4096, 12, true,
+    esp_gmf_oal_thread_create(&read_thread, "audio_data_read_task", audio_data_read_task, (void*)NULL, 4096, 12, true,
                               1);
-    return esp_gmf_oal_thread_create(&twetalk_thread, "twetalk_ws", twetalk_thread_entry, (void *)NULL, 20 * 1024, 5,
+    return esp_gmf_oal_thread_create(&twetalk_thread, "twetalk_ws", twetalk_thread_entry, (void*)NULL, 20 * 1024, 5,
                                      false, 1);
 }
