@@ -43,6 +43,89 @@ static uint32_t _time_left(uint32_t t_end, uint32_t t_now)
     return t_left;
 }
 
+/**
+ * @brief 获取主机地址信息并解析IP地址
+ * 
+ * 该函数通过DNS解析主机名，获取对应的IP地址。支持IPv4和IPv6地址解析。
+ * 
+ * @param host       [输入] 主机名或IP地址字符串，例如："www.example.com" 或 "192.168.1.1"
+ * @param port       [输入] 端口号
+ * @param ip_str     [输出] 用于存储解析后的IP地址字符串的缓冲区，大小至少为80字节
+ *                   成功时将包含点分十进制格式的IPv4地址（如"192.168.1.1"）
+ *                   或冒号分隔的IPv6地址（如"2001:db8::1"）
+ * 
+ * @return QCLOUD_RET_SUCCESS 成功解析并获取IP地址
+ * @return QCLOUD_ERR_FAILURE 解析失败（参数错误、DNS解析失败或不支持的地址类型）
+ * 
+ * @note 调用者需要确保ip_str缓冲区至少有80字节空间
+ */
+int HAL_GetAddrInfo(const char *host, uint16_t port, char ip_str[80])
+{
+    int             ret;
+    struct addrinfo hints;
+    struct addrinfo *addr_list = NULL;
+    char            port_str[6];
+
+    // 参数校验
+    if (host == NULL || ip_str == NULL) {
+        Log_e("invalid parameters");
+        return QCLOUD_ERR_FAILURE;
+    }
+
+    // 将端口号转换为字符串
+    HAL_Snprintf(port_str, sizeof(port_str), "%d", port);
+
+    // 设置地址信息查询条件
+    memset(&hints, 0x00, sizeof(hints));
+    hints.ai_family   = AF_UNSPEC;    // 支持IPv4和IPv6
+    hints.ai_socktype = SOCK_STREAM;  // TCP流式套接字
+    hints.ai_protocol = IPPROTO_TCP;  // TCP协议
+
+    // 执行DNS解析，获取地址信息链表
+    ret = getaddrinfo(host, port_str, &hints, &addr_list);
+    if (ret != 0) {
+        Log_e("getaddrinfo(%s:%s) failed, error: %d", STR_SAFE_PRINT(host), port_str, ret);
+        return QCLOUD_ERR_FAILURE;
+    }
+
+    // 检查是否成功获取地址信息
+    if (addr_list == NULL) {
+        Log_e("getaddrinfo returned NULL address list");
+        return QCLOUD_ERR_FAILURE;
+    }
+
+    // 根据地址族类型提取并转换IP地址
+    if (addr_list->ai_family == AF_INET) {
+        // IPv4地址：将网络字节序的二进制地址转换为点分十进制字符串
+        struct sockaddr_in *sa = (struct sockaddr_in *)(addr_list->ai_addr);
+        if (inet_ntop(AF_INET, &(sa->sin_addr), ip_str, 80) == NULL) {
+            Log_e("inet_ntop for IPv4 failed");
+            freeaddrinfo(addr_list);
+            return QCLOUD_ERR_FAILURE;
+        }
+    } else if (addr_list->ai_family == AF_INET6) {
+        // IPv6地址：将网络字节序的二进制地址转换为冒号分隔的字符串
+        struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *)(addr_list->ai_addr);
+        if (inet_ntop(AF_INET6, &(sa6->sin6_addr), ip_str, 80) == NULL) {
+            Log_e("inet_ntop for IPv6 failed");
+            freeaddrinfo(addr_list);
+            return QCLOUD_ERR_FAILURE;
+        }
+    } else {
+        // 不支持的地址族类型
+        Log_e("unsupported address family: %d", addr_list->ai_family);
+        freeaddrinfo(addr_list);
+        return QCLOUD_ERR_FAILURE;
+    }
+
+    // 释放地址信息链表
+    freeaddrinfo(addr_list);
+    
+    Log_d("resolved %s to %s:%d", host, ip_str, port);
+
+    return QCLOUD_RET_SUCCESS;
+}
+
 uintptr_t HAL_TCP_Connect(const char *host, uint16_t port)
 {
     int             ret;

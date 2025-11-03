@@ -435,7 +435,8 @@ static void twetalk_thread_entry(void* param)
     // init log level
     LogHandleFunc func = DEFAULT_LOG_HANDLE_FUNCS;
     utils_log_init(func, LOG_LEVEL_DEBUG, 2048);
-#if 0  // 测试用，正式使用请注释掉
+    Log_i("twetalk thread entry");
+#if 1  // 测试用，正式使用请注释掉
     static DeviceInfo device_info = {
         .device_name   = "zhanxuan001",
         .device_secret = "oTvCRKR9L5JhWU1gwaZVdA==",

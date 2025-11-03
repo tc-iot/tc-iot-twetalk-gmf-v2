@@ -35,3 +35,30 @@ if(EXISTS ${IOT_SDK_SOURCE_DIR}/CMakeLists.txt)
         OUTPUT_NAME "tc_twetalk"    
     )
 endif()
+
+set(src_lib_port ${COMPONENT_DIR}/port/HAL_File_free_rtos.c 
+                  ${COMPONENT_DIR}/port/HAL_UDP_free_rtos.c 
+                  ${COMPONENT_DIR}/port/HAL_TCP_free_rtos.c 
+                  ${COMPONENT_DIR}/port/HAL_OS_free_rtos.c 
+                  ${COMPONENT_DIR}/port/HAL_TLS_mbedtls.c 
+                  ${COMPONENT_DIR}/port/HAL_Timer_free_rtos.c 
+                  )
+
+set(inc_lib_port ${COMPONENT_DIR}/iot_explorer_sdk/inc)
+
+# 生成独立的libiothal库
+add_library(libiothal STATIC ${src_lib_port})
+target_include_directories(libiothal PUBLIC ${inc_lib_port})
+
+# 链接系统库依赖
+target_link_libraries(libiothal PUBLIC 
+    idf::freertos 
+    idf::lwip 
+    idf::mbedtls
+)
+
+# 设置库输出目录和名称
+set_target_properties(libiothal PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${LIB_OUT_DIR}  # 输出到lib目录
+    OUTPUT_NAME "tc_iothal"                   # 输出文件名为libtc_iothal.a
+)
