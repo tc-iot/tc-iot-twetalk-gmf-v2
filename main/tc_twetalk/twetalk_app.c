@@ -105,6 +105,10 @@ static void audio_data_read_task(void* pv)
     while (!sg_main_exit) {
         // TODO 发送本地音频
         ret = audio_recorder_read_data(data, DEFAULT_BUFFER_SIZE);
+        if (!TWeTalk_WS_IsConnected(sg_twetalk_handle)) {
+            // 断链不发送音频
+            continue;
+        }
         // ESP_LOGI("send","%d",ret);
         if (sg_key_record_mode == 0 && sg_wakeup_start) {  // 唤醒对话模式 && sg_vad_start
             TWeTalk_WS_SendAudio(sg_twetalk_handle, data, ret);
@@ -263,7 +267,7 @@ int _on_download_finish(const char* version, size_t total_len)
 
 const char* _get_firmware_version(void)
 {
-    return "esp32s3_v1.0.0";
+    return "esp32s3_v1.1.0";
 }
 
 static int get_twetalk_language(void)
@@ -398,7 +402,10 @@ static int _twetalk_recv_event_cb(TWeTalkEventType type, TWeTalkEventMsg* msg, v
                 TWeTalk_WS_ReconnectWithCall(sg_twetalk_handle, &call_params);
             }
         } break;
-
+        /**< 收到小程序取消呼叫 */
+        case TWETALK_EVENT_RECV_USR_CANCEL: {
+            Log_i("usr cancel. roomid: %.*s", msg->RecvCancel.room_id.value_len, msg->RecvCancel.room_id.value);
+        } break;
         /**< 设备呼叫小程序，小程序接听 */
         case TWETALK_EVENT_RECV_USR_ANSWER: {
             Log_i("user answer called: %.*s openid: %.*s", msg->UserAnswer.called.value_len,
@@ -452,10 +459,15 @@ static void twetalk_thread_entry(void* param)
     utils_log_init(func, LOG_LEVEL_DEBUG, 2048);
     Log_i("twetalk thread entry");
 #if 1  // 测试用，正式使用请注释掉
+    // static DeviceInfo device_info = {
+    //     .device_name   = "zhanxuan001",
+    //     .device_secret = "oTvCRKR9L5JhWU1gwaZVdA==",
+    //     .product_id    = "LTIHOHJW7F",
+    // };
     static DeviceInfo device_info = {
-        .device_name   = "zhanxuan001",
-        .device_secret = "oTvCRKR9L5JhWU1gwaZVdA==",
         .product_id    = "LTIHOHJW7F",
+        .device_name   = "xiaoxing_04",
+        .device_secret = "hA1ra/Ne7OAczZKm1xgMTw==",
     };
     // memset(&device_info, 0, sizeof(device_info));
     strncpy(device_info.device_version, _get_firmware_version(), sizeof(device_info.device_version) - 1);
@@ -483,7 +495,7 @@ static void twetalk_thread_entry(void* param)
     }
 #endif  // CONFIG_TWETALK_USE_DYNAMIC_REGISTER
 #endif
-    TCI_HAL_SetDevInfo((uint8_t *)&device_info, sizeof(DeviceInfo));
+    TCI_HAL_SetDevInfo((uint8_t*)&device_info, sizeof(DeviceInfo));
 
     TCI_HAL_Printf("\r\n\r\n");
     TCI_HAL_Printf("==================================================\r\n");
@@ -502,7 +514,7 @@ static void twetalk_thread_entry(void* param)
         }
         audio_prompt_play(tone_uri[LOCALPLAY_CONNECTING]);
         // TODO: 配网的时候可能执行了动态注册，所以这里再保存一次,保证下次可以正常读取到设备密钥
-        TCI_HAL_GetDevInfo((uint8_t *)&device_info, sizeof(DeviceInfo));
+        TCI_HAL_GetDevInfo((uint8_t*)&device_info, sizeof(DeviceInfo));
         HAL_NVS_Write(DEVICEINFO_NVS_NAMESPACE, (const uint8_t*)&device_info, sizeof(device_info));
         TCI_HAL_SleepMs(5000);
         esp_restart();
@@ -528,7 +540,7 @@ static void twetalk_thread_entry(void* param)
         goto ret;
     }
 
-    TWeTalkWsInitParams twetalk_params = DEFAULT_TWETALK_WS_INIT_PARAMS;
+    TWeTalkWsInitParams twetalk_params      = DEFAULT_TWETALK_WS_INIT_PARAMS;
     twetalk_params.mqtt_client              = client;
     twetalk_params.recv_audio_cb            = _twetalk_recv_audio_cb;
     twetalk_params.recv_event_cb            = _twetalk_recv_event_cb;

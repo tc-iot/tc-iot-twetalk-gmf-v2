@@ -184,6 +184,10 @@ typedef struct {
     uint16_t     repeat_packet_id_buf[MQTT_MAX_REPEAT_BUF_LEN]; /**< repeat packet id buffer */
     unsigned int current_packet_id_cnt;                         /**< index of packet id buffer */
 #endif
+
+    uint8_t yield_thread_running;   /**< yield thread running flag */
+    uint8_t yield_thread_exit;      /**< yield thread exit flag */
+    int     yield_thread_exit_code; /**< yield thread exit code */
 } QcloudIotClient;
 
 /**

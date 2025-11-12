@@ -470,45 +470,21 @@ int qcloud_iot_mqtt_yield(QcloudIotClient *client, uint32_t timeout_ms)
     int            rc = QCLOUD_RET_SUCCESS;
     uint8_t        packet_type;
     TCI_Timer timer;
-    TCI_Timer lock_timer;
 
-    // 使用 trylock + 轮询方式获取锁，避免超时失效
-    // 设置获取锁的超时时间
-    TCI_HAL_TimerCountdownMs(&lock_timer, timeout_ms);
-    
-    while (TCI_HAL_MutexTryLock(client->lock_yield) != 0) {
-        if (TCI_HAL_TimerExpired(&lock_timer)) {
-            // 超时无法获取锁，返回忙碌状态
-            TCIOT_FUNC_EXIT_RC(QCLOUD_ERR_MQTT_YIELD_BUSY);
-        }
-        // 短暂休眠后重试，避免 CPU 空转
-        TCI_HAL_SleepMs(10);
-    }
-
-    // 成功获取锁后，计算剩余超时时间
-    uint32_t remaining_ms = TCI_HAL_TimerRemain(&lock_timer);
-    if (remaining_ms == 0) {
-        remaining_ms = 1;  // 至少给 1ms
-    }
+    // 多线程模式下，yield线程独占，不需要锁
+    TCI_HAL_TimerCountdownMs(&timer, timeout_ms);
 
     // 1. check if manually disconnect
     if (!get_client_conn_state(client) && client->was_manually_disconnected == 1) {
-        TCI_HAL_MutexUnlock(client->lock_yield);
         TCIOT_FUNC_EXIT_RC(QCLOUD_RET_MQTT_MANUALLY_DISCONNECTED);
     }
 
     // 2. check connection state and if auto reconnect is enabled
     if (!get_client_conn_state(client) && client->auto_connect_enable == 0) {
-        TCI_HAL_MutexUnlock(client->lock_yield);
         TCIOT_FUNC_EXIT_RC(QCLOUD_ERR_MQTT_NO_CONN);
     }
 
     // 3. main loop for packet reading/handling and keep alive maintainance
-    // 使用剩余时间作为实际超时
-    TCI_HAL_TimerCountdownMs(&timer, remaining_ms);
-
-
-
     while (!TCI_HAL_TimerExpired(&timer)) {
         // handle reconnect
         if (!get_client_conn_state(client)) {
@@ -531,7 +507,6 @@ int qcloud_iot_mqtt_yield(QcloudIotClient *client, uint32_t timeout_ms)
 
                 rc = _mqtt_keep_alive(client);
                 if (rc) {
-                    TCI_HAL_MutexUnlock(client->lock_yield);
                     TCIOT_FUNC_EXIT_RC(client->auto_connect_enable ? QCLOUD_ERR_MQTT_ATTEMPTING_RECONNECT : rc);
                 }
                 break;
@@ -542,16 +517,13 @@ int qcloud_iot_mqtt_yield(QcloudIotClient *client, uint32_t timeout_ms)
             case QCLOUD_ERR_TCP_READ_FAIL:
                 Log_e("network read failed, rc: %d. MQTT Disconnect.", rc);
                 _handle_disconnect(client);
-                TCI_HAL_MutexUnlock(client->lock_yield);
                 TCIOT_FUNC_EXIT_RC(client->auto_connect_enable ? QCLOUD_ERR_MQTT_ATTEMPTING_RECONNECT
                                                              : QCLOUD_ERR_MQTT_NO_CONN);
                 break;
             default:  // others, just return
-                TCI_HAL_MutexUnlock(client->lock_yield);
                 TCIOT_FUNC_EXIT_RC(rc);
         }
     }
-    TCI_HAL_MutexUnlock(client->lock_yield);
     TCIOT_FUNC_EXIT_RC(rc);
 }
 
@@ -571,10 +543,6 @@ int qcloud_iot_mqtt_wait_for_read(QcloudIotClient *client, uint8_t packet_type)
     uint8_t        read_packet_type = 0;
     TCI_Timer timer;
     TCI_HAL_TimerCountdownMs(&timer, client->command_timeout_ms);
-
-    // 加锁保护读取操作，防止与 yield 并发
-    TCI_HAL_MutexLock(client->lock_yield);
-
     do {
         if (TCI_HAL_TimerExpired(&timer)) {
             rc = QCLOUD_ERR_MQTT_REQUEST_TIMEOUT;
@@ -583,7 +551,6 @@ int qcloud_iot_mqtt_wait_for_read(QcloudIotClient *client, uint8_t packet_type)
         rc = _cycle_for_read(client, &timer, &read_packet_type);
     } while (QCLOUD_RET_SUCCESS == rc && read_packet_type != packet_type);
 
-    TCI_HAL_MutexUnlock(client->lock_yield);
     TCIOT_FUNC_EXIT_RC(rc);
 }
 
