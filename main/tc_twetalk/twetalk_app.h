@@ -20,6 +20,36 @@
 
 #pragma once
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "data_template_app.h"
+#include "esp_check.h"
+#include "esp_err.h"
+#include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
+#include "freertos/task.h"
+#include "qcloud_iot_common.h"
+#include "twetalk.h"
+#include "twetalk_ws.h"
+#include "utils_log.h"
+#ifndef CONFIG_KEY_PRESS_DIALOG_MODE
+#include "esp_gmf_afe.h"
+#endif /* CONFIG_KEY_PRESS_DIALOG_MODE */
+#include "audio_processor.h"
+#include "button_key.h"
+#include "esp_gmf_oal_mem.h"
+#include "esp_gmf_oal_sys.h"
+#include "esp_gmf_oal_thread.h"
+#include "esp_heap_caps.h"
+#include "nvs.h"
+#include "nvs_flash.h"
+#include "ota_downloader.h"
+#include "pca9557.h"
+#include "qcloud_iot_wifi_config.h"
+
 typedef enum
 {
     LOCALPLAY_CONNECTING = 0,  // 正在联网
@@ -33,6 +63,24 @@ typedef enum
     LOCALPLAY_MAX,
 } LocalPlayE;
 extern const char* tone_uri[];
+
+typedef enum
+{
+    TWETALK_APP_EVENT_WS_DISCONECT,
+    TWETALK_APP_EVENT_WS_RECONECT,
+    TWETALK_APP_EVENT_WS_RECV_ERROR,
+    TWETALK_APP_EVENT_WS_REQUEST_IMAGE,
+    TWETALK_APP_EVENT_WS_RECV_USR_CALLING,
+    TWETALK_APP_EVENT_WS_RECV_USR_CANCEL,
+    TWETALK_APP_EVENT_WS_RECV_USR_HANGUP,
+    TWETALK_APP_EVENT_CHECK_CONNECT,
+    TWETALK_APP_EVENT_MAX,
+} TWeTalkAppEventType;
+
+typedef struct {
+    TWeTalkAppEventType type;
+    TWeTalkEventMsg event_msg;
+} TWeTalkAppMsg;
 
 /**
  * @brief 启动twetalk
