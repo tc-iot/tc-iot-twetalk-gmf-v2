@@ -26,8 +26,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_PLATFORM_LINK_INC_QCLOUD_IOT_LINK_H_
-#define IOT_HUB_DEVICE_C_SDK_PLATFORM_LINK_INC_QCLOUD_IOT_LINK_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_PLATFORM_LINK_INC_QCLOUD_TCIOT_LINK_H_
+#define IOT_HUB_DEVICE_C_SDK_PLATFORM_LINK_INC_QCLOUD_TCIOT_LINK_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,15 +37,15 @@ extern "C" {
 #include <stdint.h>
 #include <qcloud_iot_platform.h>
 
-#define MAX_IOT_LINK_ADDR_LEN 6
+#define MAX_TCIOT_LINK_ADDR_LEN 6
 
 typedef enum {
-    IOT_LINK_PROTOCOL_UNKOWN   = -1,
-    IOT_LINK_PROTOCOL_BLE_MESH = 0,
-    IOT_LINK_PROTOCOL_PLC,
-    IOT_LINK_PROTOCOL_UDP,
-    IOT_LINK_PROTOCOL_BLE,
-    IOT_LINK_PROTOCOL_TCP,
+    TCIOT_LINK_PROTOCOL_UNKOWN   = -1,
+    TCIOT_LINK_PROTOCOL_BLE_MESH = 0,
+    TCIOT_LINK_PROTOCOL_PLC,
+    TCIOT_LINK_PROTOCOL_UDP,
+    TCIOT_LINK_PROTOCOL_BLE,
+    TCIOT_LINK_PROTOCOL_TCP,
 } IotLinkProtocol;
 
 typedef struct {
@@ -81,9 +81,9 @@ typedef struct {
     void           *usr_data;
 } IotLinkInitParams;
 
-#define IOT_LINK_NETWORK_NONE                                                             \
+#define TCIOT_LINK_NETWORK_NONE                                                             \
     {                                                                                     \
-        .callback = {NULL, NULL, NULL, NULL, NULL}, .network = {IOT_LINK_PROTOCOL_UNKOWN, \
+        .callback = {NULL, NULL, NULL, NULL, NULL}, .network = {TCIOT_LINK_PROTOCOL_UNKOWN, \
                                                                 0,                        \
                                                                 NULL,                     \
                                                                 NULL,                     \
@@ -114,7 +114,7 @@ IotBool qcloud_iot_link_tcp_client_match(void *handle, const void *addr0, size_t
                                          size_t addr1_len);
 #define IOT_LINK_NETWORK_TCP_CLIENT                                                                                   \
     {                                                                                                                 \
-        IOT_LINK_PROTOCOL_TCP, 1, qcloud_iot_link_tcp_client_init, qcloud_iot_link_tcp_client_deinit,                 \
+        TCIOT_LINK_PROTOCOL_TCP, 1, qcloud_iot_link_tcp_client_init, qcloud_iot_link_tcp_client_deinit,                 \
             qcloud_iot_link_tcp_client_yield, qcloud_iot_link_tcp_client_send, qcloud_iot_link_tcp_client_disconnect, \
             qcloud_iot_link_tcp_client_match, NULL, NULL, NULL, NULL, NULL, NULL, NULL                                \
     }
@@ -132,7 +132,7 @@ IotBool qcloud_iot_link_tcp_server_match(void *handle, const void *addr0, size_t
                                          size_t addr1_len);
 #define IOT_LINK_NETWORK_TCP_SERVER                                                                                   \
     {                                                                                                                 \
-        IOT_LINK_PROTOCOL_TCP, 128, qcloud_iot_link_tcp_server_init, qcloud_iot_link_tcp_server_deinit,               \
+        TCIOT_LINK_PROTOCOL_TCP, 128, qcloud_iot_link_tcp_server_init, qcloud_iot_link_tcp_server_deinit,               \
             qcloud_iot_link_tcp_server_yield, qcloud_iot_link_tcp_server_send, qcloud_iot_link_tcp_server_disconnect, \
             qcloud_iot_link_tcp_server_match, NULL, NULL, NULL, NULL, NULL, NULL, NULL                                \
     }
@@ -149,9 +149,9 @@ void    qcloud_iot_link_udp_client_disconnect(void *handle, void *addr, size_t a
 IotBool qcloud_iot_link_udp_client_match(void *handle, const void *addr0, size_t addr0_len, const void *addr1,
                                          size_t addr1_len);
 
-#define IOT_LINK_NETWORK_UDP_CLIENT                                                                                   \
+#define TCIOT_LINK_NETWORK_UDP_CLIENT                                                                                   \
     {                                                                                                                 \
-        IOT_LINK_PROTOCOL_UDP, 1, qcloud_iot_link_udp_client_init, qcloud_iot_link_udp_client_deinit,                 \
+        TCIOT_LINK_PROTOCOL_UDP, 1, qcloud_iot_link_udp_client_init, qcloud_iot_link_udp_client_deinit,                 \
             qcloud_iot_link_udp_client_yield, qcloud_iot_link_udp_client_send, qcloud_iot_link_udp_client_disconnect, \
             qcloud_iot_link_udp_client_match, NULL, NULL, NULL, NULL, NULL, NULL, NULL                                \
     }
@@ -169,9 +169,9 @@ IotBool qcloud_iot_link_udp_server_match(void *handle, const void *addr0, size_t
 int     qcloud_iot_link_udp_server_invite(void *handle, void *uuid, size_t uuid_len);
 int     qcloud_iot_link_udp_server_start_scan(void *handle, IotBool start, uint32_t timeout_ms);
 int     qcloud_iot_link_udp_server_get_uuid(void *handle, void *addr, size_t addr_len, uint8_t *uuid, size_t uuid_len);
-#define IOT_LINK_NETWORK_UDP_SERVER                                                                                   \
+#define TCIOT_LINK_NETWORK_UDP_SERVER                                                                                   \
     {                                                                                                                 \
-        IOT_LINK_PROTOCOL_UDP, 128, qcloud_iot_link_udp_server_init, qcloud_iot_link_udp_server_deinit, NULL,         \
+        TCIOT_LINK_PROTOCOL_UDP, 128, qcloud_iot_link_udp_server_init, qcloud_iot_link_udp_server_deinit, NULL,         \
             qcloud_iot_link_udp_server_send, qcloud_iot_link_udp_server_disconnect, qcloud_iot_link_udp_server_match, \
             qcloud_iot_link_udp_server_invite, qcloud_iot_link_udp_server_start_scan,                                 \
             qcloud_iot_link_udp_server_get_uuid, NULL, NULL, NULL, NULL                                               \
@@ -201,9 +201,9 @@ IotBool qcloud_iot_link_mesh_node_match(void *handle, const void *addr0, size_t 
                                         size_t addr1_len);
 int     qcloud_iot_link_mesh_node_start_scan(void *handle, IotBool start, uint32_t timeout_ms);
 
-#define TCIOT_LINK_NETWORK_BLE_MESH_NODE                                                                                \
+#define IOT_LINK_NETWORK_BLE_MESH_NODE                                                                                \
     {                                                                                                                 \
-        IOT_LINK_PROTOCOL_BLE_MESH, 1, qcloud_iot_link_mesh_node_init, qcloud_iot_link_mesh_node_deinit,              \
+        TCIOT_LINK_PROTOCOL_BLE_MESH, 1, qcloud_iot_link_mesh_node_init, qcloud_iot_link_mesh_node_deinit,              \
             qcloud_iot_link_mesh_node_yield, qcloud_iot_link_mesh_node_send, qcloud_iot_link_mesh_node_disconnect,    \
             qcloud_iot_link_mesh_node_match, NULL, qcloud_iot_link_mesh_node_start_scan, NULL, NULL, NULL, NULL, NULL \
     }
@@ -228,9 +228,9 @@ int qcloud_iot_link_mesh_gateway_start_advertising(void *handle, void *adv_data,
 int qcloud_iot_link_mesh_gateway_stop_advertising(void *handle);
 int qcloud_iot_link_mesh_gateway_device_describe_sync(void *handle, void *cloud_dev_list, void *link);
 
-#define TCIOT_LINK_NETWORK_BLE_MESH_GATEWAY                                                                       \
+#define IOT_LINK_NETWORK_BLE_MESH_GATEWAY                                                                       \
     {                                                                                                           \
-        IOT_LINK_PROTOCOL_BLE_MESH, 32, qcloud_iot_link_mesh_gateway_init, qcloud_iot_link_mesh_gateway_deinit, \
+        TCIOT_LINK_PROTOCOL_BLE_MESH, 32, qcloud_iot_link_mesh_gateway_init, qcloud_iot_link_mesh_gateway_deinit, \
             qcloud_iot_link_mesh_gateway_yield, qcloud_iot_link_mesh_gateway_send,                              \
             qcloud_iot_link_mesh_gateway_disconnect, qcloud_iot_link_mesh_gateway_match,                        \
             qcloud_iot_link_mesh_gateway_invite, qcloud_iot_link_mesh_gateway_start_scan,                       \
@@ -252,7 +252,7 @@ int   qcloud_iot_link_ble_stop_advertising(void *handle);
 
 #define TCIOT_LINK_NETWORK_BLE                                                                      \
     {                                                                                             \
-        IOT_LINK_PROTOCOL_BLE, 1, qcloud_iot_link_ble_init, qcloud_iot_link_ble_deinit, NULL,     \
+        TCIOT_LINK_PROTOCOL_BLE, 1, qcloud_iot_link_ble_init, qcloud_iot_link_ble_deinit, NULL,     \
             qcloud_iot_link_ble_send, NULL, NULL, NULL, NULL, qcloud_iot_link_ble_get_uuid, NULL, \
             qcloud_iot_link_ble_start_advertising, qcloud_iot_link_ble_stop_advertising, NULL     \
     }
@@ -275,7 +275,7 @@ int     qcloud_iot_link_plc_gateway_get_device_info(void *handle, void *addr, si
 
 #define IOT_LINK_NETWORK_PLC_GATEWAY                                                                            \
     {                                                                                                           \
-        IOT_LINK_PROTOCOL_PLC, 128, qcloud_iot_link_plc_gateway_init, qcloud_iot_link_plc_gateway_deinit,       \
+        TCIOT_LINK_PROTOCOL_PLC, 128, qcloud_iot_link_plc_gateway_init, qcloud_iot_link_plc_gateway_deinit,       \
             qcloud_iot_link_plc_gateway_yield, qcloud_iot_link_plc_gateway_send,                                \
             qcloud_iot_link_plc_gateway_disconnect, qcloud_iot_link_plc_gateway_match,                          \
             qcloud_iot_link_plc_gateway_invite, qcloud_iot_link_plc_gateway_start_scan,                         \
@@ -317,4 +317,4 @@ int qcloud_iot_link_device_describe_sync(void *link, void *cloud_dev_list);
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_PLATFORM_LINK_INC_QCLOUD_IOT_LINK_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_PLATFORM_LINK_INC_QCLOUD_TCIOT_LINK_H_

@@ -87,9 +87,9 @@ char *TCI_HAL_GetPlatform(void)
     return HAL_GetPlatform();
 }
 
-long TCI_HAL_Random(void)
+int TCI_HAL_Random(void)
 {
-    return HAL_Random();
+    return (int)HAL_Random();
 }
 
 void TCI_HAL_Signal(int sginum, void (*handler)(int))

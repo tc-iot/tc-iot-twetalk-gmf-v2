@@ -136,7 +136,7 @@ int qcloud_iot_link_stop_advertising(void *link)
 
 IotLinkProtocol qcloud_iot_link_get_protocol(void *link)
 {
-    POINTER_SANITY_CHECK(link, IOT_LINK_PROTOCOL_UNKOWN);
+    POINTER_SANITY_CHECK(link, TCIOT_LINK_PROTOCOL_UNKOWN);
     IotLink *iot_link = link;
     return iot_link->network.protocol;
 }

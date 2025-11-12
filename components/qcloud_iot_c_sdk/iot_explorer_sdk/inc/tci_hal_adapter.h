@@ -627,7 +627,7 @@ char * TCI_HAL_GetPlatform(void);
  * @note 随机数的质量对加密和安全应用很重要
  * @note 可能需要在首次使用前进行种子初始化
  */
-long TCI_HAL_Random(void);
+int TCI_HAL_Random(void);
 
 /**
  * @brief 设置信号处理函数

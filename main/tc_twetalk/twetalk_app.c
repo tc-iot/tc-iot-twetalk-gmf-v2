@@ -107,9 +107,9 @@ static void audio_data_read_task(void* pv)
         ret = audio_recorder_read_data(data, DEFAULT_BUFFER_SIZE);
         // ESP_LOGI("send","%d",ret);
         if (sg_key_record_mode == 0 && sg_wakeup_start) {  // 唤醒对话模式 && sg_vad_start
-tc_twetalk_ws_send_audio(sg_twetalk_handle, data, ret);
+            TWeTalk_WS_SendAudio(sg_twetalk_handle, data, ret);
         } else if (sg_key_record_mode == 1 && sg_key_pressed) {  // 按键对话模式
-tc_twetalk_ws_send_audio(sg_twetalk_handle, data, ret);
+            TWeTalk_WS_SendAudio(sg_twetalk_handle, data, ret);
         }
     }
     esp_gmf_oal_thread_delete(read_thread);
@@ -351,7 +351,7 @@ static int _twetalk_recv_audio_cb(uint8_t* recv_data, int recv_len, void* contex
  */
 static int _twetalk_recv_event_cb(TWeTalkEventType type, TWeTalkEventMsg* msg, void* context)
 {
-    tc_twetalk_call_event_type_print(type);
+    TWeTalk_CallEventTypePrint(type);
     switch (type) {
         /**< 机器人开始讲话 */
         case TWETALK_EVENT_BOT_START_SPEAKING:
@@ -376,13 +376,27 @@ static int _twetalk_recv_event_cb(TWeTalkEventType type, TWeTalkEventMsg* msg, v
         } break;
 
         /**< 收到小程序呼叫，可做UI显示，可以接听/挂断/不理会 */
-        case TWETALK_EVENT_RECV_ROOMID: {
-            Log_i("calling roomid: %.*s", msg->RecvCalling.room_id.value_len, msg->RecvCalling.room_id.value);
+        /**< caller id 主叫者id 即小程序的openId */
+        case TWETALK_EVENT_RECV_USR_CALLING: {
+            Log_i("calling roomid: %.*s caller id : %.*s", msg->RecvCalling.room_id.value_len,
+                  msg->RecvCalling.room_id.value, msg->RecvCalling.caller_id.value_len,
+                  msg->RecvCalling.caller_id.value);
             // TODO 自定义是否接听
-            tc_twetalk_ws_call_response(sg_twetalk_handle, TWETALK_EVENT_DEVICE_ANSWER,
-                                     &msg->RecvCalling.room_id);  // 接听
-            // tc_twetalk_call_response(sg_twetalk_handle, TWETALK_EVENT_DEVICE_REJECTS, &msg->RecvCalling.room_id); //
-            // 拒接
+            if (TWeTalk_WS_IsConnected(sg_twetalk_handle)) {
+                TWeTalk_WS_CallResponse(sg_twetalk_handle, TWETALK_EVENT_DEVICE_ANSWER,
+                                        &msg->RecvCalling.room_id);  // 接听
+                // TWeTalk_WS_CallResponse(sg_twetalk_handle, TWETALK_EVENT_DEVICE_REJECTS, &msg->RecvCalling.room_id);
+                // //拒接
+
+            } else {
+                // TODO ws断开 直接走特定ws连接打电话
+                TWeTalkCallParams call_params;
+                memset(&call_params, 0, sizeof(call_params));
+                call_params.response = TWETALK_EVENT_DEVICE_ANSWER;
+                strncpy(call_params.room_id, msg->RecvCalling.room_id.value, msg->RecvCalling.room_id.value_len);
+                strncpy(call_params.caller_id, msg->RecvCalling.caller_id.value, msg->RecvCalling.caller_id.value_len);
+                TWeTalk_WS_ReconnectWithCall(sg_twetalk_handle, &call_params);
+            }
         } break;
 
         /**< 设备呼叫小程序，小程序接听 */
@@ -504,14 +518,14 @@ static void twetalk_thread_entry(void* param)
         Log_i("Cloud Device Construct Success");
     } else {
         Log_e("MQTT Construct failed!");
-        return;
+        goto ret;
     }
 
     rc = usr_data_template_init(client);
     if (rc) {
         Log_e("usr data template init failed: %d", rc);
         TCIOT_MQTT_Destroy(&client);
-        return;
+        goto ret;
     }
 
     TWeTalkWsInitParams twetalk_params = DEFAULT_TWETALK_WS_INIT_PARAMS;
@@ -528,7 +542,7 @@ static void twetalk_thread_entry(void* param)
     twetalk_params.wxa_appid   = "wx7d65d685b7b00dae";
     twetalk_params.wxa_modelid = "0yQruCUX6y6MC7isot282g";
 
-    sg_twetalk_handle = tc_twetalk_ws_init(&twetalk_params);
+    sg_twetalk_handle = TWeTalk_WS_Init(&twetalk_params);
     if (sg_twetalk_handle == NULL) {
         Log_e("TWeTalk WebSocket init failed!");
         usr_data_template_deinit(client);
@@ -540,6 +554,7 @@ static void twetalk_thread_entry(void* param)
     rc = _ota_task_init(client);
     if (rc) {
         Log_e("ota task init failed: %d", rc);
+        TWeTalk_WS_Exit(sg_twetalk_handle);
         usr_data_template_deinit(client);
         TCIOT_MQTT_Destroy(&client);
         goto ret;
@@ -553,7 +568,7 @@ static void twetalk_thread_entry(void* param)
     memset(openids, 0, sizeof(openids));
     strcpy(openids[0].name, CONFIG_TWETALK_CALLING_NAME);       //
     strcpy(openids[0].open_id, CONFIG_TWETALK_CALLING_OPENID);  //
-    tc_twetalk_ws_call_sync_openids(sg_twetalk_handle, openids, 1);
+    TWeTalk_WS_CallSyncOpenids(sg_twetalk_handle, openids, 1);
 
     do {
         rc = TCIOT_MQTT_Yield(client, 200);
@@ -570,18 +585,18 @@ static void twetalk_thread_entry(void* param)
             break;  // 退出循环
         }
         if (sg_twetalk_error) {
-            tc_twetalk_ws_disconnect(sg_twetalk_handle);
+            TWeTalk_WS_Disconnect(sg_twetalk_handle);
             sg_twetalk_error = 0;
         }
         if (sg_check_twetalk_connect) {
             sg_check_twetalk_connect = 0;
             // 长时间无对话后台会切掉websocket，所以如果断线需要重新连接
-            if (twetalk_ws_is_connected(sg_twetalk_handle) != 1) {
-                tc_twetalk_ws_reconnect(sg_twetalk_handle, 0);
+            if (TWeTalk_WS_IsConnected(sg_twetalk_handle) != 1) {
+                TWeTalk_WS_Reconnect(sg_twetalk_handle, 0);
             }
         }
     } while (!sg_main_exit);
-    rc |= tc_twetalk_ws_exit(sg_twetalk_handle);
+    rc |= TWeTalk_WS_Exit(sg_twetalk_handle);
     rc |= usr_data_template_deinit(client);
     iot_ota_deinit();
     rc |= TCIOT_MQTT_Destroy(&client);
@@ -594,6 +609,7 @@ ret:
     }
     utils_log_deinit();
     esp_gmf_oal_thread_delete(twetalk_thread);
+    vTaskDelete(NULL);  // 删除当前任务，防止FreeRTOS报错
     return;
 }
 

@@ -44,10 +44,11 @@ typedef enum {
     TWETALK_EVENT_RECV_USR_ERROR,  /**< 设备呼叫小程序，发生错误❌ */
 
     /** 小程序呼叫设备事件 */
-    TWETALK_EVENT_RECV_ROOMID,   /**< 收到呼叫 */
-    TWETALK_EVENT_DEVICE_ANSWER, /**< 小程序呼叫设备，设备接听 */
-    TWETALK_EVENT_DEVICE_REJECT, /**< 小程序呼叫设备，设备拒绝 */
-    TWETALK_EVENT_DEVICE_HANGUP, /**< 小程序呼叫设备，设备主动挂断 */
+    TWETALK_EVENT_RECV_USR_CALLING, /**< 收到小程序呼叫 */
+    TWETALK_EVENT_RECV_USR_CANCEL,  /**< 当设备没接听此时小程序取消呼叫则会收到此消息 */
+    TWETALK_EVENT_DEVICE_ANSWER,    /**< 小程序呼叫设备，设备接听 */
+    TWETALK_EVENT_DEVICE_REJECT,    /**< 小程序呼叫设备，设备拒绝 */
+    TWETALK_EVENT_DEVICE_HANGUP,    /**< 小程序呼叫设备，设备主动挂断 */
 
     TWETALK_EVENT_RECV_DISCONNECT, /**< 收到断开连接 */
     TWETALK_EVENT_RECV_ERROR,      /**< 接收错误 */
@@ -79,7 +80,12 @@ typedef union {
 
     struct {
         UtilsJsonValue room_id;
+        UtilsJsonValue caller_id;
     } RecvCalling;
+
+    struct {
+        UtilsJsonValue room_id;
+    } RecvCancel;
 
     struct {
         int code;
@@ -154,6 +160,12 @@ typedef enum {
     TWETALK_LANGUAGE_TYPE_EN,
     TWETALK_LANGUAGE_TYPE_MAX,
 } TWeTalkLanguageType;
+
+typedef struct {
+    char             room_id[256];
+    char             caller_id[128];
+    TWeTalkEventType response;
+} TWeTalkCallParams;
 
 typedef struct {
     uint8_t* data;      /**< 图像数据指针 */
