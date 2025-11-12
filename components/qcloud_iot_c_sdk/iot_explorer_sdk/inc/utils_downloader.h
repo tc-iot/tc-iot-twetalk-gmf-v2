@@ -55,7 +55,7 @@ typedef enum {
  */
 typedef struct {
     // memory
-    void* (*downloader_malloc)(uint32_t len); /**< user malloc */
+    void* (*downloader_malloc)(size_t len); /**< user malloc */
     void (*downloader_free)(void* val);     /**< user free */
 
     // break point

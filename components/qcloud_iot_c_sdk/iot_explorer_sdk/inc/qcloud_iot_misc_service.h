@@ -26,8 +26,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_IOT_MISC_SERVICE_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_IOT_MISC_SERVICE_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_TCIOT_MISC_SERVICE_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_TCIOT_MISC_SERVICE_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,24 +54,24 @@ typedef struct {
  * @param[in] usr_data
  * @return 0 for success, or err code (<0) @see IotReturnCode
  */
-int IOT_MiscService_Init(void *client, IoTMiscServiceCallback callbacks, void *usr_data);
+int TCIOT_MiscService_Init(void *client, IoTMiscServiceCallback callbacks, void *usr_data);
 
 /**
  * @brief misc service deinit, unregister handler from server list.
  *
  * @param[in,out] client pointer to mqtt client
  */
-void IOT_MiscService_Deinit(void *client);
+void TCIOT_MiscService_Deinit(void *client);
 /**
  * @brief Actively initiate a request to unbind the device to the platform
  *
  * @param[in,out] client pointer to mqtt client
  * @return 0 for success, or err code (<0) @see IotReturnCode
  */
-int IOT_MiscService_UnbindDeviceRequest(void *client);
+int TCIOT_MiscService_UnbindDeviceRequest(void *client);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_IOT_MISC_SERVICE_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_TCIOT_MISC_SERVICE_H_

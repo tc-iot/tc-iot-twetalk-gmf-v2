@@ -73,15 +73,15 @@ static void _display_bind_state(BLELLsyncBindState state)
  */
 int llsync_data_init(uint8_t mac[6], DeviceInfo *dev_info)
 {
-    int rc = 0;
     memset(&sg_llsync_data, 0, sizeof(BLELLsyncData));
-#if BLE_QIOT_LLSYNC_STANDARD
+#if BLE_QTCIOT_LLSYNC_STANDARD
+    int rc = 0;
     // 1. get core data
-    rc = HAL_File_Read(BLE_LLSYNC_CORE_DATA_FILEPATH, &sg_llsync_data.core_data, sizeof(BLELLsyncCoreData), 0);
+    rc = TCI_HAL_File_Read(BLE_LLSYNC_CORE_DATA_FILEPATH, &sg_llsync_data.core_data, sizeof(BLELLsyncCoreData), 0);
     if (!rc) {
         Log_w("The device has not been bound.");
     }
-#endif // BLE_QIOT_LLSYNC_STANDARD
+#endif // BLE_QTCIOT_LLSYNC_STANDARD
     // 2. get device info
     sg_llsync_data.dev_info = dev_info;
     // 3. get mac
@@ -114,8 +114,8 @@ int iot_llsync_creat_adv_data(uint8_t adv_data_raw[32])
         /* service uuid */
         0x03,
         0x03,
-        (IOT_BLE_UUID_SERVICE & 0xff),
-        (IOT_BLE_UUID_SERVICE >> 8) & 0xff,
+        (TCIOT_BLE_UUID_SERVICE & 0xff),
+        (TCIOT_BLE_UUID_SERVICE >> 8) & 0xff,
     };
 
     // 1. creat llsync adv data
@@ -124,9 +124,9 @@ int iot_llsync_creat_adv_data(uint8_t adv_data_raw[32])
     index              = 2;
 
     llsync_adv_data[index] =
-        sg_llsync_data.core_data.bind_state | (BLE_QIOT_LLSYNC_PROTOCOL_VERSION << LLSYNC_PROTO_VER_BIT);
+        sg_llsync_data.core_data.bind_state | (BLE_QTCIOT_LLSYNC_PROTOCOL_VERSION << LLSYNC_PROTO_VER_BIT);
 
-#if BLE_QIOT_DYNREG_ENABLE
+#if BLE_QTCIOT_DYNREG_ENABLE
     if (is_llsync_need_dynreg()) {
         llsync_adv_data[index] |= (1 << LLSYNC_DYNREG_MASK_BIT);
     }
@@ -158,9 +158,9 @@ int iot_llsync_creat_adv_data(uint8_t adv_data_raw[32])
         // unbind
         case E_LLSYNC_BIND_IDLE:
         case E_LLSYNC_BIND_WAIT: {
-#if BLE_QIOT_LLSYNC_CONFIG_NET && !BLE_QIOT_LLSYNC_DUAL_COM
-            // llsync_adv_data[index++] = BLE_QIOT_LLSYNC_PROTOCOL_VERSION;
-#endif  // BLE_QIOT_LLSYNC_CONFIG_NET
+#if BLE_QTCIOT_LLSYNC_CONFIG_NET && !BLE_QTCIOT_LLSYNC_DUAL_COM
+            // llsync_adv_data[index++] = BLE_QTCIOT_LLSYNC_PROTOCOL_VERSION;
+#endif  // BLE_QTCIOT_LLSYNC_CONFIG_NET
         // 1 bytes state + 6 bytes mac + 10 bytes product id
             memcpy(llsync_adv_data + index, sg_llsync_data.mac, 6);
             index += 6;
@@ -249,9 +249,9 @@ void llsync_connection_state_set(BLELLsyncConnectState new_state)
 IotBool llsync_is_connected(void)
 {
     if (sg_llsync_data.llsync_connect_state == E_LLSYNC_CONNECTED) {
-        return IOT_BOOL_TRUE;
+        return TCIOT_BOOL_TRUE;
     }
-    return IOT_BOOL_FALSE;
+    return TCIOT_BOOL_FALSE;
 }
 
 /**
@@ -273,9 +273,9 @@ void ble_connection_state_set(BLEConnectState new_state)
 IotBool ble_is_connected(void)
 {
     if (sg_llsync_data.ble_connect_state == E_BLE_CONNECTED) {
-        return IOT_BOOL_TRUE;
+        return TCIOT_BOOL_TRUE;
     }
-    return IOT_BOOL_FALSE;
+    return TCIOT_BOOL_FALSE;
 }
 
 /**
@@ -306,9 +306,9 @@ int ble_inform_mtu_result(const char *result, uint16_t data_len)
     }
 }
 
-#if BLE_QIOT_LLSYNC_STANDARD
+#if BLE_QTCIOT_LLSYNC_STANDARD
 
-#if BLE_QIOT_DYNREG_ENABLE
+#if BLE_QTCIOT_DYNREG_ENABLE
 
 #define UTILS_AES_ENCRYPT   1 /**< AES encryption. */
 #define UTILS_AES_DECRYPT   0 /**< AES decryption. */
@@ -322,11 +322,11 @@ int ble_inform_mtu_result(const char *result, uint16_t data_len)
  */
 IotBool is_llsync_need_dynreg(void)
 {
-    if (!sg_llsync_data.dev_info->device_secret[0] || !strncmp(sg_llsync_data.dev_info->device_secret, "IOT_PSK", 7)) {
+    if (!sg_llsync_data.dev_info->device_secret[0] || !strncmp(sg_llsync_data.dev_info->device_secret, "TCIOT_PSK", 7)) {
         Log_d("need dyn register.");
-        return IOT_BOOL_TRUE;
+        return TCIOT_BOOL_TRUE;
     }
-    return IOT_BOOL_FALSE;
+    return TCIOT_BOOL_FALSE;
 }
 
 /**
@@ -412,7 +412,7 @@ int ble_dynreg_parse_psk(const char *in_buf, uint16_t data_len)
     if (NULL != psk) {
         memcpy(sg_llsync_data.dev_info->device_secret, psk + strlen("\"psk\":\""), MAX_SIZE_OF_DEVICE_SECRET);
         Log_d("device secret : %s", sg_llsync_data.dev_info->device_secret);
-        HAL_SetDevInfo(&sg_llsync_data.dev_info);
+        TCI_HAL_SetDevInfo((uint8_t *)&sg_llsync_data.dev_info, sizeof(DeviceInfo));
         return QCLOUD_RET_SUCCESS;
     }
     Log_e("no-exist psk");
@@ -430,7 +430,7 @@ static int ble_write_core_data(BLELLsyncCoreData *core_data)
 {
     memcpy(&sg_llsync_data.core_data, core_data, sizeof(BLELLsyncCoreData));
     Log_dump("core data", (void *)&sg_llsync_data.core_data, sizeof(sg_llsync_data.core_data));
-    if (sizeof(BLELLsyncCoreData) != HAL_File_Write(BLE_LLSYNC_CORE_DATA_FILEPATH, (char *)&sg_llsync_data.core_data,
+    if (sizeof(BLELLsyncCoreData) != TCI_HAL_File_Write(BLE_LLSYNC_CORE_DATA_FILEPATH, (char *)&sg_llsync_data.core_data,
                                                     sizeof(BLELLsyncCoreData), 0)) {
         Log_e("llsync write core failed");
         return QCLOUD_ERR_FAILURE;
@@ -665,7 +665,7 @@ int ble_unbind_get_authcode(const char *unbind_data, uint16_t data_len, char *ou
 
     return ret_len;
 }
-#endif  // BLE_QIOT_LLSYNC_STANDARD
+#endif  // BLE_QTCIOT_LLSYNC_STANDARD
 
 /**
  * @brief get device name
@@ -675,7 +675,7 @@ int ble_unbind_get_authcode(const char *unbind_data, uint16_t data_len, char *ou
  */
 int ble_get_device_name(char *output_name)
 {
-    if (sg_llsync_data.dev_info->device_name[0] && strncmp(sg_llsync_data.dev_info->device_secret, "IOT_PSK", 7)) {
+    if (sg_llsync_data.dev_info->device_name[0] && strncmp(sg_llsync_data.dev_info->device_secret, "TCIOT_PSK", 7)) {
         strncpy(output_name, sg_llsync_data.dev_info->device_name, MAX_SIZE_OF_DEVICE_NAME);
         return (int)strlen(sg_llsync_data.dev_info->device_name);
     }

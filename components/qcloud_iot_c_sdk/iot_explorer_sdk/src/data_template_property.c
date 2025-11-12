@@ -247,18 +247,18 @@ int data_template_property_publish(void *client, PropertyUpMethodType publish_ty
         [PROPERTY_UP_METHOD_TYPE_GET_MODE_DEFINE] = "get_model_define",
     };
 
-    len = HAL_Snprintf(buf, buf_len, "{\"method\":\"%s\",", method_str[publish_type]);
+    len = TCI_HAL_Snprintf(buf, buf_len, "{\"method\":\"%s\",", method_str[publish_type]);
     switch (publish_type) {
         case PROPERTY_UP_METHOD_TYPE_REPORT:
         case PROPERTY_UP_METHOD_TYPE_REPORT_INFO:
-            len += HAL_Snprintf(buf + len, buf_len - len, "\"params\":%s,", params.json);
+            len += TCI_HAL_Snprintf(buf + len, buf_len - len, "\"params\":%s,", params.json);
         case PROPERTY_UP_METHOD_TYPE_GET_STATUS:
         case PROPERTY_UP_METHOD_TYPE_GET_MODE_DEFINE:
         case PROPERTY_UP_METHOD_TYPE_CLEAR_CONTROL:
-            len += HAL_Snprintf(buf + len, buf_len - len, "\"clientToken\":\"clear-control-%" SCNu64 "\"", IOT_Timer_CurrentSec());
+            len += TCI_HAL_Snprintf(buf + len, buf_len - len, "\"clientToken\":\"clear-control-%" SCNu64 "\"", TCI_HAL_GetTimeSecond());
             break;
         case PROPERTY_UP_METHOD_TYPE_CONTROL_REPLY:
-            len += HAL_Snprintf(buf + len, buf_len - len, "\"clientToken\":\"%.*s\",\"code\":%d",
+            len += TCI_HAL_Snprintf(buf + len, buf_len - len, "\"clientToken\":\"%.*s\",\"code\":%d",
                                 params.control_reply.client_token.value_len, params.control_reply.client_token.value,
                                 params.control_reply.code);
             break;

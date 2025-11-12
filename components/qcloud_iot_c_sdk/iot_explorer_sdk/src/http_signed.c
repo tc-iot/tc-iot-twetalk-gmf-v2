@@ -79,7 +79,7 @@ static int _http_signed_connect(HTTPSignedHandle *handle)
         .ca_crt = NULL,  // TODO: support cert
 
     };
-    return IOT_HTTP_Connect(handle->http_client, &connect_params);
+    return TCIOT_HTTP_Connect(handle->http_client, &connect_params);
 }
 
 /**
@@ -103,7 +103,7 @@ static void _http_signed_upload_header_construct(HTTPSignedHandle *handle, uint3
     "X-TC-Timestamp: %d\r\n"           \
     "X-TC-Nonce: %d\r\n"               \
     "X-TC-Signature: %s\r\n"
-    HAL_Snprintf(handle->http_request.header, HTTP_SIGNED_REQUEST_HEADER_LEN, QCLOUD_HTTP_HEADER_FORMAT, timestamp,
+    TCI_HAL_Snprintf(handle->http_request.header, HTTP_SIGNED_REQUEST_HEADER_LEN, QCLOUD_HTTP_HEADER_FORMAT, timestamp,
                  nonce, sign);
     // Log_d("header:%s", handle->http_request.header);
 }
@@ -123,14 +123,14 @@ static void _http_signed_upload_header_new(HTTPSignedHandle *handle, const char 
     char     sign_out[QCLOUD_SHA1_RESULT_LEN * 2]             = {0};
     char     request_buf_sha1[QCLOUD_SHA1_RESULT_LEN * 2 + 1] = {0};
     size_t   olen                                             = 0;
-    int      nonce                                            = IOT_Timer_GetRandomNumber();
-    uint32_t timestamp                                        = IOT_Timer_CurrentSec();
+    int      nonce                                            = TCI_HAL_Random();
+    uint32_t timestamp                                        = TCI_HAL_GetTimeSecond();
 
     memset(handle->sign_string, 0, HTTP_SIGNED_STRING_BUFFER_LEN);
     /* cal hmac sha1 */
     utils_sha1_hex((const uint8_t *)request_body_buf, request_body_buf_len, (uint8_t *)request_buf_sha1);
     /* create sign string */
-    HAL_Snprintf(handle->sign_string, HTTP_SIGNED_STRING_BUFFER_LEN, "%s\n%s\n\nhmacsha1\n%s\n%d\n%d\n%s", "POST",
+    TCI_HAL_Snprintf(handle->sign_string, HTTP_SIGNED_STRING_BUFFER_LEN, "%s\n%s\n\nhmacsha1\n%s\n%d\n%d\n%s", "POST",
                  handle->params.host, handle->params.uri, timestamp, nonce, request_buf_sha1);
     utils_hmac_sha1((const uint8_t *)handle->sign_string, strlen(handle->sign_string),
                     (uint8_t *)handle->params.secret_key, strlen(handle->params.secret_key), sign);
@@ -147,45 +147,45 @@ static void _http_signed_upload_header_new(HTTPSignedHandle *handle, const char 
  */
 void *_http_signed_init(HttpSignedParams *params)
 {
-    HTTPSignedHandle *handle = HAL_Malloc(sizeof(HTTPSignedHandle));
+    HTTPSignedHandle *handle = TCI_HAL_Malloc(sizeof(HTTPSignedHandle));
     if (!handle) {
         goto exit;
     }
 
-    handle->http_client = IOT_HTTP_Init();
+    handle->http_client = TCIOT_HTTP_Init();
     if (!handle->http_client) {
         goto exit;
     }
 
-    handle->http_request.header = HAL_Malloc(HTTP_SIGNED_REQUEST_HEADER_LEN);
+    handle->http_request.header = TCI_HAL_Malloc(HTTP_SIGNED_REQUEST_HEADER_LEN);
     if (!handle->http_request.header) {
         goto exit;
     }
     memset(handle->http_request.header, 0, HTTP_SIGNED_REQUEST_HEADER_LEN);
 
-    handle->sign_string = HAL_Malloc(HTTP_SIGNED_STRING_BUFFER_LEN);
+    handle->sign_string = TCI_HAL_Malloc(HTTP_SIGNED_STRING_BUFFER_LEN);
     if (!handle->sign_string) {
         goto exit;
     }
     memset(handle->sign_string, 0, HTTP_SIGNED_STRING_BUFFER_LEN);
 
-    handle->url = HAL_Malloc(HTTP_SIGNED_URL_LEN);
+    handle->url = TCI_HAL_Malloc(HTTP_SIGNED_URL_LEN);
     if (!handle->url) {
         goto exit;
     }
 
     memcpy(&handle->params, params, sizeof(HttpSignedParams));
     memset(handle->url, 0, HTTP_SIGNED_URL_LEN);
-    HAL_Snprintf(handle->url, HTTP_SIGNED_URL_LEN, "%s://%s%s", "http", handle->params.host, handle->params.uri);
+    TCI_HAL_Snprintf(handle->url, HTTP_SIGNED_URL_LEN, "%s://%s%s", "http", handle->params.host, handle->params.uri);
 
     return handle;
 exit:
     if (handle) {
-        HAL_Free(handle->http_request.header);
-        HAL_Free(handle->sign_string);
-        HAL_Free(handle->url);
-        IOT_HTTP_Deinit(handle->http_client);
-        HAL_Free(handle);
+        TCI_HAL_Free(handle->http_request.header);
+        TCI_HAL_Free(handle->sign_string);
+        TCI_HAL_Free(handle->url);
+        TCIOT_HTTP_Deinit(handle->http_client);
+        TCI_HAL_Free(handle);
     }
     return NULL;
 }
@@ -214,12 +214,12 @@ int _http_signed_upload(HTTPSignedHandle *handle, const char *upload_buf, size_t
     }
 
     handle->http_request.url            = handle->url;
-    handle->http_request.method         = IOT_HTTP_METHOD_POST;
+    handle->http_request.method         = TCIOT_HTTP_METHOD_POST;
     handle->http_request.content_type   = "application/json;charset=utf-8";
     handle->http_request.content        = (char *)upload_buf;
     handle->http_request.content_length = upload_len;
 
-    rc = IOT_HTTP_Request(handle->http_client, &handle->http_request);
+    rc = TCIOT_HTTP_Request(handle->http_client, &handle->http_request);
     return rc;
 }
 
@@ -231,12 +231,12 @@ int _http_signed_upload(HTTPSignedHandle *handle, const char *upload_buf, size_t
 static void _http_signed_deinit(HTTPSignedHandle *signed_handle)
 {
     POINTER_SANITY_CHECK_RTN(signed_handle);
-    IOT_HTTP_Disconnect(signed_handle->http_client);
-    IOT_HTTP_Deinit(signed_handle->http_client);
-    HAL_Free(signed_handle->http_request.header);
-    HAL_Free(signed_handle->sign_string);
-    HAL_Free(signed_handle->url);
-    HAL_Free(signed_handle);
+    TCIOT_HTTP_Disconnect(signed_handle->http_client);
+    TCIOT_HTTP_Deinit(signed_handle->http_client);
+    TCI_HAL_Free(signed_handle->http_request.header);
+    TCI_HAL_Free(signed_handle->sign_string);
+    TCI_HAL_Free(signed_handle->url);
+    TCI_HAL_Free(signed_handle);
 }
 
 /**
@@ -249,7 +249,7 @@ static void _http_signed_deinit(HTTPSignedHandle *signed_handle)
  * @param response_buf_len response buffer length if need recv
  * @return int if need recv return recv length else return 0 is success
  */
-int IOT_HTTP_SignedRequest(HttpSignedParams *params, const char *request_buf, size_t request_buf_len,
+int TCIOT_HTTP_SignedRequest(HttpSignedParams *params, const char *request_buf, size_t request_buf_len,
                            uint8_t *response_buf, int response_buf_len)
 {
     int rc = 0;
@@ -269,7 +269,7 @@ int IOT_HTTP_SignedRequest(HttpSignedParams *params, const char *request_buf, si
         goto exit;
     }
     if (params->need_recv) {
-        rc = IOT_HTTP_Recv(handle->http_client, response_buf, response_buf_len, params->recv_timeout_ms);
+        rc = TCIOT_HTTP_Recv(handle->http_client, response_buf, response_buf_len, params->recv_timeout_ms);
     }
 
 exit:

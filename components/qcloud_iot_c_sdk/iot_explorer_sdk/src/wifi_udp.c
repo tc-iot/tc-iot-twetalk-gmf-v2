@@ -38,7 +38,7 @@ static int _udp_send(int fd, uint8_t *buf, int len, const char *ip, const char *
     Log_d("%.*s", len, buf);
     size_t udp_resend_cnt = 3;
     do {
-        rc = HAL_UDP_Send(fd, buf, len, ip, port);
+        rc = TCI_HAL_UDP_Send(fd, buf, len, ip, port);
     } while (rc > 0 && (--udp_resend_cnt));
     return udp_resend_cnt != 2 ? QCLOUD_RET_SUCCESS : QCLOUD_ERR_FAILURE;
 }
@@ -49,24 +49,24 @@ static int _udp_construct_reply(WifiConfigCmd cmd, WifiConfigCmdParams *params, 
 
     DeviceInfo device_info = {0};
 
-    rc = HAL_GetDevInfo(&device_info);
+    rc = TCI_HAL_GetDevInfo((uint8_t *)&device_info, sizeof(DeviceInfo));
     if (rc) {
         return rc;
     }
 
-    reply_len = HAL_Snprintf(buf, buf_len,
+    reply_len = TCI_HAL_Snprintf(buf, buf_len,
                              "{\"cmdType\":%d,\"productId\":\"%s\",\"deviceName\":\"%s\",\"protoVersion\":\"3.0\"", cmd,
                              device_info.product_id, device_info.device_name);
     switch (cmd) {
         case WIFI_CONFIG_CMD_DEVICE_REPLY:
             break;
         case WIFI_CONFIG_CMD_REPORT_WIFI_CONFIG_STATE:
-            reply_len += HAL_Snprintf(buf + reply_len, buf_len - reply_len, ",\"wifiConfigState\":%d", params->state);
+            reply_len += TCI_HAL_Snprintf(buf + reply_len, buf_len - reply_len, ",\"wifiConfigState\":%d", params->state);
             break;
         default:
             return QCLOUD_ERR_FAILURE;
     }
-    reply_len += HAL_Snprintf(buf + reply_len, buf_len - reply_len, "}");
+    reply_len += TCI_HAL_Snprintf(buf + reply_len, buf_len - reply_len, "}");
     return reply_len;
 }
 
@@ -81,7 +81,7 @@ static int _udp_construct_reply(WifiConfigCmd cmd, WifiConfigCmdParams *params, 
  */
 int iot_wifi_udp_init(void)
 {
-    return HAL_UDP_Bind(WIFI_UDP_SERVER_IP, WIFI_UDP_SERVER_PORT);
+    return TCI_HAL_UDP_Bind(WIFI_UDP_SERVER_IP, WIFI_UDP_SERVER_PORT);
 }
 
 /**
@@ -91,7 +91,7 @@ int iot_wifi_udp_init(void)
  */
 void iot_wifi_udp_deinit(int fd)
 {
-    return HAL_UDP_Close(fd);
+    return TCI_HAL_UDP_Close(fd);
 }
 
 /**
@@ -113,8 +113,8 @@ int iot_wifi_udp_recv(int fd, char *ip, size_t ip_len, char *port, size_t port_l
     uint16_t udp_port = 0;
     memset(ip, 0, ip_len);
     memset(port, 0, port_len);
-    int rc = HAL_UDP_Recv(fd, buf, buf_len, timeout_ms, ip, ip_len, &udp_port);
-    HAL_Snprintf(port, port_len, "%" SCNu16, udp_port);
+    int rc = TCI_HAL_UDP_Recv(fd, buf, buf_len, timeout_ms, ip, ip_len, &udp_port);
+    TCI_HAL_Snprintf(port, port_len, "%" SCNu16, udp_port);
     return rc;
 }
 
@@ -172,7 +172,7 @@ int iot_wifi_udp_broadcast_state(int fd, WifiConfigState state)
  */
 void iot_wifi_udp_broadcast_local_ip(int fd, size_t ssid_len, size_t pwd_len)
 {
-    uint32_t ipv4 = HAL_Wifi_Ipv4Get();
+    uint32_t ipv4 = TCI_HAL_Wifi_Ipv4Get();
     if (!ipv4) {
         Log_e("can not find local ipv4.");
         return;
@@ -184,7 +184,7 @@ void iot_wifi_udp_broadcast_local_ip(int fd, size_t ssid_len, size_t pwd_len)
     // ssid_len + pwd_len + 9
     broadcast_buf[i++] = ssid_len + pwd_len + 9;
     // mac
-    i += HAL_Wifi_MacGet(&broadcast_buf[i]);
+    i += TCI_HAL_Wifi_MacGet(&broadcast_buf[i]);
     // ip
     broadcast_buf[i++] = (ipv4 >> 24) & 0xff;
     broadcast_buf[i++] = (ipv4 >> 16) & 0xff;

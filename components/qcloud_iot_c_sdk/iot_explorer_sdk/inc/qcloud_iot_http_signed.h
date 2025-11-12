@@ -25,8 +25,8 @@
  * 2022-01-17		1.0			hubertxxu		first commit
  * </table>
  */
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_HTTP_SIGNED_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_HTTP_SIGNED_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_HTTP_SIGNED_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_HTTP_SIGNED_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,10 +56,10 @@ typedef struct {
  * @param response_buf_len response buffer length if need recv
  * @return int 0 for success. others @see IotReturnCode
  */
-int IOT_HTTP_SignedRequest(HttpSignedParams *params, const char *request_buf, size_t request_buf_len,
+int TCIOT_HTTP_SignedRequest(HttpSignedParams *params, const char *request_buf, size_t request_buf_len,
                            uint8_t *response_buf, int response_buf_len);
 
 #ifdef __cplusplus
 }
 #endif
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_HTTP_SIGNED_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_HTTP_SIGNED_H_

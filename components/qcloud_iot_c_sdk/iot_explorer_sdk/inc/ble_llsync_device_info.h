@@ -43,7 +43,7 @@ extern "C" {
 
 #define LLSYNC_MTU_SET_RESULT_ERR 0xFFFF  // some error when setting mtu
 
-#define BLE_QIOT_LLSYNC_PROTOCOL_VERSION (4)  // llsync protocol version, equal or less than 15
+#define BLE_QTCIOT_LLSYNC_PROTOCOL_VERSION (4)  // llsync protocol version, equal or less than 15
 
 #define ATT_DEFAULT_MTU                 23  // default att mtu
 #define ATT_MTU_TO_LLSYNC_MTU(_att_mtu) ((_att_mtu)-3)
@@ -121,7 +121,7 @@ typedef struct {
     IotBool  have_data;  // start received package
     uint8_t  type;       // event type
     uint16_t buf_len;    // the length of data
-    char     buf[BLE_QIOT_EVENT_MAX_SIZE];
+    char     buf[BLE_QTCIOT_EVENT_MAX_SIZE];
 } BLELLsyncEventSlice;
 
 int llsync_data_init(uint8_t mac[6], DeviceInfo *dev_info);

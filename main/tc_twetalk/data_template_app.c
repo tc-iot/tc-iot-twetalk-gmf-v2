@@ -49,7 +49,7 @@ static void _method_control_callback(UtilsJsonValue client_token, UtilsJsonValue
     Log_i("recv msg[%.*s]: params=%.*s", client_token.value_len, client_token.value, params.value_len, params.value);
     iot_data_template_property_parse(sg_data_template, params);
     _handle_property_callback(iot_data, 0);
-    IOT_DataTemplate_PropertyControlReply(iot_data, buf, sizeof(buf), 0, client_token);
+    TCIOT_DataTemplate_PropertyControlReply(iot_data, buf, sizeof(buf), 0, client_token);
 }
 
 static void _method_get_status_reply_callback(UtilsJsonValue client_token, int code, UtilsJsonValue reported,
@@ -61,7 +61,7 @@ static void _method_get_status_reply_callback(UtilsJsonValue client_token, int c
           STRING_PTR_PRINT_SANITY_CHECK(control.value));
     iot_data_template_property_parse(sg_data_template, control);
     _handle_property_callback(iot_data, 1);
-    IOT_DataTemplate_PropertyClearControl(iot_data, buf, sizeof(buf));
+    TCIOT_DataTemplate_PropertyClearControl(iot_data, buf, sizeof(buf));
 }
 
 static void _method_action_callback(UtilsJsonValue client_token, UtilsJsonValue action_id, UtilsJsonValue params,
@@ -103,7 +103,7 @@ int usr_data_template_init(void *mqtt_client)
     callback.property_callback.method_get_status_reply_callback = _method_get_status_reply_callback;
     callback.action_callback.method_action_callback             = _method_action_callback;
 
-    rc = IOT_DataTemplate_Init(mqtt_client, callback, mqtt_client);
+    rc = TCIOT_DataTemplate_Init(mqtt_client, callback, mqtt_client);
     if (rc) {
         Log_e("Client Subscribe Topic Failed: %d", rc);
         return rc;
@@ -113,7 +113,7 @@ int usr_data_template_init(void *mqtt_client)
 
 int usr_data_template_deinit(void *mqtt_client)
 {
-    IOT_DataTemplate_Deinit(mqtt_client);
+    TCIOT_DataTemplate_Deinit(mqtt_client);
     iot_data_template_destroy(sg_data_template);
     sg_data_template = NULL;
     return QCLOUD_RET_SUCCESS;

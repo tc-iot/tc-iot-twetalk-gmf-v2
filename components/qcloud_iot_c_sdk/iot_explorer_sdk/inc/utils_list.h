@@ -61,7 +61,7 @@ typedef enum {
  *
  */
 typedef struct {
-    void *(*list_malloc)(uint32_t len);
+    void *(*list_malloc)(size_t len);
     void (*list_free)(void *val);
 
     void *(*list_lock_init)(void);
@@ -75,18 +75,18 @@ typedef struct {
  *
  */
 #define DEFAULT_LIST_FUNCS     \
-    {HAL_Malloc,               \
-     HAL_Free,                 \
-     HAL_RecursiveMutexCreate, \
-     HAL_RecursiveMutexLock,   \
-     HAL_RecursiveMutexUnLock, \
-     HAL_RecursiveMutexDestroy}
+    {TCI_HAL_Malloc,               \
+     TCI_HAL_Free,                 \
+     TCI_HAL_RecursiveMutexCreate, \
+     TCI_HAL_RecursiveMutexLock,   \
+     TCI_HAL_RecursiveMutexUnLock, \
+     TCI_HAL_RecursiveMutexDestroy}
 
 /**
  * @brief Default list func
  *
  */
-#define DEFAULT_UNLOCK_LIST_FUNCS {HAL_Malloc, HAL_Free, NULL, NULL, NULL, NULL}
+#define DEFAULT_UNLOCK_LIST_FUNCS {TCI_HAL_Malloc, TCI_HAL_Free, NULL, NULL, NULL, NULL}
 
 /**
  * @brief Node process handle called by utils_list_process.

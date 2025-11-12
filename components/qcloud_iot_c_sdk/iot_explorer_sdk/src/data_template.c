@@ -38,7 +38,7 @@
  * @param[in] usr_data usr data used in callback
  * @return 0 for success, or err code (<0) @see IotReturnCode
  */
-int IOT_DataTemplate_Init(void *client, IotDataTemplateCallback callback, void *usr_data)
+int TCIOT_DataTemplate_Init(void *client, IotDataTemplateCallback callback, void *usr_data)
 {
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
     int rc = 0;
@@ -69,7 +69,7 @@ int IOT_DataTemplate_Init(void *client, IotDataTemplateCallback callback, void *
  * @param[in] usr_data usr data used in callback
  * @return 0 for success, or err code (<0) @see IotReturnCode
  */
-int IOT_DataTemplate_Register(void *client, IotDataTemplateCallback callback, void *usr_data)
+int TCIOT_DataTemplate_Register(void *client, IotDataTemplateCallback callback, void *usr_data)
 {
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
     int rc = 0;
@@ -97,7 +97,7 @@ int IOT_DataTemplate_Register(void *client, IotDataTemplateCallback callback, vo
  *
  * @param[in,out] client pointer to mqtt client
  */
-void IOT_DataTemplate_Deinit(void *client)
+void TCIOT_DataTemplate_Deinit(void *client)
 {
     POINTER_SANITY_CHECK_RTN(client);
 
@@ -115,7 +115,7 @@ void IOT_DataTemplate_Deinit(void *client)
  * @param[in] params params constructed with property
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_DataTemplate_PropertyReport(void *client, char *buf, int buf_len, const char *params)
+int TCIOT_DataTemplate_PropertyReport(void *client, char *buf, int buf_len, const char *params)
 {
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
     POINTER_SANITY_CHECK(buf, QCLOUD_ERR_INVAL);
@@ -132,7 +132,7 @@ int IOT_DataTemplate_PropertyReport(void *client, char *buf, int buf_len, const 
  * @param[in] buf_len buffer length
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_DataTemplate_PropertyGetStatus(void *client, char *buf, int buf_len)
+int TCIOT_DataTemplate_PropertyGetStatus(void *client, char *buf, int buf_len)
 {
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
     POINTER_SANITY_CHECK(buf, QCLOUD_ERR_INVAL);
@@ -150,7 +150,7 @@ int IOT_DataTemplate_PropertyGetStatus(void *client, char *buf, int buf_len)
  * @param[in] params params constructed with device info
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_DataTemplate_PropertyReportInfo(void *client, char *buf, int buf_len, const char *params)
+int TCIOT_DataTemplate_PropertyReportInfo(void *client, char *buf, int buf_len, const char *params)
 {
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
     POINTER_SANITY_CHECK(buf, QCLOUD_ERR_INVAL);
@@ -167,7 +167,7 @@ int IOT_DataTemplate_PropertyReportInfo(void *client, char *buf, int buf_len, co
  * @param[in] buf_len buffer length
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_DataTemplate_PropertyClearControl(void *client, char *buf, int buf_len)
+int TCIOT_DataTemplate_PropertyClearControl(void *client, char *buf, int buf_len)
 {
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
     POINTER_SANITY_CHECK(buf, QCLOUD_ERR_INVAL);
@@ -186,7 +186,7 @@ int IOT_DataTemplate_PropertyClearControl(void *client, char *buf, int buf_len)
  * @param[in] client_token client token of control message
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_DataTemplate_PropertyControlReply(void *client, char *buf, int buf_len, int code, UtilsJsonValue client_token)
+int TCIOT_DataTemplate_PropertyControlReply(void *client, char *buf, int buf_len, int code, UtilsJsonValue client_token)
 {
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
     POINTER_SANITY_CHECK(buf, QCLOUD_ERR_INVAL);
@@ -203,7 +203,7 @@ int IOT_DataTemplate_PropertyControlReply(void *client, char *buf, int buf_len, 
  * @param[in] buf_len buffer length
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_DataTemplate_PropertyGetModeDefine(void *client, char *buf, int buf_len)
+int TCIOT_DataTemplate_PropertyGetModeDefine(void *client, char *buf, int buf_len)
 {
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
     POINTER_SANITY_CHECK(buf, QCLOUD_ERR_INVAL);
@@ -222,7 +222,7 @@ int IOT_DataTemplate_PropertyGetModeDefine(void *client, char *buf, int buf_len)
  * @param[in] data @see IotDataTemplateEventData
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_DataTemplate_EventPost(void *client, char *buf, int buf_len, IotDataTemplateEventData data)
+int TCIOT_DataTemplate_EventPost(void *client, char *buf, int buf_len, IotDataTemplateEventData data)
 {
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
     POINTER_SANITY_CHECK(buf, QCLOUD_ERR_INVAL);
@@ -239,7 +239,7 @@ int IOT_DataTemplate_EventPost(void *client, char *buf, int buf_len, IotDataTemp
  * @param[in] reply @see IotDataTemplateActionReply
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_DataTemplate_ActionReply(void *client, char *buf, int buf_len, IotDataTemplateActionReply reply)
+int TCIOT_DataTemplate_ActionReply(void *client, char *buf, int buf_len, IotDataTemplateActionReply reply)
 {
     return data_template_action_reply_publish(client, buf, buf_len, reply);
 }

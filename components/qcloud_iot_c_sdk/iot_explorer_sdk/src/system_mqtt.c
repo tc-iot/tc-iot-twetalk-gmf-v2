@@ -123,8 +123,8 @@ static void _system_mqtt_message_callback(void *client, const MQTTMessage *messa
         strncpy(result->server_ip.ip_list, value.value, result->server_ip.ip_len);
     }
 
-    result->result_recv_time = HAL_Timer_CurrentMs();
-    result->result_recv_ok   = IOT_BOOL_TRUE;
+    result->result_recv_time = TCI_HAL_GetTimeMs();
+    result->result_recv_ok   = TCIOT_BOOL_TRUE;
 }
 
 /**
@@ -137,27 +137,27 @@ static int _system_mqtt_result_topic_check_and_sub(void *client, const char *top
 {
     int rc = 0;
     // 1. check topic is sub ready
-    if (IOT_MQTT_IsSubReady(client, topic)) {
+    if (TCIOT_MQTT_IsSubReady(client, topic)) {
         return rc;
     }
 
     // 2. subscribe
     SubscribeParams   sub_params  = DEFAULT_SUB_PARAMS;
-    SystemResultInfo *system_info = (SystemResultInfo *)HAL_Malloc(sizeof(SystemResultInfo));
+    SystemResultInfo *system_info = (SystemResultInfo *)TCI_HAL_Malloc(sizeof(SystemResultInfo));
     if (!system_info) {
         return QCLOUD_ERR_MALLOC;
     }
 
-    system_info->result_recv_ok = IOT_BOOL_FALSE;
+    system_info->result_recv_ok = TCIOT_BOOL_FALSE;
 
     sub_params.on_message_handler = _system_mqtt_message_callback;
     sub_params.qos                = QOS1;
     sub_params.user_data          = system_info;
-    sub_params.user_data_free     = HAL_Free;
+    sub_params.user_data_free     = TCI_HAL_Free;
 
-    rc = IOT_MQTT_SubscribeSync(client, topic, &sub_params);
+    rc = TCIOT_MQTT_SubscribeSync(client, topic, &sub_params);
     if (rc) {
-        HAL_Free(system_info);
+        TCI_HAL_Free(system_info);
     }
     return rc;
 }
@@ -172,16 +172,16 @@ static int _system_mqtt_result_topic_check_and_sub(void *client, const char *top
 static int _system_mqtt_get_resource_publish(void *client, const char *topic, SysResourceType type)
 {
     char pub_topic_name[MAX_SIZE_OF_CLOUD_TOPIC];
-    HAL_Snprintf(pub_topic_name, sizeof(pub_topic_name), "$sys/operation/%s/%s",
-                 STRING_PTR_PRINT_SANITY_CHECK(IOT_MQTT_GetDeviceInfo(client)->product_id),
-                 STRING_PTR_PRINT_SANITY_CHECK(IOT_MQTT_GetDeviceInfo(client)->device_name));
+    TCI_HAL_Snprintf(pub_topic_name, sizeof(pub_topic_name), "$sys/operation/%s/%s",
+                 STRING_PTR_PRINT_SANITY_CHECK(TCIOT_MQTT_GetDeviceInfo(client)->product_id),
+                 STRING_PTR_PRINT_SANITY_CHECK(TCIOT_MQTT_GetDeviceInfo(client)->device_name));
 
-    SystemResultInfo *result = IOT_MQTT_GetSubUsrData(client, topic);
+    SystemResultInfo *result = TCIOT_MQTT_GetSubUsrData(client, topic);
     if (!result) {
         return QCLOUD_ERR_FAILURE;
     }
     result->wait_type      = type;
-    result->result_recv_ok = IOT_BOOL_FALSE;
+    result->result_recv_ok = TCIOT_BOOL_FALSE;
 
     PublishParams pub_params = DEFAULT_PUB_PARAMS;
     pub_params.qos           = QOS0;
@@ -196,11 +196,11 @@ static int _system_mqtt_get_resource_publish(void *client, const char *topic, Sy
         default:
             break;
     }
-    return IOT_MQTT_Publish(client, pub_topic_name, &pub_params);
+    return TCIOT_MQTT_Publish(client, pub_topic_name, &pub_params);
 }
 
 /**
- * @brief Wait system result, timeout @see QCLOUD_IOT_MQTT_WAIT_ACK_TIMEOUT
+ * @brief Wait system result, timeout @see QCLOUD_TCIOT_MQTT_WAIT_ACK_TIMEOUT
  *
  * @param[in,out] client pointer to mqtt client
  * @param[in] topic system result topic
@@ -210,18 +210,18 @@ static int _system_mqtt_get_resource_publish(void *client, const char *topic, Sy
 static int _system_mqtt_result_wait(void *client, const char *topic, void *user_data)
 {
     int               rc = 0;
-    QcloudIotTimer    wait_result_timer;
+    TCI_Timer    wait_result_timer;
     SystemResultInfo *result;
 
-    IOT_Timer_CountdownMs(&wait_result_timer, QCLOUD_IOT_MQTT_WAIT_ACK_TIMEOUT);
+    TCI_HAL_TimerCountdownMs(&wait_result_timer, QCLOUD_TCIOT_MQTT_WAIT_ACK_TIMEOUT);
 
-    result = IOT_MQTT_GetSubUsrData(client, topic);
+    result = TCIOT_MQTT_GetSubUsrData(client, topic);
     if (!result) {
         return QCLOUD_ERR_FAILURE;
     }
-    result->result_recv_ok = IOT_BOOL_FALSE;
-    while (!rc && !IOT_Timer_Expired(&wait_result_timer)) {
-        rc = IOT_MQTT_Yield(client, QCLOUD_IOT_MQTT_YIELD_TIMEOUT);
+    result->result_recv_ok = TCIOT_BOOL_FALSE;
+    while (!rc && !TCI_HAL_TimerExpired(&wait_result_timer)) {
+        rc = TCIOT_MQTT_Yield(client, QCLOUD_TCIOT_MQTT_YIELD_TIMEOUT);
         if (result->result_recv_ok) {
             switch (result->wait_type) {
                 case RESOURCE_TIME:
@@ -255,9 +255,9 @@ static int _system_mqtt_get_resource(void *client, SysResourceType type, void *u
     int  rc = 0;
     char system_result_topic[MAX_SIZE_OF_CLOUD_TOPIC];
 
-    HAL_Snprintf(system_result_topic, MAX_SIZE_OF_CLOUD_TOPIC, "$sys/operation/result/%s/%s",
-                 STRING_PTR_PRINT_SANITY_CHECK(IOT_MQTT_GetDeviceInfo(client)->product_id),
-                 STRING_PTR_PRINT_SANITY_CHECK(IOT_MQTT_GetDeviceInfo(client)->device_name));
+    TCI_HAL_Snprintf(system_result_topic, MAX_SIZE_OF_CLOUD_TOPIC, "$sys/operation/result/%s/%s",
+                 STRING_PTR_PRINT_SANITY_CHECK(TCIOT_MQTT_GetDeviceInfo(client)->product_id),
+                 STRING_PTR_PRINT_SANITY_CHECK(TCIOT_MQTT_GetDeviceInfo(client)->device_name));
 
     rc = _system_mqtt_result_topic_check_and_sub(client, system_result_topic);
     if (rc) {
@@ -279,7 +279,7 @@ static int _system_mqtt_get_resource(void *client, SysResourceType type, void *u
  * @param[out] time time from system result topic
  * @return @see IotReturnCode
  */
-int IOT_Sys_GetTime(void *client, uint32_t *time)
+int TCIOT_Sys_GetTime(void *client, uint32_t *time)
 {
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
     POINTER_SANITY_CHECK(time, QCLOUD_ERR_INVAL);
@@ -292,7 +292,7 @@ int IOT_Sys_GetTime(void *client, uint32_t *time)
  * @param[in,out] client pointer to mqtt client
  * @return @see IotReturnCode
  */
-int IOT_Sys_SyncNTPTime(void *client)
+int TCIOT_Sys_SyncNTPTime(void *client)
 {
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
 
@@ -304,9 +304,9 @@ int IOT_Sys_SyncNTPTime(void *client)
 
     char system_result_topic[MAX_SIZE_OF_CLOUD_TOPIC];
 
-    HAL_Snprintf(system_result_topic, MAX_SIZE_OF_CLOUD_TOPIC, "$sys/operation/result/%s/%s",
-                 STRING_PTR_PRINT_SANITY_CHECK(IOT_MQTT_GetDeviceInfo(client)->product_id),
-                 STRING_PTR_PRINT_SANITY_CHECK(IOT_MQTT_GetDeviceInfo(client)->device_name));
+    TCI_HAL_Snprintf(system_result_topic, MAX_SIZE_OF_CLOUD_TOPIC, "$sys/operation/result/%s/%s",
+                 STRING_PTR_PRINT_SANITY_CHECK(TCIOT_MQTT_GetDeviceInfo(client)->product_id),
+                 STRING_PTR_PRINT_SANITY_CHECK(TCIOT_MQTT_GetDeviceInfo(client)->device_name));
 
     rc = _system_mqtt_result_topic_check_and_sub(client, system_result_topic);
     if (rc) {
@@ -314,11 +314,11 @@ int IOT_Sys_SyncNTPTime(void *client)
     }
 
     // prepare for publish
-    result = IOT_MQTT_GetSubUsrData(client, system_result_topic);
+    result = TCIOT_MQTT_GetSubUsrData(client, system_result_topic);
     if (!result) {
         return -1;
     }
-    local_publish_before = HAL_Timer_CurrentMs();
+    local_publish_before = TCI_HAL_GetTimeMs();
 
     // publish and wait
     rc = _system_mqtt_get_resource_publish(client, system_result_topic, RESOURCE_TIME);
@@ -334,7 +334,7 @@ int IOT_Sys_SyncNTPTime(void *client)
     local_ntptime =
         (result->time.ntptime2 + result->time.ntptime1 + result->result_recv_time - local_publish_before) / 2;
 
-    rc = HAL_SetTimeMs(local_ntptime);
+    rc = TCI_HAL_SetTimeMs(local_ntptime);
     if (rc) {
         Log_e("set systime ms failed, timestamp %lld, please check permission or other ret :%d", local_ntptime, rc);
     } else {
@@ -350,7 +350,7 @@ int IOT_Sys_SyncNTPTime(void *client)
  * @param[out] server_ip serverip from system result topic
  * @return @see IotReturnCode
  */
-int IOT_Sys_GetServerIp(void *client, char *server_ip)
+int TCIOT_Sys_GetServerIp(void *client, char *server_ip)
 {
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
     POINTER_SANITY_CHECK(server_ip, QCLOUD_ERR_INVAL);

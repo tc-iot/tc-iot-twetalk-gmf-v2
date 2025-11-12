@@ -201,7 +201,7 @@ IotBool qcloud_iot_link_mesh_node_match(void *handle, const void *addr0, size_t 
                                         size_t addr1_len);
 int     qcloud_iot_link_mesh_node_start_scan(void *handle, IotBool start, uint32_t timeout_ms);
 
-#define IOT_LINK_NETWORK_BLE_MESH_NODE                                                                                \
+#define TCIOT_LINK_NETWORK_BLE_MESH_NODE                                                                                \
     {                                                                                                                 \
         IOT_LINK_PROTOCOL_BLE_MESH, 1, qcloud_iot_link_mesh_node_init, qcloud_iot_link_mesh_node_deinit,              \
             qcloud_iot_link_mesh_node_yield, qcloud_iot_link_mesh_node_send, qcloud_iot_link_mesh_node_disconnect,    \
@@ -228,7 +228,7 @@ int qcloud_iot_link_mesh_gateway_start_advertising(void *handle, void *adv_data,
 int qcloud_iot_link_mesh_gateway_stop_advertising(void *handle);
 int qcloud_iot_link_mesh_gateway_device_describe_sync(void *handle, void *cloud_dev_list, void *link);
 
-#define IOT_LINK_NETWORK_BLE_MESH_GATEWAY                                                                       \
+#define TCIOT_LINK_NETWORK_BLE_MESH_GATEWAY                                                                       \
     {                                                                                                           \
         IOT_LINK_PROTOCOL_BLE_MESH, 32, qcloud_iot_link_mesh_gateway_init, qcloud_iot_link_mesh_gateway_deinit, \
             qcloud_iot_link_mesh_gateway_yield, qcloud_iot_link_mesh_gateway_send,                              \
@@ -250,7 +250,7 @@ int   qcloud_iot_link_ble_get_uuid(void *handle, void *addr, size_t addr_len, ui
 int   qcloud_iot_link_ble_start_advertising(void *handle, void *adv_data, size_t adv_data_len, uint32_t adv_time);
 int   qcloud_iot_link_ble_stop_advertising(void *handle);
 
-#define IOT_LINK_NETWORK_BLE                                                                      \
+#define TCIOT_LINK_NETWORK_BLE                                                                      \
     {                                                                                             \
         IOT_LINK_PROTOCOL_BLE, 1, qcloud_iot_link_ble_init, qcloud_iot_link_ble_deinit, NULL,     \
             qcloud_iot_link_ble_send, NULL, NULL, NULL, NULL, qcloud_iot_link_ble_get_uuid, NULL, \

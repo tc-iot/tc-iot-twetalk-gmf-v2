@@ -29,8 +29,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_MQTT_CLIENT_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_MQTT_CLIENT_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_MQTT_CLIENT_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_MQTT_CLIENT_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -109,7 +109,7 @@ typedef const char *(*MQTTGetNextHostIp)(void);
  */
 typedef struct {
     DeviceInfo *device_info;            /**< device info */
-    const char *host;                   /**< host for user, null for default using QCLOUD_IOT_MQTT_DIRECT_DOMAIN */
+    const char *host;                   /**< host for user, null for default using QCLOUD_TCIOT_MQTT_DIRECT_DOMAIN */
     const char *backup_host;            /**< backup host for user if host not connect will try use this */
     uint32_t    command_timeout;        /**< timeout value (unit: ms) for MQTT connect/pub/sub/yield */
     uint32_t    keep_alive_interval;    /**< MQTT keep alive time interval in second */
@@ -126,7 +126,7 @@ typedef struct {
  */
 #define DEFAULT_MQTT_INIT_PARAMS                                                                                  \
     {                                                                                                             \
-        NULL, NULL, NULL, QCLOUD_IOT_MQTT_COMMAND_TIMEOUT, QCLOUD_IOT_MQTT_KEEP_ALIVE_INTERNAL, 1, 1, 1, 0, NULL, \
+        NULL, NULL, NULL, QCLOUD_TCIOT_MQTT_COMMAND_TIMEOUT, QCLOUD_TCIOT_MQTT_KEEP_ALIVE_INTERNAL, 1, 1, 1, 0, NULL, \
         {                                                                                                         \
             0                                                                                                     \
         }                                                                                                         \
@@ -228,15 +228,15 @@ typedef struct {
  * @param[in] params MQTT init parameters
  * @return a valid MQTT client handle when success, or NULL otherwise
  */
-void *IOT_MQTT_Construct(const MQTTInitParams *params);
+void *TCIOT_MQTT_Construct(const MQTTInitParams *params);
 
 /**
  * @brief Connect Mqtt server if not connect.
  *
- * @param[in,out] client pointer to mqtt client pointer, should using the pointer of IOT_MQTT_Construct return.
+ * @param[in,out] client pointer to mqtt client pointer, should using the pointer of TCIOT_MQTT_Construct return.
  * @return @see IotReturnCode
  */
-int IOT_MQTT_Connect(void *client);
+int TCIOT_MQTT_Connect(void *client);
 
 /**
  * @brief Close connection and destroy MQTT client.
@@ -244,7 +244,7 @@ int IOT_MQTT_Connect(void *client);
  * @param client pointer to mqtt client pointer
  * @return @see IotReturnCode
  */
-int IOT_MQTT_Destroy(void **client);
+int TCIOT_MQTT_Destroy(void **client);
 
 /**
  * @brief Check connection and keep alive state, read/handle MQTT packet in synchronized way.
@@ -254,7 +254,7 @@ int IOT_MQTT_Destroy(void **client);
  * @return QCLOUD_RET_SUCCESS when success, QCLOUD_ERR_MQTT_ATTEMPTING_RECONNECT when try reconnecting, others @see
  * IotReturnCode
  */
-int IOT_MQTT_Yield(void *client, uint32_t timeout_ms);
+int TCIOT_MQTT_Yield(void *client, uint32_t timeout_ms);
 
 /**
  * @brief Publish MQTT message.
@@ -264,7 +264,7 @@ int IOT_MQTT_Yield(void *client, uint32_t timeout_ms);
  * @param[in] params @see PublishParams
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_MQTT_Publish(void *client, const char *topic_name, const PublishParams *params);
+int TCIOT_MQTT_Publish(void *client, const char *topic_name, const PublishParams *params);
 
 /**
  * @brief Subscribe MQTT topic.
@@ -274,7 +274,7 @@ int IOT_MQTT_Publish(void *client, const char *topic_name, const PublishParams *
  * @param[in] params @see SubscribeParams
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_MQTT_Subscribe(void *client, const char *topic_filter, const SubscribeParams *params);
+int TCIOT_MQTT_Subscribe(void *client, const char *topic_filter, const SubscribeParams *params);
 
 /**
  * @brief Unsubscribe MQTT topic.
@@ -283,17 +283,17 @@ int IOT_MQTT_Subscribe(void *client, const char *topic_filter, const SubscribePa
  * @param[in] topic_filter topic filter to unsubscribe
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_MQTT_Unsubscribe(void *client, const char *topic_filter);
+int TCIOT_MQTT_Unsubscribe(void *client, const char *topic_filter);
 
 /**
  * @brief Check if MQTT topic has been subscribed or not
  *
  * @param[in,out] client pointer to mqtt client
  * @param[in] topic_filter topic filter to subscribe
- * @return IOT_BOOL_TRUE already subscribed
- * @return IOT_BOOL_FALSE not ready
+ * @return TCIOT_BOOL_TRUE already subscribed
+ * @return TCIOT_BOOL_FALSE not ready
  */
-IotBool IOT_MQTT_IsSubReady(void *client, const char *topic_filter);
+IotBool TCIOT_MQTT_IsSubReady(void *client, const char *topic_filter);
 
 /**
  * @brief Get user data in subscribe.
@@ -302,7 +302,7 @@ IotBool IOT_MQTT_IsSubReady(void *client, const char *topic_filter);
  * @param[in] topic_filter topic filter to subscribe
  * @return NULL or user data
  */
-void *IOT_MQTT_GetSubUsrData(void *client, const char *topic_filter);
+void *TCIOT_MQTT_GetSubUsrData(void *client, const char *topic_filter);
 
 /**
  * @brief Subscribe and wait sub ready.
@@ -312,16 +312,16 @@ void *IOT_MQTT_GetSubUsrData(void *client, const char *topic_filter);
  * @param[in] params @see SubscribeParams
  * @return @see IotReturnCode
  */
-int IOT_MQTT_SubscribeSync(void *client, const char *topic_filter, const SubscribeParams *params);
+int TCIOT_MQTT_SubscribeSync(void *client, const char *topic_filter, const SubscribeParams *params);
 
 /**
  * @brief Check if MQTT is connected.
  *
  * @param[in,out] client pointer to mqtt client
- * @return IOT_BOOL_TRUE connected
- * @return IOT_BOOL_FALSE no connected
+ * @return TCIOT_BOOL_TRUE connected
+ * @return TCIOT_BOOL_FALSE no connected
  */
-IotBool IOT_MQTT_IsConnected(void *client);
+IotBool TCIOT_MQTT_IsConnected(void *client);
 
 /**
  * @brief Set trustee used in services.
@@ -329,7 +329,7 @@ IotBool IOT_MQTT_IsConnected(void *client);
  * @param[in,out] client pointer to mqtt client
  * @param[in] trustee trustee device
  */
-void IOT_MQTT_Proxy(void *client, DeviceInfo *trustee);
+void TCIOT_MQTT_Proxy(void *client, DeviceInfo *trustee);
 
 /**
  * @brief Get device info used in services.
@@ -337,10 +337,10 @@ void IOT_MQTT_Proxy(void *client, DeviceInfo *trustee);
  * @param[in,out] client pointer to mqtt client
  * @return @see DeviceInfo
  */
-DeviceInfo *IOT_MQTT_GetDeviceInfo(void *client);
+DeviceInfo *TCIOT_MQTT_GetDeviceInfo(void *client);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_MQTT_CLIENT_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_MQTT_CLIENT_H_

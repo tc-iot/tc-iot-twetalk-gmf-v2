@@ -38,7 +38,7 @@ extern "C" {
 
 #include "mqtt_packet.h"
 
-#include "network_interface.h"
+#include "qcloud_iot_network_interface.h"
 
 #include "utils_list.h"
 #include "utils_base64.h"
@@ -85,7 +85,7 @@ extern "C" {
  * @brief Minimal TLS handshaking timeout value (unit: ms)
  *
  */
-#define QCLOUD_IOT_TLS_HANDSHAKE_TIMEOUT (5 * 1000)
+#define QCLOUD_TCIOT_TLS_HANDSHAKE_TIMEOUT (5 * 1000)
 
 /**
  * @brief Enable repeat packet id filter
@@ -144,8 +144,8 @@ typedef struct {
     uint16_t next_packet_id;     /**< MQTT random packet id */
     uint32_t command_timeout_ms; /**< MQTT command timeout, unit:ms */
 
-    uint8_t write_buf[QCLOUD_IOT_MQTT_TX_BUF_LEN]; /**< MQTT write buffer */
-    uint8_t read_buf[QCLOUD_IOT_MQTT_RX_BUF_LEN];  /**< MQTT read buffer */
+    uint8_t write_buf[QCLOUD_TCIOT_MQTT_TX_BUF_LEN]; /**< MQTT write buffer */
+    uint8_t read_buf[QCLOUD_TCIOT_MQTT_RX_BUF_LEN];  /**< MQTT read buffer */
     size_t  write_buf_size;                        /**< size of MQTT write buffer */
     size_t  read_buf_size;                         /**< size of MQTT read buffer */
 
@@ -155,8 +155,10 @@ typedef struct {
 
     void *lock_generic;      /**< mutex/lock for this client struture */
     void *lock_write_buf;    /**< mutex/lock for write buffer */
+    void *lock_yield;        /**< mutex/lock for yield operation and read buffer */
     void *list_pub_wait_ack; /**< puback waiting list */
     void *list_sub_wait_ack; /**< suback waiting list */
+
 
     char              host_addr[HOST_STR_LENGTH]; /**< MQTT server host */
     MQTTGetNextHostIp get_next_host_ip;           // get host ip
@@ -167,9 +169,9 @@ typedef struct {
     MQTTPacketConnectOption options;                  /**< handle to connection parameters */
     char                    conn_id[MAX_CONN_ID_LEN]; /**< connect id */
 
-    SubTopicHandle sub_handles[QCLOUD_IOT_MQTT_MAX_MESSAGE_HANDLERS]; /**< subscription handle array */
-    QcloudIotTimer ping_timer;                                        /**< MQTT ping timer */
-    QcloudIotTimer reconnect_delay_timer;                             /**< MQTT reconnect delay timer */
+    SubTopicHandle sub_handles[QCLOUD_TCIOT_MQTT_MAX_MESSAGE_HANDLERS]; /**< subscription handle array */
+    TCI_Timer ping_timer;                                        /**< MQTT ping timer */
+    TCI_Timer reconnect_delay_timer;                             /**< MQTT reconnect delay timer */
     uint8_t        was_manually_disconnected;                         /**< was disconnect by server or device */
     uint8_t        is_ping_outstanding;             /**< 1 = ping request is sent while ping response not arrived yet */
     uint32_t       current_reconnect_wait_interval; /**< unit:ms */
@@ -191,7 +193,7 @@ typedef struct {
 typedef struct {
     uint32_t       len;            /**< msg length */
     uint16_t       packet_id;      /**< packet id */
-    QcloudIotTimer pub_start_time; /**< timer for puback waiting */
+    TCI_Timer pub_start_time; /**< timer for puback waiting */
     uint8_t        buf[0];         /**< msg buffer */
 } QcloudIotPubInfo;
 
@@ -202,7 +204,7 @@ typedef struct {
 typedef struct {
     MQTTPacketType  type;                           /**< type: sub or unsub */
     uint16_t        packet_id;                      /**< packet id */
-    QcloudIotTimer  sub_start_time;                 /**< timer for suback waiting */
+    TCI_Timer  sub_start_time;                 /**< timer for suback waiting */
     char            topic[MAX_SIZE_OF_CLOUD_TOPIC]; /**< topic subscribed(unsubscribed) */
     SubscribeParams params;                         /**< params needed to subscribe */
 } QcloudIotSubInfo;
@@ -386,8 +388,8 @@ int qcloud_iot_mqtt_resubscribe(QcloudIotClient *client);
  *
  * @param[in,out] client pointer to mqtt client
  * @param[in] topic_filter topic filter
- * @return IOT_BOOL_TRUE for ready
- * @return IOT_BOOL_FALSE for not ready
+ * @return TCIOT_BOOL_TRUE for ready
+ * @return TCIOT_BOOL_FALSE for not ready
  */
 IotBool qcloud_iot_mqtt_is_sub_ready(QcloudIotClient *client, const char *topic_filter);
 

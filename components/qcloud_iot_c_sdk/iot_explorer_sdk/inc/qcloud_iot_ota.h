@@ -26,8 +26,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_OTA_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_OTA_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_OTA_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_OTA_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,58 +39,19 @@ extern "C" {
 
 #include "utils_json.h"
 
-#ifdef AT_MODULE_ENABLE
-
-/**
- * @brief Init ota && report mcu & at version.
- *
- * @param[in] version mcu version.
- * @return 0 for success
- */
-int IOT_OTA_Init(const char *version);
-
-/**
- * @brief Deinit ota.
- *
- * @return @see IotReturnCode
- */
-void IOT_OTA_Deinit(void);
-
-/**
- * @brief Read fw info from at module.
- *
- * @param[out] version mcu fw version
- * @param[out] fw_size mcu fw size
- * @param[out] md5  mcu fw md5
- * @param[in] timeout_ms timeout
- * @return 0 for success
- */
-int IOT_OTA_ReadFwInfo(char **version, uint32_t *fw_size, char **md5, uint32_t timeout_ms);
-
-/**
- * @brief Read fw data from at module.
- *
- * @param[out] fw_data fw data
- * @param[out] fw_data_len fw data length
- * @param[in] timeout_ms timeout
- * @return 0 for success
- */
-int IOT_OTA_ReadFWData(uint8_t *fw_data, uint32_t *fw_data_len, uint32_t timeout_ms);
-
-#else
 /**
  * @brief OTA report type.
  *
  */
 typedef enum {
-    IOT_OTA_REPORT_TYPE_DOWNLOADING = 0,
-    IOT_OTA_REPORT_TYPE_UPGRADE_BEGIN,
-    IOT_OTA_REPORT_TYPE_UPGRADE_SUCCESS,
-    IOT_OTA_REPORT_TYPE_DOWNLOAD_TIMEOUT,
-    IOT_OTA_REPORT_TYPE_FILE_NOT_EXIST,
-    IOT_OTA_REPORT_TYPE_AUTH_FAIL,
-    IOT_OTA_REPORT_TYPE_MD5_NOT_MATCH,
-    IOT_OTA_REPORT_TYPE_UPGRADE_FAIL,
+    TCIOT_OTA_REPORT_TYPE_DOWNLOADING = 0,
+    TCIOT_OTA_REPORT_TYPE_UPGRADE_BEGIN,
+    TCIOT_OTA_REPORT_TYPE_UPGRADE_SUCCESS,
+    TCIOT_OTA_REPORT_TYPE_DOWNLOAD_TIMEOUT,
+    TCIOT_OTA_REPORT_TYPE_FILE_NOT_EXIST,
+    TCIOT_OTA_REPORT_TYPE_AUTH_FAIL,
+    TCIOT_OTA_REPORT_TYPE_MD5_NOT_MATCH,
+    TCIOT_OTA_REPORT_TYPE_UPGRADE_FAIL,
 } IotOTAReportType;
 
 /**
@@ -103,6 +64,45 @@ typedef struct {
     void (*report_version_reply_callback)(int result_code, void *usr_data);
 } IotOTAUpdateCallback;
 
+#ifdef ENABLE_MODULE_AT
+
+/**
+ * @brief Init ota && report mcu & at version.
+ *
+ * @param[in] version mcu version.
+ * @return 0 for success
+ */
+int TCIOT_OTA_Init(const char *version);
+
+/**
+ * @brief Deinit ota.
+ *
+ * @return @see IotReturnCode
+ */
+void TCIOT_OTA_Deinit(void);
+
+/**
+ * @brief Read fw info from at module.
+ *
+ * @param[out] version mcu fw version
+ * @param[out] fw_size mcu fw size
+ * @param[out] md5  mcu fw md5
+ * @param[in] timeout_ms timeout
+ * @return 0 for success
+ */
+int TCIOT_OTA_ReadFwInfo(char **version, uint32_t *fw_size, char **md5, uint32_t timeout_ms);
+
+/**
+ * @brief Read fw data from at module.
+ *
+ * @param[out] fw_data fw data
+ * @param[out] fw_data_len fw data length
+ * @param[in] timeout_ms timeout
+ * @return 0 for success
+ */
+int TCIOT_OTA_ReadFWData(uint8_t *fw_data, uint32_t *fw_data_len, uint32_t timeout_ms);
+
+#else
 /**
  * @brief OTA init, subscribe update topic.
  *
@@ -111,14 +111,14 @@ typedef struct {
  * @param[in] usr_data usr data used in callback
  * @return 0 for success, or err code (<0) @see IotReturnCode
  */
-int IOT_OTA_Init(void *client, IotOTAUpdateCallback callback, void *usr_data);
+int TCIOT_OTA_Init(void *client, IotOTAUpdateCallback callback, void *usr_data);
 
 /**
  * @brief OTA deinit, unsubscribe update topic.
  *
  * @param[in,out] client pointer to mqtt client
  */
-void IOT_OTA_Deinit(void *client);
+void TCIOT_OTA_Deinit(void *client);
 
 /**
  * @brief Report upgrade progress.
@@ -127,11 +127,11 @@ void IOT_OTA_Deinit(void *client);
  * @param[out] buf publish message buffer
  * @param[in] buf_len buffer len
  * @param[in] report_type @see IotOTAReportType
- * @param[in] progress progress using in IOT_OTA_REPORT_TYPE_DOWNLOADING
+ * @param[in] progress progress using in TCIOT_OTA_REPORT_TYPE_DOWNLOADING
  * @param[in] version update firmware version
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_OTA_ReportProgress(void *client, char *buf, int buf_len, IotOTAReportType report_type, int progress,
+int TCIOT_OTA_ReportProgress(void *client, char *buf, int buf_len, IotOTAReportType report_type, int progress,
                            const char *version);
 
 /**
@@ -143,7 +143,7 @@ int IOT_OTA_ReportProgress(void *client, char *buf, int buf_len, IotOTAReportTyp
  * @param[in] version current firmware version
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_OTA_ReportVersion(void *client, char *buf, int buf_len, const char *version);
+int TCIOT_OTA_ReportVersion(void *client, char *buf, int buf_len, const char *version);
 
 #endif
 
@@ -151,4 +151,4 @@ int IOT_OTA_ReportVersion(void *client, char *buf, int buf_len, const char *vers
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_OTA_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_OTA_H_

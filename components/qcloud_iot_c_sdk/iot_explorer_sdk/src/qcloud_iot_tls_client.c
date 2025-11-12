@@ -30,9 +30,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
-
-#include "tc_iot_hal.h"
-#include "tc_iot_ret_code.h"
+#include "qcloud_iot_tls_client.h"
 
 
 /**
@@ -43,14 +41,14 @@
  * @param[in] port server port
  * @return tls handle, 0 for fail
  */
-uintptr_t qcloud_iot_tls_client_connect(const TLSConnectParams *connect_params, const char *host, const char *port)
+uintptr_t qcloud_iot_tls_client_connect(const TCI_TLSConnectParams *connect_params, const char *host, const char *port)
 {
     if (!connect_params || !host || !port) {
         return 0;
     }
     
     int port_int = atoi(port);
-    return HAL_TLS_Connect((TLSConnectParams *)connect_params, host, port_int);
+    return TCI_HAL_TLS_Connect((TCI_TLSConnectParams *)connect_params, host, port_int);
 }
 
 /**
@@ -61,7 +59,7 @@ uintptr_t qcloud_iot_tls_client_connect(const TLSConnectParams *connect_params, 
 void qcloud_iot_tls_client_disconnect(uintptr_t handle)
 {
     if (handle != 0) {
-        HAL_TLS_Disconnect(handle);
+        TCI_HAL_TLS_Disconnect(handle);
     }
 }
 
@@ -77,11 +75,11 @@ void qcloud_iot_tls_client_disconnect(uintptr_t handle)
 int qcloud_iot_tls_client_write(uintptr_t handle, unsigned char *msg, size_t total_len, uint32_t timeout_ms)
 {
     if (handle == 0 || !msg || total_len == 0) {
-        return QCLOUD_ERR_INVAL;
+        return -1;
     }
     
     size_t written_len = 0;
-    return HAL_TLS_Write(handle, msg, total_len, timeout_ms, &written_len);
+    return TCI_HAL_TLS_Write(handle, msg, total_len, timeout_ms, &written_len);
 }
 
 /**
@@ -98,8 +96,8 @@ int qcloud_iot_tls_client_read(uintptr_t handle, unsigned char *msg, size_t tota
                                size_t *read_len)
 {
     if (handle == 0 || !msg || total_len == 0 || !read_len) {
-        return QCLOUD_ERR_INVAL;
+        return -1;
     }
     
-    return HAL_TLS_Read(handle, msg, total_len, timeout_ms, read_len);
+    return TCI_HAL_TLS_Read(handle, msg, total_len, timeout_ms, read_len);
 }

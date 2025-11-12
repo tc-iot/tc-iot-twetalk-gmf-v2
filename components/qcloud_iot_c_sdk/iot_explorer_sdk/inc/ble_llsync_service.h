@@ -41,22 +41,22 @@ extern "C" {
 // ------------------------------------------------------------------------------
 
 // 1 byte type + 2 bytes payload-length
-#define BLE_QIOT_EVENT_FIXED_HEADER_LEN (3)
+#define BLE_QTCIOT_EVENT_FIXED_HEADER_LEN (3)
 // the bit 15 - 14 is slice flag, bit 13 - 0 is tlv length
-#define BLE_QIOT_IS_SLICE_PACKAGE(_C) ((_C)&0XC0)
-#define BLE_QIOT_IS_SLICE_HEADER(_C)  (((_C)&0XC0) == 0X40)
-#define BLE_QIOT_IS_SLICE_BODY(_C)    (((_C)&0XC0) == 0X80)
-#define BLE_QIOT_IS_SLICE_TAIL(_C)    (((_C)&0XC0) == 0XC0)
+#define BLE_QTCIOT_IS_SLICE_PACKAGE(_C) ((_C)&0XC0)
+#define BLE_QTCIOT_IS_SLICE_HEADER(_C)  (((_C)&0XC0) == 0X40)
+#define BLE_QTCIOT_IS_SLICE_BODY(_C)    (((_C)&0XC0) == 0X80)
+#define BLE_QTCIOT_IS_SLICE_TAIL(_C)    (((_C)&0XC0) == 0XC0)
 
-#define BLE_QIOT_STRING_TYPE_LEN     2                               // string/struct type length
-#define BLE_QIOT_MIN_STRING_TYPE_LEN (BLE_QIOT_STRING_TYPE_LEN + 1)  // at least 2 bytes length and 1 byte payload
-#define BLE_QIOT_NOT_SUPPORT_WARN    " not support, please check the data template"
+#define BLE_QTCIOT_STRING_TYPE_LEN     2                               // string/struct type length
+#define BLE_QTCIOT_MIN_STRING_TYPE_LEN (BLE_QTCIOT_STRING_TYPE_LEN + 1)  // at least 2 bytes length and 1 byte payload
+#define BLE_QTCIOT_NOT_SUPPORT_WARN    " not support, please check the data template"
 
-#define BLE_QIOT_CONTROL_DATA_TYPE          (0x00)
-#define BLE_QIOT_GET_STATUS_REPLY_DATA_TYPE (0x22)
+#define BLE_QTCIOT_CONTROL_DATA_TYPE          (0x00)
+#define BLE_QTCIOT_GET_STATUS_REPLY_DATA_TYPE (0x22)
 
-#define BLE_QIOT_GET_STATUS_REPLY_HEADER_LEN (4)
-#define BLE_QIOT_DATA_FIXED_HEADER_LEN       (3)
+#define BLE_QTCIOT_GET_STATUS_REPLY_HEADER_LEN (4)
+#define BLE_QTCIOT_DATA_FIXED_HEADER_LEN       (3)
 
 #define BLE_LLSYNC_CHARACTERISTIC_UUID_DEVICE_INFO (0xffe1)
 #define BLE_LLSYNC_CHARACTERISTIC_UUID_DATA        (0xffe2)
@@ -66,101 +66,101 @@ extern "C" {
 #define BLE_LLSYNC_CHARACTERISTIC_UUID_SUBDEV_RPT  (0xffe6)
 
 // tlv header define, bit 7 - 5 is type, bit 4 - 0 depends on type of data template
-#define BLE_QIOT_PARSE_TLV_HEAD_TYPE(_C) (((_C)&0XFF) >> 5)
-#define BLE_QIOT_PARSE_TLV_HEAD_ID(_C)   ((_C)&0X1F)
+#define BLE_QTCIOT_PARSE_TLV_HEAD_TYPE(_C) (((_C)&0XFF) >> 5)
+#define BLE_QTCIOT_PARSE_TLV_HEAD_ID(_C)   ((_C)&0X1F)
 
-#define BLE_QIOT_GET_OTA_REQUEST_HEADER_LEN 3  // the ota request header len
-#define BLE_QIOT_OTA_DATA_HEADER_LEN        3  // the ota data header len
+#define BLE_QTCIOT_GET_OTA_REQUEST_HEADER_LEN 3  // the ota request header len
+#define BLE_QTCIOT_OTA_DATA_HEADER_LEN        3  // the ota data header len
 
 // ota feature
-#define BLE_QIOT_OTA_ENABLE        (1 << 0)
-#define BLE_QIOT_OTA_RESUME_ENABLE (1 << 1)
+#define BLE_QTCIOT_OTA_ENABLE        (1 << 0)
+#define BLE_QTCIOT_OTA_RESUME_ENABLE (1 << 1)
 
 // ota file valid result
-#define BLE_QIOT_OTA_VALID_SUCCESS (1 << 7)
-#define BLE_QIOT_OTA_VALID_FAIL    (0 << 7)
+#define BLE_QTCIOT_OTA_VALID_SUCCESS (1 << 7)
+#define BLE_QTCIOT_OTA_VALID_FAIL    (0 << 7)
 
-#define BLE_QIOT_OTA_MAX_VERSION_STR (32)  // max ota version length
-#define BLE_QIOT_OTA_PAGE_VALID_VAL  0x5A  // ota info valid flag
+#define BLE_QTCIOT_OTA_MAX_VERSION_STR (32)  // max ota version length
+#define BLE_QTCIOT_OTA_PAGE_VALID_VAL  0x5A  // ota info valid flag
 
-#define BLE_QIOT_OTA_FIRST_TIMEOUT   (1)
-#define BLE_QIOT_OTA_MAX_RETRY_COUNT 5  // disconnect if retry times more than BLE_QIOT_OTA_MAX_RETRY_COUNT
+#define BLE_QTCIOT_OTA_FIRST_TIMEOUT   (1)
+#define BLE_QTCIOT_OTA_MAX_RETRY_COUNT 5  // disconnect if retry times more than BLE_QTCIOT_OTA_MAX_RETRY_COUNT
 
 // ota control bits
-#define BLE_QIOT_OTA_REQUEST_BIT     (1 << 0)
-#define BLE_QIOT_OTA_RECV_END_BIT    (1 << 1)
-#define BLE_QIOT_OTA_RECV_DATA_BIT   (1 << 2)
-#define BLE_QIOT_OTA_FIRST_RETRY_BIT (1 << 3)
-#define BLE_QIOT_OTA_DO_VALID_BIT    (1 << 4)
-#define BLE_QIOT_OTA_HAVE_DATA_BIT   (1 << 5)
+#define BLE_QTCIOT_OTA_REQUEST_BIT     (1 << 0)
+#define BLE_QTCIOT_OTA_RECV_END_BIT    (1 << 1)
+#define BLE_QTCIOT_OTA_RECV_DATA_BIT   (1 << 2)
+#define BLE_QTCIOT_OTA_FIRST_RETRY_BIT (1 << 3)
+#define BLE_QTCIOT_OTA_DO_VALID_BIT    (1 << 4)
+#define BLE_QTCIOT_OTA_HAVE_DATA_BIT   (1 << 5)
 
 // the reason of ota file error
 enum {
-    BLE_QIOT_OTA_CRC_ERROR        = 0,
-    BLE_QIOT_OTA_READ_FLASH_ERROR = 1,
-    BLE_QIOT_OTA_FILE_ERROR       = 2,
+    BLE_QTCIOT_OTA_CRC_ERROR        = 0,
+    BLE_QTCIOT_OTA_READ_FLASH_ERROR = 1,
+    BLE_QTCIOT_OTA_FILE_ERROR       = 2,
 };
 
 // ota data type
 typedef enum {
-    BLE_QIOT_OTA_MSG_REQUEST = 0,
-    BLE_QIOT_OTA_MSG_DATA    = 1,
-    BLE_QIOT_OTA_MSG_END     = 2,
-    BLE_QIOT_OTA_MSG_BUTT,
+    BLE_QTCIOT_OTA_MSG_REQUEST = 0,
+    BLE_QTCIOT_OTA_MSG_DATA    = 1,
+    BLE_QTCIOT_OTA_MSG_END     = 2,
+    BLE_QTCIOT_OTA_MSG_BUTT,
 }BLELLsyncOTAMsg;
 
 typedef enum {
-    BLE_QIOT_EVENT_NO_SLICE   = 0,
-    BLE_QIOT_EVENT_SLICE_HEAD = 1,
-    BLE_QIOT_EVENT_SLICE_BODY = 2,
-    BLE_QIOT_EVENT_SLICE_FOOT = 3,
+    BLE_QTCIOT_EVENT_NO_SLICE   = 0,
+    BLE_QTCIOT_EVENT_SLICE_HEAD = 1,
+    BLE_QTCIOT_EVENT_SLICE_BODY = 2,
+    BLE_QTCIOT_EVENT_SLICE_FOOT = 3,
 } BLELLsyncSliceType;
 
 typedef enum {
-    BLE_QIOT_REPLY_SUCCESS = 0,
-    BLE_QIOT_REPLY_FAIL,
-    BLE_QIOT_REPLY_DATA_ERR,
-    BLE_QIOT_REPLY_BUTT,
+    BLE_QTCIOT_REPLY_SUCCESS = 0,
+    BLE_QTCIOT_REPLY_FAIL,
+    BLE_QTCIOT_REPLY_DATA_ERR,
+    BLE_QTCIOT_REPLY_BUTT,
 } BLELLsycReplyResult;
 
 // define message type that from server to device
 typedef enum {
-    BLE_QIOT_DATA_DOWN_REPORT_REPLY = 0,
-    BLE_QIOT_DATA_DOWN_CONTROL,
-    BLE_QIOT_DATA_DOWN_GET_STATUS_REPLY,
-    BLE_QIOT_DATA_DOWN_ACTION,
-    BLE_QIOT_DATA_DOWN_EVENT_REPLY,
+    BLE_QTCIOT_DATA_DOWN_REPORT_REPLY = 0,
+    BLE_QTCIOT_DATA_DOWN_CONTROL,
+    BLE_QTCIOT_DATA_DOWN_GET_STATUS_REPLY,
+    BLE_QTCIOT_DATA_DOWN_ACTION,
+    BLE_QTCIOT_DATA_DOWN_EVENT_REPLY,
 } BLELLsyncDataDownType;
 
 // define message type that from device to server
 typedef enum {
-    BLE_QIOT_EVENT_UP_PROPERTY_REPORT = 0,
-    BLE_QIOT_EVENT_UP_CONTROL_REPLY,
-    BLE_QIOT_EVENT_UP_GET_STATUS,
-    BLE_QIOT_EVENT_UP_EVENT_POST,
-    BLE_QIOT_EVENT_UP_ACTION_REPLY,
-    BLE_QIOT_EVENT_UP_BIND_SIGN_RET,
-    BLE_QIOT_EVENT_UP_CONN_SIGN_RET,
-    BLE_QIOT_EVENT_UP_UNBIND_SIGN_RET,
-    BLE_QIOT_EVENT_UP_REPORT_MTU,
-    BLE_QIOT_EVENT_UP_REPLY_OTA_REPORT,
-    BLE_QIOT_EVENT_UP_REPLY_OTA_DATA,
-    BLE_QIOT_EVENT_UP_REPORT_CHECK_RESULT,
-    BLE_QIOT_EVENT_UP_SYNC_MTU,
-    BLE_QIOT_EVENT_UP_SYNC_WAIT_TIME,
-    BLE_QIOT_EVENT_UP_DYNREG_SIGN,
-    BLE_QIOT_EVENT_UP_WIFI_MODE = 0xE0,
-    BLE_QIOT_EVENT_UP_WIFI_INFO,
-    BLE_QIOT_EVENT_UP_WIFI_CONNECT,
-    BLE_QIOT_EVENT_UP_WIFI_TOKEN,
-    BLE_QIOT_EVENT_UP_WIFI_LOG,
-    BLE_QIOT_EVENT_UP_BUTT,
+    BLE_QTCIOT_EVENT_UP_PROPERTY_REPORT = 0,
+    BLE_QTCIOT_EVENT_UP_CONTROL_REPLY,
+    BLE_QTCIOT_EVENT_UP_GET_STATUS,
+    BLE_QTCIOT_EVENT_UP_EVENT_POST,
+    BLE_QTCIOT_EVENT_UP_ACTION_REPLY,
+    BLE_QTCIOT_EVENT_UP_BIND_SIGN_RET,
+    BLE_QTCIOT_EVENT_UP_CONN_SIGN_RET,
+    BLE_QTCIOT_EVENT_UP_UNBIND_SIGN_RET,
+    BLE_QTCIOT_EVENT_UP_REPORT_MTU,
+    BLE_QTCIOT_EVENT_UP_REPLY_OTA_REPORT,
+    BLE_QTCIOT_EVENT_UP_REPLY_OTA_DATA,
+    BLE_QTCIOT_EVENT_UP_REPORT_CHECK_RESULT,
+    BLE_QTCIOT_EVENT_UP_SYNC_MTU,
+    BLE_QTCIOT_EVENT_UP_SYNC_WAIT_TIME,
+    BLE_QTCIOT_EVENT_UP_DYNREG_SIGN,
+    BLE_QTCIOT_EVENT_UP_WIFI_MODE = 0xE0,
+    BLE_QTCIOT_EVENT_UP_WIFI_INFO,
+    BLE_QTCIOT_EVENT_UP_WIFI_CONNECT,
+    BLE_QTCIOT_EVENT_UP_WIFI_TOKEN,
+    BLE_QTCIOT_EVENT_UP_WIFI_LOG,
+    BLE_QTCIOT_EVENT_UP_BUTT,
 } BLELLsyncUpLinkType;
 
 typedef enum {
-    BLE_QIOT_EFFECT_REQUEST = 0,
-    BLE_QIOT_EFFECT_REPLY,
-    BLE_QIOT_EFFECT_BUTT,
+    BLE_QTCIOT_EFFECT_REQUEST = 0,
+    BLE_QTCIOT_EFFECT_REPLY,
+    BLE_QTCIOT_EFFECT_BUTT,
 } BLELLsyncEffectType;
 
 typedef enum {

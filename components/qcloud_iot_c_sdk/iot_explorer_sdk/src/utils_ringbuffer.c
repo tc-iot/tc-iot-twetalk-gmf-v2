@@ -153,24 +153,6 @@ uint32_t utils_ringbuffer_total_size(void *ringbuffer)
 }
 
 /**
- * @brief Reset the ring buffer
- *
- * @param[in] ringbuffer Pointer to ring buffer
- */
-static inline void utils_ringbuffer_reset(void *ringbuffer)
-{
-    RingBuffer *rb = (RingBuffer *)ringbuffer;
-    if (rb == NULL) {
-        return;
-    }
-    _ringbuffer_lock(rb, 0);
-    rb->write_index = 0;
-    rb->read_index  = 0;
-    rb->used_count  = 0;
-    _ringbuffer_unlock(rb);
-}
-
-/**
  * @brief Check if ring buffer is empty
  *
  * @param[in] ringbuffer Pointer to ring buffer

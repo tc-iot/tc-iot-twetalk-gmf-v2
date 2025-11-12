@@ -26,8 +26,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_IOT_FILE_MANAGE_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_IOT_FILE_MANAGE_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_TCIOT_FILE_MANAGE_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_TCIOT_FILE_MANAGE_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,21 +52,21 @@ extern "C" {
  */
 typedef enum {
     // file update
-    IOT_FILE_MANAGE_REPORT_TYPE_DOWNLOADING = 0,
-    IOT_FILE_MANAGE_REPORT_TYPE_UPGRADE_BEGIN,
-    IOT_FILE_MANAGE_REPORT_TYPE_UPGRADE_SUCCESS,
-    IOT_FILE_MANAGE_REPORT_TYPE_DOWNLOAD_TIMEOUT,
-    IOT_FILE_MANAGE_REPORT_TYPE_FILE_NOT_EXIST,
-    IOT_FILE_MANAGE_REPORT_TYPE_AUTH_FAIL,
-    IOT_FILE_MANAGE_REPORT_TYPE_MD5_NOT_MATCH,
-    IOT_FILE_MANAGE_REPORT_TYPE_UPGRADE_FAIL,
-    IOT_FILE_MANAGE_REPORT_TYPE_SPACE_NOT_ENOUGH,
+    TCIOT_FILE_MANAGE_REPORT_TYPE_DOWNLOADING = 0,
+    TCIOT_FILE_MANAGE_REPORT_TYPE_UPGRADE_BEGIN,
+    TCIOT_FILE_MANAGE_REPORT_TYPE_UPGRADE_SUCCESS,
+    TCIOT_FILE_MANAGE_REPORT_TYPE_DOWNLOAD_TIMEOUT,
+    TCIOT_FILE_MANAGE_REPORT_TYPE_FILE_NOT_EXIST,
+    TCIOT_FILE_MANAGE_REPORT_TYPE_AUTH_FAIL,
+    TCIOT_FILE_MANAGE_REPORT_TYPE_MD5_NOT_MATCH,
+    TCIOT_FILE_MANAGE_REPORT_TYPE_UPGRADE_FAIL,
+    TCIOT_FILE_MANAGE_REPORT_TYPE_SPACE_NOT_ENOUGH,
     // file delete
-    IOT_FILE_MANAGE_REPORT_TYPE_DEL_SUCCESS,
-    IOT_FILE_MANAGE_REPORT_TYPE_DEL_FAIL,
+    TCIOT_FILE_MANAGE_REPORT_TYPE_DEL_SUCCESS,
+    TCIOT_FILE_MANAGE_REPORT_TYPE_DEL_FAIL,
     // file post
-    IOT_FILE_MANAGE_REPORT_TYPE_POST_SUCCESS,
-    IOT_FILE_MANAGE_REPORT_TYPE_POST_FAIL,
+    TCIOT_FILE_MANAGE_REPORT_TYPE_POST_SUCCESS,
+    TCIOT_FILE_MANAGE_REPORT_TYPE_POST_FAIL,
 } IotFileManageReportType;
 
 /**
@@ -74,11 +74,11 @@ typedef enum {
  *
  */
 typedef enum {
-    IOT_FILE_MANAGE_FILE_TYPE_UNKOWN = -1,
-    IOT_FILE_MANAGE_FILE_TYPE_FILE   = 0,
-    IOT_FILE_MANAGE_FILE_TYPE_AUDIO,
-    IOT_FILE_MANAGE_FILE_TYPE_VOICE,
-    IOT_FILE_MANAGE_FILE_TYPE_VIDEO,
+    TCIOT_FILE_MANAGE_FILE_TYPE_UNKOWN = -1,
+    TCIOT_FILE_MANAGE_FILE_TYPE_FILE   = 0,
+    TCIOT_FILE_MANAGE_FILE_TYPE_AUDIO,
+    TCIOT_FILE_MANAGE_FILE_TYPE_VOICE,
+    TCIOT_FILE_MANAGE_FILE_TYPE_VIDEO,
 } IotFileManageFileType;
 
 /**
@@ -113,14 +113,14 @@ typedef struct {
  * @param[in] usr_data usr data used in callback
  * @return 0 for success, or err code (<0) @see IotReturnCode
  */
-int IOT_FileManage_Init(void *client, IotFileManageCallback callback, void *usr_data);
+int TCIOT_FileManage_Init(void *client, IotFileManageCallback callback, void *usr_data);
 
 /**
  * @brief File manage deinit, unregister handler from server list.
  *
  * @param[in,out] client pointer to mqtt client
  */
-void IOT_FileManage_Deinit(void *client);
+void TCIOT_FileManage_Deinit(void *client);
 
 /**
  * @brief Report file manage message.
@@ -129,12 +129,12 @@ void IOT_FileManage_Deinit(void *client);
  * @param[out] buf publish message buffer
  * @param[in] buf_len buffer len
  * @param[in] report_type @see IotFileManageReportType
- * @param[in] progress progress using in  IOT_FILE_MANAGE_REPORT_TYPE_DOWNLOADING
+ * @param[in] progress progress using in  TCIOT_FILE_MANAGE_REPORT_TYPE_DOWNLOADING
  * @param[in] file_name_or_token token using in post event;file name using in other event
  * @param[in] version file version
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_FileManage_Report(void *client, char *buf, int buf_len, IotFileManageReportType report_type, int progress,
+int TCIOT_FileManage_Report(void *client, char *buf, int buf_len, IotFileManageReportType report_type, int progress,
                           const char *file_name_or_token, const char *version);
 
 /**
@@ -147,7 +147,7 @@ int IOT_FileManage_Report(void *client, char *buf, int buf_len, IotFileManageRep
  * @param[in] max_num max num of file list.
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_FileManage_ReportFileList(void *client, char *buf, int buf_len, const IotFileManageFileInfo file_list[],
+int TCIOT_FileManage_ReportFileList(void *client, char *buf, int buf_len, const IotFileManageFileInfo file_list[],
                                   int max_num);
 /**
  * @brief Request url to upload.
@@ -159,7 +159,7 @@ int IOT_FileManage_ReportFileList(void *client, char *buf, int buf_len, const Io
  * @param[in] request_id user defined, to keep unique.
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_FileManage_PostRequest(void *client, char *buf, int buf_len, const IotFileManageFileInfo *file_info,
+int TCIOT_FileManage_PostRequest(void *client, char *buf, int buf_len, const IotFileManageFileInfo *file_info,
                                int request_id);
 
 /**
@@ -169,10 +169,10 @@ int IOT_FileManage_PostRequest(void *client, char *buf, int buf_len, const IotFi
  * @param[in] len string length
  * @return @see IotFileManageFileType
  */
-IotFileManageFileType IOT_FileManage_GetFileType(const char *file_type, int len);
+IotFileManageFileType TCIOT_FileManage_GetFileType(const char *file_type, int len);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_IOT_FILE_MANAGE_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_TCIOT_FILE_MANAGE_H_

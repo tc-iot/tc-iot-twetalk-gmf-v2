@@ -48,7 +48,7 @@ static const char *TAG = "wifi softAP";
 
 int HAL_SoftAP_Start(const char *ssid, const char *password, uint8_t ch)
 {
-    int rc = HAL_Wifi_Init();
+    int rc = TCI_HAL_Wifi_Init();
     if (rc) {
         Log_e("wifi init fail %d", rc);
         return rc;
@@ -69,7 +69,7 @@ int HAL_SoftAP_Start(const char *ssid, const char *password, uint8_t ch)
     } else {
         wifi_config.ap.authmode = WIFI_AUTH_OPEN;
     }
-    HAL_Wifi_ModeSet(TC_IOT_WIFI_MODE_AP);
+    TCI_HAL_Wifi_ModeSet(TCI_TCIOT_WIFI_MODE_AP);
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 

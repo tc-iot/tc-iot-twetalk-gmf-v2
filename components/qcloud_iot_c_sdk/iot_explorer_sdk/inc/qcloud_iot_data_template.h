@@ -26,8 +26,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_IOT_DATA_TEMPLATE_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_IOT_DATA_TEMPLATE_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_TCIOT_DATA_TEMPLATE_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_TCIOT_DATA_TEMPLATE_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -90,9 +90,9 @@ typedef struct {
  *
  */
 typedef enum {
-    IOT_DATA_TEMPLATE_EVENT_TYPE_INFO = 0,
-    IOT_DATA_TEMPLATE_EVENT_TYPE_ALERT,
-    IOT_DATA_TEMPLATE_EVENT_TYPE_FAULT,
+    TCIOT_DATA_TEMPLATE_EVENT_TYPE_INFO = 0,
+    TCIOT_DATA_TEMPLATE_EVENT_TYPE_ALERT,
+    TCIOT_DATA_TEMPLATE_EVENT_TYPE_FAULT,
 } IotDataTemplateEventType;
 
 /**
@@ -123,7 +123,7 @@ typedef struct {
  * @param[in] usr_data usr data used in callback
  * @return 0 for success, or err code (<0) @see IotReturnCode
  */
-int IOT_DataTemplate_Init(void *client, IotDataTemplateCallback callback, void *usr_data);
+int TCIOT_DataTemplate_Init(void *client, IotDataTemplateCallback callback, void *usr_data);
 
 /**
  * @brief Register callback to data template topic.
@@ -133,14 +133,14 @@ int IOT_DataTemplate_Init(void *client, IotDataTemplateCallback callback, void *
  * @param[in] usr_data usr data used in callback
  * @return 0 for success, or err code (<0) @see IotReturnCode
  */
-int IOT_DataTemplate_Register(void *client, IotDataTemplateCallback callback, void *usr_data);
+int TCIOT_DataTemplate_Register(void *client, IotDataTemplateCallback callback, void *usr_data);
 
 /**
  * @brief Unsubscribe data template topic.
  *
  * @param[in,out] client pointer to mqtt client
  */
-void IOT_DataTemplate_Deinit(void *client);
+void TCIOT_DataTemplate_Deinit(void *client);
 
 /**
  * @brief Report property.
@@ -151,7 +151,7 @@ void IOT_DataTemplate_Deinit(void *client);
  * @param[in] params params constructed with property
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_DataTemplate_PropertyReport(void *client, char *buf, int buf_len, const char *params);
+int TCIOT_DataTemplate_PropertyReport(void *client, char *buf, int buf_len, const char *params);
 
 /**
  * @brief Get control message offline.
@@ -161,7 +161,7 @@ int IOT_DataTemplate_PropertyReport(void *client, char *buf, int buf_len, const 
  * @param[in] buf_len buffer length
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_DataTemplate_PropertyGetStatus(void *client, char *buf, int buf_len);
+int TCIOT_DataTemplate_PropertyGetStatus(void *client, char *buf, int buf_len);
 
 /**
  * @brief Report device info.
@@ -172,7 +172,7 @@ int IOT_DataTemplate_PropertyGetStatus(void *client, char *buf, int buf_len);
  * @param[in] params params constructed with device info
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_DataTemplate_PropertyReportInfo(void *client, char *buf, int buf_len, const char *params);
+int TCIOT_DataTemplate_PropertyReportInfo(void *client, char *buf, int buf_len, const char *params);
 
 /**
  * @brief Clear control message offline.
@@ -182,7 +182,7 @@ int IOT_DataTemplate_PropertyReportInfo(void *client, char *buf, int buf_len, co
  * @param[in] buf_len buffer length
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_DataTemplate_PropertyClearControl(void *client, char *buf, int buf_len);
+int TCIOT_DataTemplate_PropertyClearControl(void *client, char *buf, int buf_len);
 
 /**
  * @brief Reply control message.
@@ -194,7 +194,7 @@ int IOT_DataTemplate_PropertyClearControl(void *client, char *buf, int buf_len);
  * @param[in] client_token client token of control message
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_DataTemplate_PropertyControlReply(void *client, char *buf, int buf_len, int code, UtilsJsonValue client_token);
+int TCIOT_DataTemplate_PropertyControlReply(void *client, char *buf, int buf_len, int code, UtilsJsonValue client_token);
 
 /**
  * @brief Get model define.
@@ -204,7 +204,7 @@ int IOT_DataTemplate_PropertyControlReply(void *client, char *buf, int buf_len, 
  * @param[in] buf_len buffer length
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_DataTemplate_PropertyGetModeDefine(void *client, char *buf, int buf_len);
+int TCIOT_DataTemplate_PropertyGetModeDefine(void *client, char *buf, int buf_len);
 
 /**
  * @brief Post event.
@@ -215,7 +215,7 @@ int IOT_DataTemplate_PropertyGetModeDefine(void *client, char *buf, int buf_len)
  * @param[in] data @see IotDataTemplateEventData
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_DataTemplate_EventPost(void *client, char *buf, int buf_len, IotDataTemplateEventData data);
+int TCIOT_DataTemplate_EventPost(void *client, char *buf, int buf_len, IotDataTemplateEventData data);
 
 /**
  * @brief Reply action message.
@@ -226,10 +226,10 @@ int IOT_DataTemplate_EventPost(void *client, char *buf, int buf_len, IotDataTemp
  * @param[in] reply @see IotDataTemplateActionReply
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_DataTemplate_ActionReply(void *client, char *buf, int buf_len, IotDataTemplateActionReply reply);
+int TCIOT_DataTemplate_ActionReply(void *client, char *buf, int buf_len, IotDataTemplateActionReply reply);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_IOT_DATA_TEMPLATE_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_TCIOT_DATA_TEMPLATE_H_

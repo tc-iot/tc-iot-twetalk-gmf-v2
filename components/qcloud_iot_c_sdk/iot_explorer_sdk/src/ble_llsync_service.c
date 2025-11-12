@@ -30,17 +30,17 @@
 #include "qcloud_iot_llsync.h"
 #include "ble_llsync_device_info.h"
 #include "ble_llsync_service.h"
-#if BLE_QIOT_LLSYNC_GATEWAY
+#if BLE_QTCIOT_LLSYNC_GATEWAY
 #include "ble_llsync_to_lltlv.h"
-#endif // BLE_QIOT_LLSYNC_GATEWAY
+#endif // BLE_QTCIOT_LLSYNC_GATEWAY
 #include "utils_crc.h"
 
-#if BLE_QIOT_SUPPORT_OTA
+#if BLE_QTCIOT_SUPPORT_OTA
 
 typedef struct {
     uint32_t file_size;
     uint32_t file_crc;
-    uint8_t  file_version[BLE_QIOT_OTA_MAX_VERSION_STR];
+    uint8_t  file_version[BLE_QTCIOT_OTA_MAX_VERSION_STR];
 } BleOtaFileInfo;
 
 // ota info saved in flash if support resuming
@@ -71,7 +71,7 @@ typedef struct {
 typedef struct {
     void            *ota_timer;
     uint8_t          timeout_cnt;
-    uint8_t          data_buf[BLE_QIOT_OTA_BUF_SIZE];
+    uint8_t          data_buf[BLE_QTCIOT_OTA_BUF_SIZE];
     uint16_t         data_buf_size;
     uint32_t         download_file_size;
     uint8_t          next_seq;
@@ -81,22 +81,22 @@ typedef struct {
     BleOtaReply      ota_reply_info;
     BleOtaInfoRecord ota_info_record;
 } BleOta;
-#endif  // BLE_QIOT_SUPPORT_OTA
+#endif  // BLE_QTCIOT_SUPPORT_OTA
 
 typedef struct {
     IotBool                  init_flag;
     void                    *link;
-    IOTBLELLsyncCallback     callback;
+    TCIOTBLELLsyncCallback     callback;
     void                    *usr_data;
-    IOTBLELLsyncWifiCallback wifi_callback;
+    TCIOTBLELLsyncWifiCallback wifi_callback;
     void                    *wifi_usr_data;
-#if BLE_QIOT_SUPPORT_OTA
+#if BLE_QTCIOT_SUPPORT_OTA
     BleOta ota;
 #endif
-} IOTBLELLsync;
+} TCIOTBLELLsync;
 
-static IOTBLELLsync sg_iot_ble_llsync = {
-    .init_flag = IOT_BOOL_FALSE,
+static TCIOTBLELLsync sg_iot_ble_llsync = {
+    .init_flag = TCIOT_BOOL_FALSE,
 };
 
 // -----------------------------------------------------------------------------
@@ -114,16 +114,16 @@ int ble_uplink_notify2(LLsyncUpLinkData *uplink_data)
     uint16_t           left_len       = uplink_data->buf_len;
     uint16_t           send_len       = 0;
     uint16_t           mtu_size       = 0;
-    BLELLsyncSliceType slice_state    = BLE_QIOT_EVENT_NO_SLICE;
+    BLELLsyncSliceType slice_state    = BLE_QTCIOT_EVENT_NO_SLICE;
     uint16_t           send_buf_index = 0;
     uint16_t           tmp_len        = 0;
 
-    uint8_t send_buf[BLE_QIOT_EVENT_BUF_SIZE] = {0};
+    uint8_t send_buf[BLE_QTCIOT_EVENT_BUF_SIZE] = {0};
 
-    if (!llsync_is_connected() && uplink_data->type != BLE_QIOT_EVENT_UP_BIND_SIGN_RET &&
-        uplink_data->type != BLE_QIOT_EVENT_UP_CONN_SIGN_RET &&
-        uplink_data->type != BLE_QIOT_EVENT_UP_UNBIND_SIGN_RET &&
-        uplink_data->type != BLE_QIOT_EVENT_UP_SYNC_WAIT_TIME && uplink_data->type != BLE_QIOT_EVENT_UP_DYNREG_SIGN) {
+    if (!llsync_is_connected() && uplink_data->type != BLE_QTCIOT_EVENT_UP_BIND_SIGN_RET &&
+        uplink_data->type != BLE_QTCIOT_EVENT_UP_CONN_SIGN_RET &&
+        uplink_data->type != BLE_QTCIOT_EVENT_UP_UNBIND_SIGN_RET &&
+        uplink_data->type != BLE_QTCIOT_EVENT_UP_SYNC_WAIT_TIME && uplink_data->type != BLE_QTCIOT_EVENT_UP_DYNREG_SIGN) {
         Log_e("upload msg negate, device not connected, uplink_data->type : %d", uplink_data->type);
         return QCLOUD_ERR_FAILURE;
     }
@@ -131,7 +131,7 @@ int ble_uplink_notify2(LLsyncUpLinkData *uplink_data)
     // reserve event header length, 3 bytes fixed length + n bytes header
     mtu_size = llsync_mtu_get();
     mtu_size = mtu_size > sizeof(send_buf) ? sizeof(send_buf) : mtu_size;
-    mtu_size -= (BLE_QIOT_EVENT_FIXED_HEADER_LEN + uplink_data->header_len);
+    mtu_size -= (BLE_QTCIOT_EVENT_FIXED_HEADER_LEN + uplink_data->header_len);
     // Log_d("mtu size %d", mtu_size);
 
     do {
@@ -141,7 +141,12 @@ int ble_uplink_notify2(LLsyncUpLinkData *uplink_data)
 
         send_buf[send_buf_index++] = uplink_data->type;
         if (NULL != uplink_data->buf) {
-            tmp_len = HTONS(send_len + uplink_data->header_len);
+            //tmp_len = HTONS(send_len + uplink_data->header_len);
+            {
+                // TODO: 适配macos
+                uint16_t temp = send_len + uplink_data->header_len;
+                tmp_len = HTONS(temp);
+            }
             memcpy(send_buf + send_buf_index, &tmp_len, sizeof(uint16_t));
             send_buf_index += sizeof(uint16_t);
             if (NULL != uplink_data->header) {
@@ -153,14 +158,14 @@ int ble_uplink_notify2(LLsyncUpLinkData *uplink_data)
 
             p += send_len;
             left_len -= send_len;
-            send_len += (BLE_QIOT_EVENT_FIXED_HEADER_LEN + uplink_data->header_len);
+            send_len += (BLE_QTCIOT_EVENT_FIXED_HEADER_LEN + uplink_data->header_len);
 
             if (0 == left_len) {
                 slice_state =
-                    (BLE_QIOT_EVENT_NO_SLICE == slice_state) ? BLE_QIOT_EVENT_NO_SLICE : BLE_QIOT_EVENT_SLICE_FOOT;
+                    (BLE_QTCIOT_EVENT_NO_SLICE == slice_state) ? BLE_QTCIOT_EVENT_NO_SLICE : BLE_QTCIOT_EVENT_SLICE_FOOT;
             } else {
                 slice_state =
-                    (BLE_QIOT_EVENT_NO_SLICE == slice_state) ? BLE_QIOT_EVENT_SLICE_HEAD : BLE_QIOT_EVENT_SLICE_BODY;
+                    (BLE_QTCIOT_EVENT_NO_SLICE == slice_state) ? BLE_QTCIOT_EVENT_SLICE_HEAD : BLE_QTCIOT_EVENT_SLICE_BODY;
             }
             // the high 2 bits means slice state, and the left 14 bits is data length
             send_buf[1] |= slice_state << 6;
@@ -191,12 +196,12 @@ int ble_uplink_report_device_info(uint8_t type)
     char device_info[56] = {0};  // 1 byte llsync proto version + 2 bytes mtu size + 1 byte length of develop version
     uint16_t mtu_size    = 0;
 
-#if BLE_QIOT_REMOTE_SET_MTU
+#if BLE_QTCIOT_REMOTE_SET_MTU
     mtu_size = LLSYNC_MTU_SET_MASK;
-#endif  // BLE_QIOT_REMOTE_SET_MTU
+#endif  // BLE_QTCIOT_REMOTE_SET_MTU
     mtu_size |= ATT_USER_MTU;
     mtu_size       = HTONS(mtu_size);
-    device_info[0] = BLE_QIOT_LLSYNC_PROTOCOL_VERSION;
+    device_info[0] = BLE_QTCIOT_LLSYNC_PROTOCOL_VERSION;
     memcpy(&device_info[1], &mtu_size, sizeof(mtu_size));
     if (type == E_REPORT_DEVNAME) {
         device_info[3] = (char)ble_get_device_name(&device_info[4]);
@@ -205,7 +210,7 @@ int ble_uplink_report_device_info(uint8_t type)
     }
 
     LLsyncUpLinkData uplink_data = DEFAULT_LLSYNC_UPLINK_DATA;
-    uplink_data.type             = BLE_QIOT_EVENT_UP_REPORT_MTU;
+    uplink_data.type             = BLE_QTCIOT_EVENT_UP_REPORT_MTU;
     uplink_data.buf              = (const char *)device_info;
     uplink_data.buf_len          = 4 + device_info[3];
     return ble_uplink_notify2(&uplink_data);
@@ -226,13 +231,13 @@ int ble_uplink_sync_mtu(uint16_t att_mtu)
     mtu_size = HTONS(mtu_size);
 
     LLsyncUpLinkData uplink_data = DEFAULT_LLSYNC_UPLINK_DATA;
-    uplink_data.type             = BLE_QIOT_EVENT_UP_SYNC_MTU;
+    uplink_data.type             = BLE_QTCIOT_EVENT_UP_SYNC_MTU;
     uplink_data.buf              = (const char *)&mtu_size;
     uplink_data.buf_len          = sizeof(uint16_t);
     return ble_uplink_notify2(&uplink_data);
 }
 
-#if BLE_QIOT_LLSYNC_CONFIG_NET
+#if BLE_QTCIOT_LLSYNC_CONFIG_NET
 /**
  * @brief report result
  *
@@ -270,7 +275,7 @@ int ble_uplink_report_wifi_connect(uint8_t mode, uint8_t state, const char *ssid
     memcpy(buf + pos, ssid, ssid_len);
 
     LLsyncUpLinkData uplink_data = DEFAULT_LLSYNC_UPLINK_DATA;
-    uplink_data.type             = BLE_QIOT_EVENT_UP_WIFI_CONNECT;
+    uplink_data.type             = BLE_QTCIOT_EVENT_UP_WIFI_CONNECT;
     uplink_data.buf              = (const char *)buf;
     uplink_data.buf_len          = pos + ssid_len;
     return ble_uplink_notify2(&uplink_data);
@@ -286,14 +291,14 @@ int ble_uplink_report_wifi_connect(uint8_t mode, uint8_t state, const char *ssid
 int ble_uplink_report_wifi_log(const uint8_t *log, uint16_t log_size)
 {
     LLsyncUpLinkData uplink_data = DEFAULT_LLSYNC_UPLINK_DATA;
-    uplink_data.type             = BLE_QIOT_EVENT_UP_WIFI_LOG;
+    uplink_data.type             = BLE_QTCIOT_EVENT_UP_WIFI_LOG;
     uplink_data.buf              = (const char *)log;
     uplink_data.buf_len          = log_size;
     return ble_uplink_notify2(&uplink_data);
 }
-#endif  // BLE_QIOT_LLSYNC_CONFIG_NET
+#endif  // BLE_QTCIOT_LLSYNC_CONFIG_NET
 
-#if BLE_QIOT_LLSYNC_STANDARD
+#if BLE_QTCIOT_LLSYNC_STANDARD
 /**
  * @brief get status
  *
@@ -301,17 +306,17 @@ int ble_uplink_report_wifi_log(const uint8_t *log, uint16_t log_size)
  */
 int ble_uplink_get_status(void)
 {
-#ifdef BLE_QIOT_INCLUDE_PROPERTY
+#ifdef BLE_QTCIOT_INCLUDE_PROPERTY
     LLsyncUpLinkData uplink_data = DEFAULT_LLSYNC_UPLINK_DATA;
-    uplink_data.type             = BLE_QIOT_EVENT_UP_GET_STATUS;
+    uplink_data.type             = BLE_QTCIOT_EVENT_UP_GET_STATUS;
     return ble_uplink_notify2(&uplink_data);
 #else
-    Log_e("property" BLE_QIOT_NOT_SUPPORT_WARN);
+    Log_e("property" BLE_QTCIOT_NOT_SUPPORT_WARN);
     return QCLOUD_RET_SUCCESS;
 #endif
 }
 
-#if BLE_QIOT_SECURE_BIND
+#if BLE_QTCIOT_SECURE_BIND
 /**
  * @brief update wait time
  *
@@ -322,14 +327,14 @@ int ble_uplink_sync_wait_time(uint16_t time)
 {
     time                         = HTONS(time);
     LLsyncUpLinkData uplink_data = DEFAULT_LLSYNC_UPLINK_DATA;
-    uplink_data.type             = BLE_QIOT_EVENT_UP_SYNC_WAIT_TIME;
+    uplink_data.type             = BLE_QTCIOT_EVENT_UP_SYNC_WAIT_TIME;
     uplink_data.buf              = (const char *)&time;
     uplink_data.buf_len          = sizeof(uint16_t);
     return ble_uplink_notify2(&uplink_data);
 }
-#endif  // BLE_QIOT_SECURE_BIND
+#endif  // BLE_QTCIOT_SECURE_BIND
 
-#endif  // BLE_QIOT_LLSYNC_STANDARD
+#endif  // BLE_QTCIOT_LLSYNC_STANDARD
 
 // ---------------------------------------------------------------------------------------------
 // downlink data handle
@@ -338,19 +343,19 @@ typedef struct {
     IotBool  have_data;  // start received package
     uint8_t  type;       // event type
     uint16_t buf_len;    // the length of data
-    char     buf[BLE_QIOT_EVENT_MAX_SIZE];
+    char     buf[BLE_QTCIOT_EVENT_MAX_SIZE];
 } BLELLsyncSlice;
 
 // llsync support data fragment, so we need to package all the data before parsing if the data is slice
 static BLELLsyncSlice sg_ble_slice_data;
 
-#if BLE_QIOT_BUTTON_BROADCAST
+#if BLE_QTCIOT_BUTTON_BROADCAST
 static ble_timer_t sg_bind_timer = NULL;
-#endif  // BLE_QIOT_BUTTON_BROADCAST
+#endif  // BLE_QTCIOT_BUTTON_BROADCAST
 
-#if BLE_QIOT_LLSYNC_STANDARD
+#if BLE_QTCIOT_LLSYNC_STANDARD
 
-#if BLE_QIOT_SECURE_BIND
+#if BLE_QTCIOT_SECURE_BIND
 static BLELLsyncBindData sg_bind_auth_data;
 /**
  * @brief handle secure bind
@@ -363,7 +368,7 @@ static int ble_secure_bind_handle(const char *data, uint16_t len)
 {
     memset(&sg_bind_auth_data, 0, sizeof(BLELLsyncBindData));
     memcpy(&sg_bind_auth_data, data, sizeof(BLELLsyncBindData));
-    ble_uplink_sync_wait_time(BLE_QIOT_BIND_WAIT_TIME);
+    ble_uplink_sync_wait_time(BLE_QTCIOT_BIND_WAIT_TIME);
     if (sg_iot_ble_llsync.callback.secure_bind_callback) {
         sg_iot_ble_llsync.callback.secure_bind_callback(sg_iot_ble_llsync.usr_data);
     }
@@ -389,13 +394,13 @@ int ble_secure_bind_user_confirm(BLELLsyncSecureBindState choose)
         return QCLOUD_ERR_FAILURE;
     }
     flag = choose << 5;
-    return ble_uplink_notify2((uint8_t)BLE_QIOT_EVENT_UP_BIND_SIGN_RET, flag, NULL, 0, out_buf, rc_len);
+    return ble_uplink_notify2((uint8_t)BLE_QTCIOT_EVENT_UP_BIND_SIGN_RET, flag, NULL, 0, out_buf, rc_len);
 }
-#endif  // BLE_QIOT_SECURE_BIND
+#endif  // BLE_QTCIOT_SECURE_BIND
 
-#endif  // BLE_QIOT_LLSYNC_STANDARD
+#endif  // BLE_QTCIOT_LLSYNC_STANDARD
 
-#if BLE_QIOT_BUTTON_BROADCAST
+#if BLE_QTCIOT_BUTTON_BROADCAST
 /**
  * @brief bind timer timeout callback
  *
@@ -410,21 +415,21 @@ static void ble_bind_timer_callback(void *usr_data)
         Log_i("stop advertising");
     }
 }
-#endif  // BLE_QIOT_BUTTON_BROADCAST
+#endif  // BLE_QTCIOT_BUTTON_BROADCAST
 
 static uint8_t ble_msg_type_header_len(uint8_t type)
 {
-    if (type == BLE_QIOT_GET_STATUS_REPLY_DATA_TYPE) {
-        return BLE_QIOT_GET_STATUS_REPLY_HEADER_LEN;
+    if (type == BLE_QTCIOT_GET_STATUS_REPLY_DATA_TYPE) {
+        return BLE_QTCIOT_GET_STATUS_REPLY_HEADER_LEN;
     } else {
-        return BLE_QIOT_DATA_FIXED_HEADER_LEN;
+        return BLE_QTCIOT_DATA_FIXED_HEADER_LEN;
     }
 }
 
 static int8_t ble_package_slice_data(uint8_t data_type, uint8_t flag, uint8_t header_len, const char *in_buf,
                                      int in_len)
 {
-    if (!BLE_QIOT_IS_SLICE_HEADER(flag)) {
+    if (!BLE_QTCIOT_IS_SLICE_HEADER(flag)) {
         if (!sg_ble_slice_data.have_data) {
             Log_e("slice no header");
             return -1;
@@ -440,12 +445,12 @@ static int8_t ble_package_slice_data(uint8_t data_type, uint8_t flag, uint8_t he
         }
     }
 
-    if (BLE_QIOT_IS_SLICE_HEADER(flag)) {
+    if (BLE_QTCIOT_IS_SLICE_HEADER(flag)) {
         if (sg_ble_slice_data.have_data) {
             Log_i("new data coming, clean the package buffer");
             memset(&sg_ble_slice_data, 0, sizeof(sg_ble_slice_data));
         }
-        sg_ble_slice_data.have_data = IOT_BOOL_TRUE;
+        sg_ble_slice_data.have_data = TCIOT_BOOL_TRUE;
         sg_ble_slice_data.type      = data_type;
         // reserved space for payload length field
         sg_ble_slice_data.buf_len += header_len;
@@ -453,7 +458,7 @@ static int8_t ble_package_slice_data(uint8_t data_type, uint8_t flag, uint8_t he
         memcpy(sg_ble_slice_data.buf + sg_ble_slice_data.buf_len, in_buf + header_len, in_len - header_len);
         sg_ble_slice_data.buf_len += (in_len - header_len);
         return 1;
-    } else if (BLE_QIOT_IS_SLICE_BODY(flag)) {
+    } else if (BLE_QTCIOT_IS_SLICE_BODY(flag)) {
         memcpy(sg_ble_slice_data.buf + sg_ble_slice_data.buf_len, in_buf + header_len, in_len - header_len);
         sg_ble_slice_data.buf_len += (in_len - header_len);
         return 1;
@@ -475,15 +480,13 @@ static int ble_device_info_msg_handle(const char *in_buf, int in_len)
 {
     POINTER_SANITY_CHECK(in_buf, QCLOUD_ERR_INVAL);
     uint8_t          ch;
-    char             out_buf[80] = {0};
     char            *p_data      = NULL;
     int              p_data_len  = 0;
-    int              rc_len      = 0;
     uint16_t         tmp_len     = 0;
     uint8_t          header_len  = 0;
     int              rc          = QCLOUD_RET_SUCCESS;
-    LLsyncUpLinkData uplink_data = DEFAULT_LLSYNC_UPLINK_DATA;
-#if BLE_QIOT_LLSYNC_CONFIG_NET
+
+#if BLE_QTCIOT_LLSYNC_CONFIG_NET
     static char    ssid[64] = {0};
     static uint8_t ssid_len;
     char          *p_ssid   = NULL;
@@ -492,7 +495,12 @@ static int ble_device_info_msg_handle(const char *in_buf, int in_len)
     // This flag is use to avoid attacker jump "ble_conn_get_authcode()" step, then
     // send 'E_DEV_MSG_CONN_SUCC' msg, and device straightly set 'E_LLSYNC_CONNECTED' flag.
     // This behavior make signature check useless lead to risk.
-    static IotBool conn_flag = IOT_BOOL_FALSE;
+#if BLE_QTCIOT_LLSYNC_STANDARD
+    char             out_buf[80] = {0};
+    int              rc_len      = 0;
+    LLsyncUpLinkData uplink_data = DEFAULT_LLSYNC_UPLINK_DATA;
+    static IotBool conn_flag = TCIOT_BOOL_FALSE;
+#endif
 
     p_data     = (char *)in_buf;
     p_data_len = in_len;
@@ -500,14 +508,18 @@ static int ble_device_info_msg_handle(const char *in_buf, int in_len)
     // E_DEV_MSG_SYNC_TIME, E_DEV_MSG_CONN_VALID, E_DEV_MSG_BIND_SUCC, E_DEV_MSG_UNBIND this 4 type
     // of message has more than one bytes data, it may cut to several slices, here need to merge them
     // together, other type message only has 1 byte data, not need merge.
-    if ((in_len > 3) && BLE_QIOT_IS_SLICE_PACKAGE(in_buf[1])) {
+    if ((in_len > 3) && BLE_QTCIOT_IS_SLICE_PACKAGE(in_buf[1])) {
         // Log_dump( "slice", p_data, p_data_len);
         header_len = ble_msg_type_header_len(in_buf[0]);
         rc         = ble_package_slice_data(in_buf[0], in_buf[1], header_len, in_buf, in_len);
         if (rc < 0) {
             return QCLOUD_ERR_FAILURE;
         } else if (rc == 0) {
-            tmp_len = HTONS(sg_ble_slice_data.buf_len - header_len);
+            //tmp_len = HTONS(sg_ble_slice_data.buf_len - header_len);
+            {
+                uint16_t tmp = sg_ble_slice_data.buf_len - header_len;
+                tmp_len = HTONS(tmp);
+            }
             memcpy(&sg_ble_slice_data.buf[1], &tmp_len, sizeof(tmp_len));
             p_data     = sg_ble_slice_data.buf;
             p_data_len = sg_ble_slice_data.buf_len;
@@ -519,9 +531,9 @@ static int ble_device_info_msg_handle(const char *in_buf, int in_len)
     rc = 2;  // default fail.
     ch = p_data[0];
     switch (ch) {
-#if BLE_QIOT_LLSYNC_STANDARD
+#if BLE_QTCIOT_LLSYNC_STANDARD
         case E_DEV_MSG_SYNC_TIME:
-#if BLE_QIOT_DYNREG_ENABLE
+#if BLE_QTCIOT_DYNREG_ENABLE
             if (is_llsync_need_dynreg()) {
                 rc_len = ble_dynreg_get_authcode(p_data + 3, p_data_len - 3, out_buf, sizeof(out_buf));
                 if (rc_len <= 0) {
@@ -529,14 +541,14 @@ static int ble_device_info_msg_handle(const char *in_buf, int in_len)
                     rc = QCLOUD_ERR_FAILURE;
                     break;
                 }
-                uplink_data.type    = BLE_QIOT_EVENT_UP_DYNREG_SIGN;
+                uplink_data.type    = BLE_QTCIOT_EVENT_UP_DYNREG_SIGN;
                 uplink_data.buf     = out_buf;
                 uplink_data.buf_len = rc_len;
                 rc                  = ble_uplink_notify2(&uplink_data);
                 break;
             }
 #endif
-#if BLE_QIOT_SECURE_BIND
+#if BLE_QTCIOT_SECURE_BIND
             rc = ble_secure_bind_handle(p_data + 3, p_data_len - 3);
 #else
             rc_len = ble_bind_get_authcode(p_data + 3, p_data_len - 3, out_buf, sizeof(out_buf));
@@ -546,11 +558,11 @@ static int ble_device_info_msg_handle(const char *in_buf, int in_len)
                 break;
             }
 
-            uplink_data.type    = BLE_QIOT_EVENT_UP_BIND_SIGN_RET;
+            uplink_data.type    = BLE_QTCIOT_EVENT_UP_BIND_SIGN_RET;
             uplink_data.buf     = out_buf;
             uplink_data.buf_len = rc_len;
             rc                  = ble_uplink_notify2(&uplink_data);
-#endif  // BLE_QIOT_SECURE_BIND
+#endif  // BLE_QTCIOT_SECURE_BIND
             break;
         case E_DEV_MSG_CONN_VALID:
             rc_len = ble_conn_get_authcode(p_data + 3, p_data_len - 3, out_buf, sizeof(out_buf));
@@ -559,11 +571,11 @@ static int ble_device_info_msg_handle(const char *in_buf, int in_len)
                 rc = QCLOUD_ERR_FAILURE;
                 break;
             }
-            uplink_data.type    = BLE_QIOT_EVENT_UP_CONN_SIGN_RET;
+            uplink_data.type    = BLE_QTCIOT_EVENT_UP_CONN_SIGN_RET;
             uplink_data.buf     = out_buf;
             uplink_data.buf_len = rc_len;
             rc                  = ble_uplink_notify2(&uplink_data);
-            conn_flag           = IOT_BOOL_TRUE;
+            conn_flag           = TCIOT_BOOL_TRUE;
             break;
         case E_DEV_MSG_BIND_SUCC:
             if (QCLOUD_RET_SUCCESS != ble_bind_write_result(p_data + 3, p_data_len - 3)) {
@@ -581,7 +593,7 @@ static int ble_device_info_msg_handle(const char *in_buf, int in_len)
                 rc = QCLOUD_ERR_FAILURE;
                 break;
             }
-            uplink_data.type    = BLE_QIOT_EVENT_UP_UNBIND_SIGN_RET;
+            uplink_data.type    = BLE_QTCIOT_EVENT_UP_UNBIND_SIGN_RET;
             uplink_data.buf     = out_buf;
             uplink_data.buf_len = rc_len;
             rc                  = ble_uplink_notify2(&uplink_data);
@@ -590,7 +602,7 @@ static int ble_device_info_msg_handle(const char *in_buf, int in_len)
             if (!conn_flag) {
                 break;
             }
-            conn_flag = IOT_BOOL_FALSE;
+            conn_flag = TCIOT_BOOL_FALSE;
             Log_i("get msg connect success");
             llsync_connection_state_set(E_LLSYNC_CONNECTED);
             rc = ble_uplink_report_device_info(E_REPORT_DEVINFO);
@@ -610,17 +622,17 @@ static int ble_device_info_msg_handle(const char *in_buf, int in_len)
             break;
         case E_DEV_MSG_BIND_TIMEOUT:
             Log_i("get msg bind result: %d", p_data[1]);
-#if (1 == BLE_QIOT_SECURE_BIND)
+#if (1 == BLE_QTCIOT_SECURE_BIND)
             ble_secure_bind_user_notify(p_data[1]);
 #endif
             break;
-#if BLE_QIOT_DYNREG_ENABLE
+#if BLE_QTCIOT_DYNREG_ENABLE
         case E_DEV_MSG_DYNREG:
             rc = ble_dynreg_parse_psk(p_data + 5, p_data[4]);
             if (rc < 0) {
                 break;
             }
-#if BLE_QIOT_SECURE_BIND
+#if BLE_QTCIOT_SECURE_BIND
             rc = ble_secure_bind_handle(p_data + 5 + p_data[4], p_data_len - 5 - p_data[4]);
 #else
             rc_len =
@@ -630,16 +642,16 @@ static int ble_device_info_msg_handle(const char *in_buf, int in_len)
                 rc = QCLOUD_ERR_FAILURE;
                 break;
             }
-            uplink_data.type    = BLE_QIOT_EVENT_UP_BIND_SIGN_RET;
+            uplink_data.type    = BLE_QTCIOT_EVENT_UP_BIND_SIGN_RET;
             uplink_data.buf     = out_buf;
             uplink_data.buf_len = rc_len;
             rc                  = ble_uplink_notify2(&uplink_data);
-#endif  // BLE_QIOT_SECURE_BIND
+#endif  // BLE_QTCIOT_SECURE_BIND
             break;
-#endif  // BLE_QIOT_DYNREG_ENABLE
-#endif  // BLE_QIOT_LLSYNC_STANDARD
+#endif  // BLE_QTCIOT_DYNREG_ENABLE
+#endif  // BLE_QTCIOT_LLSYNC_STANDARD
 
-#if BLE_QIOT_LLSYNC_CONFIG_NET
+#if BLE_QTCIOT_LLSYNC_CONFIG_NET
         case E_DEV_MSG_GET_DEV_INFO:
             llsync_connection_state_set(E_LLSYNC_CONNECTED);
             rc = ble_uplink_report_device_info(E_REPORT_DEVNAME);
@@ -647,7 +659,7 @@ static int ble_device_info_msg_handle(const char *in_buf, int in_len)
         case E_DEV_MSG_SET_WIFI_MODE:
             if (sg_iot_ble_llsync.wifi_callback.set_wifi_mode) {
                 rc = sg_iot_ble_llsync.wifi_callback.set_wifi_mode(p_data[1], sg_iot_ble_llsync.wifi_usr_data);
-                rc = ble_uplink_report_result(BLE_QIOT_EVENT_UP_WIFI_MODE, rc);
+                rc = ble_uplink_report_result(BLE_QTCIOT_EVENT_UP_WIFI_MODE, rc);
             }
             break;
         case E_DEV_MSG_SET_WIFI_INFO:
@@ -659,7 +671,7 @@ static int ble_device_info_msg_handle(const char *in_buf, int in_len)
             if (sg_iot_ble_llsync.wifi_callback.set_wifi_info) {
                 rc = sg_iot_ble_llsync.wifi_callback.set_wifi_info(ssid, ssid_len, &p_passwd[1], p_passwd[0],
                                                                    sg_iot_ble_llsync.wifi_usr_data);
-                rc = ble_uplink_report_result(BLE_QIOT_EVENT_UP_WIFI_INFO, rc);
+                rc = ble_uplink_report_result(BLE_QTCIOT_EVENT_UP_WIFI_INFO, rc);
             }
             break;
         case E_DEV_MSG_SET_WIFI_CONNECT:
@@ -676,7 +688,7 @@ static int ble_device_info_msg_handle(const char *in_buf, int in_len)
             if (sg_iot_ble_llsync.wifi_callback.set_wifi_token) {
                 rc = sg_iot_ble_llsync.wifi_callback.set_wifi_token(p_data + 3, p_data_len - 3,
                                                                     sg_iot_ble_llsync.wifi_usr_data);
-                rc = ble_uplink_report_result(BLE_QIOT_EVENT_UP_WIFI_TOKEN, rc);
+                rc = ble_uplink_report_result(BLE_QTCIOT_EVENT_UP_WIFI_TOKEN, rc);
             }
             break;
         case E_DEV_MSG_GET_DEV_LOG:
@@ -696,7 +708,7 @@ static int ble_device_info_msg_handle(const char *in_buf, int in_len)
     return rc;
 }
 
-#if BLE_QIOT_LLSYNC_STANDARD
+#if BLE_QTCIOT_LLSYNC_STANDARD
 /**
  * @brief llsync data characteristic uuid : 0xffe2
  *
@@ -727,34 +739,34 @@ static int ble_lldata_msg_handle(const char *in_buf, int in_len)
     p_data     = (char *)in_buf;
     p_data_len = in_len;
 
-    data_type = BLE_QIOT_PARSE_MSG_HEAD_TYPE(in_buf[0]);
-    if (data_type >= BLE_QIOT_DATA_TYPE_BUTT) {
+    data_type = BLE_QTCIOT_PARSE_MSG_HEAD_TYPE(in_buf[0]);
+    if (data_type >= BLE_QTCIOT_DATA_TYPE_BUTT) {
         Log_e("invalid data type: %d", data_type);
         return QCLOUD_ERR_FAILURE;
     }
-    data_effect = BLE_QIOT_PARSE_MSG_HEAD_EFFECT(in_buf[0]);
-    if (data_effect >= BLE_QIOT_EFFECT_BUTT) {
+    data_effect = BLE_QTCIOT_PARSE_MSG_HEAD_EFFECT(in_buf[0]);
+    if (data_effect >= BLE_QTCIOT_EFFECT_BUTT) {
         Log_e("invalid data eff: ect");
         return QCLOUD_ERR_FAILURE;
     }
-    id = BLE_QIOT_PARSE_MSG_HEAD_ID(in_buf[0]);
+    id = BLE_QTCIOT_PARSE_MSG_HEAD_ID(in_buf[0]);
     Log_d("data type: %d, effect: %d, id: %d", data_type, data_effect, id);
 
     // if data is action_reply, control or get_status_reply, the data maybe need package
-    if ((data_type == BLE_QIOT_MSG_TYPE_ACTION) || (in_buf[0] == BLE_QIOT_CONTROL_DATA_TYPE) ||
-        (in_buf[0] == BLE_QIOT_GET_STATUS_REPLY_DATA_TYPE)) {
-        slice_flag = (in_buf[0] == BLE_QIOT_GET_STATUS_REPLY_DATA_TYPE) ? in_buf[2] : in_buf[1];
-        slice_type = (in_buf[0] == BLE_QIOT_GET_STATUS_REPLY_DATA_TYPE) ? in_buf[0] : data_type;
+    if ((data_type == BLE_QTCIOT_MSG_TYPE_ACTION) || (in_buf[0] == BLE_QTCIOT_CONTROL_DATA_TYPE) ||
+        (in_buf[0] == BLE_QTCIOT_GET_STATUS_REPLY_DATA_TYPE)) {
+        slice_flag = (in_buf[0] == BLE_QTCIOT_GET_STATUS_REPLY_DATA_TYPE) ? in_buf[2] : in_buf[1];
+        slice_type = (in_buf[0] == BLE_QTCIOT_GET_STATUS_REPLY_DATA_TYPE) ? in_buf[0] : data_type;
 
         // Log_dump( "slice", p_data, p_data_len);
-        if (BLE_QIOT_IS_SLICE_PACKAGE(slice_flag)) {
+        if (BLE_QTCIOT_IS_SLICE_PACKAGE(slice_flag)) {
             header_len = ble_msg_type_header_len(slice_type);
             rc         = ble_package_slice_data(slice_type, slice_flag, header_len, in_buf, in_len);
             if (rc < 0) {
                 return QCLOUD_ERR_FAILURE;
             } else if (rc == 0) {
                 tmp_len = HTONS(sg_ble_slice_data.buf_len - header_len);
-                if (BLE_QIOT_GET_STATUS_REPLY_DATA_TYPE == slice_type) {
+                if (BLE_QTCIOT_GET_STATUS_REPLY_DATA_TYPE == slice_type) {
                     sg_ble_slice_data.buf[1] = in_buf[1];
                     memcpy(&sg_ble_slice_data.buf[2], &tmp_len, sizeof(tmp_len));
                 } else {
@@ -767,9 +779,9 @@ static int ble_lldata_msg_handle(const char *in_buf, int in_len)
             }
         }
     }
-#ifdef BLE_QIOT_LLSYNC_GATEWAY
+#ifdef BLE_QTCIOT_LLSYNC_GATEWAY
     rc = iot_llsync_self_down_data_handle((uint8_t *)p_data, p_data_len);
- #endif //  BLE_QIOT_LLSYNC_GATEWAY
+ #endif //  BLE_QTCIOT_LLSYNC_GATEWAY
     memset(&sg_ble_slice_data, 0, sizeof(sg_ble_slice_data));
     return rc;
 }
@@ -777,7 +789,7 @@ static int ble_lldata_msg_handle(const char *in_buf, int in_len)
 // ---------------------------------------------------------------------------------
 // ble ota
 // ---------------------------------------------------------------------------------
-#if BLE_QIOT_SUPPORT_OTA
+#if BLE_QTCIOT_SUPPORT_OTA
 
 static int ble_ota_init(void)
 {
@@ -785,30 +797,30 @@ static int ble_ota_init(void)
     sg_iot_ble_llsync.ota.download_address =
         sg_iot_ble_llsync.callback.ota_callback.get_download_addr(sg_iot_ble_llsync.usr_data);
 
-#if BLE_QIOT_SUPPORT_RESUMING
+#if BLE_QTCIOT_SUPPORT_RESUMING
     uint32_t size_align   = 0;
     uint8_t  file_percent = 0;
     // start from 0 if read flash fail, but ota will continue so ignored the return code
     POINTER_SANITY_CHECK(sg_iot_ble_llsync.callback.ota_callback.read_flash, QCLOUD_ERR_INVAL);
-    sg_iot_ble_llsync.callback.ota_callback.read_flash(sg_iot_ble_llsync.usr_data, BLE_QIOT_OTA_INFO_FLASH_ADDR,
+    sg_iot_ble_llsync.callback.ota_callback.read_flash(sg_iot_ble_llsync.usr_data, BLE_QTCIOT_OTA_INFO_FLASH_ADDR,
                                                        (uint8_t *)&sg_iot_ble_llsync.ota.ota_info_record,
                                                        sizeof(BleOtaInfoRecord));
-    // ble_qiot_log_hex(BLE_QIOT_LOG_LEVEL_INFO, "ota info", &sg_ota_info, sizeof(sg_ota_info));
+    // ble_qiot_log_hex(BLE_QTCIOT_LOG_LEVEL_INFO, "ota info", &sg_ota_info, sizeof(sg_ota_info));
     //  check if the valid flag legalled
-    if ((sg_iot_ble_llsync.ota.ota_info_record.valid_flag == BLE_QIOT_OTA_PAGE_VALID_VAL) &&
+    if ((sg_iot_ble_llsync.ota.ota_info_record.valid_flag == BLE_QTCIOT_OTA_PAGE_VALID_VAL) &&
         (sg_iot_ble_llsync.ota.download_address == sg_iot_ble_llsync.ota.ota_info_record.last_address)) {
         // the ota info write to flash may be mismatch the file write to flash, we should download file from the byte
         // align the flash page
-        size_align = sg_iot_ble_llsync.ota.ota_info_record.last_file_size / BLE_QIOT_RECORD_FLASH_PAGESIZE *
-                     BLE_QIOT_RECORD_FLASH_PAGESIZE;
+        size_align = sg_iot_ble_llsync.ota.ota_info_record.last_file_size / BLE_QTCIOT_RECORD_FLASH_PAGESIZE *
+                     BLE_QTCIOT_RECORD_FLASH_PAGESIZE;
         sg_iot_ble_llsync.ota.download_file_size += size_align;
         file_percent = size_align * 100 / sg_iot_ble_llsync.ota.ota_info_record.download_file_info.file_size;
         sg_iot_ble_llsync.ota.download_percent = file_percent;
         Log_i("align file size: %x, the percent: %d", size_align, file_percent);
     }
-#endif  // BLE_QIOT_SUPPORT_RESUMING
+#endif  // BLE_QTCIOT_SUPPORT_RESUMING
     // malloc ota buffer
-    // sg_iot_ble_llsync.ota.data_buf = HAL_Malloc(BLE_QIOT_OTA_BUF_SIZE);
+    // sg_iot_ble_llsync.ota.data_buf = TCI_HAL_Malloc(BLE_QTCIOT_OTA_BUF_SIZE);
     // if (!sg_iot_ble_llsync.ota.data_buf) {
     //     Log_e("malloc ota data buf fail.");
     //     return QCLOUD_ERR_MALLOC;
@@ -819,17 +831,17 @@ static int ble_ota_init(void)
 static int ble_ota_write_info(void)
 {
     int rc = 0;
-#if BLE_QIOT_SUPPORT_RESUMING
-    sg_iot_ble_llsync.ota.ota_info_record.valid_flag = ~BLE_QIOT_OTA_PAGE_VALID_VAL;
+#if BLE_QTCIOT_SUPPORT_RESUMING
+    sg_iot_ble_llsync.ota.ota_info_record.valid_flag = ~BLE_QTCIOT_OTA_PAGE_VALID_VAL;
     POINTER_SANITY_CHECK(sg_iot_ble_llsync.callback.ota_callback.write_flash, QCLOUD_ERR_INVAL);
-    rc = sg_iot_ble_llsync.callback.ota_callback.write_flash(sg_iot_ble_llsync.usr_data, BLE_QIOT_OTA_INFO_FLASH_ADDR,
+    rc = sg_iot_ble_llsync.callback.ota_callback.write_flash(sg_iot_ble_llsync.usr_data, BLE_QTCIOT_OTA_INFO_FLASH_ADDR,
                                                              (uint8_t *)&sg_iot_ble_llsync.ota.ota_info_record,
                                                              sizeof(BleOtaInfoRecord));
     if (rc) {
         Log_e("record ota download info fail. rc : %d", rc);
         return rc;
     }
-#endif  // BLE_QIOT_SUPPORT_RESUMING
+#endif  // BLE_QTCIOT_SUPPORT_RESUMING
     return rc;
 }
 
@@ -852,7 +864,7 @@ static int ble_ota_write_data_to_flash(void)
 static int ble_ota_stop(void)
 {
     int rc = 0;
-    if (!(sg_iot_ble_llsync.ota.ota_flag & BLE_QIOT_OTA_REQUEST_BIT)) {
+    if (!(sg_iot_ble_llsync.ota.ota_flag & BLE_QTCIOT_OTA_REQUEST_BIT)) {
         Log_w("ota not start");
         return rc;
     }
@@ -866,15 +878,15 @@ static int ble_ota_stop(void)
     rc = ble_ota_write_data_to_flash();
     rc |= ble_ota_write_info();
     // inform user ota failed because ble disconnect
-    sg_iot_ble_llsync.callback.ota_callback.ota_stop(sg_iot_ble_llsync.usr_data, BLE_QIOT_OTA_DISCONNECT);
-    // HAL_Free(sg_iot_ble_llsync.ota.data_buf);
+    sg_iot_ble_llsync.callback.ota_callback.ota_stop(sg_iot_ble_llsync.usr_data, BLE_QTCIOT_OTA_DISCONNECT);
+    // TCI_HAL_Free(sg_iot_ble_llsync.ota.data_buf);
     // sg_iot_ble_llsync.ota.data_buf = NULL;
     return rc;
 }
 
 static uint8_t ble_ota_type_header_len(uint8_t type)
 {
-    return BLE_QIOT_GET_OTA_REQUEST_HEADER_LEN;
+    return BLE_QTCIOT_GET_OTA_REQUEST_HEADER_LEN;
 }
 
 static int ble_ota_reply_ota_data(BleOta *ota)
@@ -896,7 +908,7 @@ static int ble_ota_reply_ota_data(BleOta *ota)
 
     // uplink
     LLsyncUpLinkData uplink_data = DEFAULT_LLSYNC_UPLINK_DATA;
-    uplink_data.type             = BLE_QIOT_EVENT_UP_REPLY_OTA_DATA;
+    uplink_data.type             = BLE_QTCIOT_EVENT_UP_REPLY_OTA_DATA;
     uplink_data.header           = &req;
     uplink_data.header_len       = sizeof(uint8_t);
     uplink_data.buf              = (const char *)&file_size;
@@ -906,26 +918,26 @@ static int ble_ota_reply_ota_data(BleOta *ota)
 
 static void ble_ota_timer_callback(void *timer)
 {
-    if (sg_iot_ble_llsync.ota.ota_flag & BLE_QIOT_OTA_RECV_DATA_BIT) {
-        sg_iot_ble_llsync.ota.ota_flag &= (~BLE_QIOT_OTA_RECV_DATA_BIT);
+    if (sg_iot_ble_llsync.ota.ota_flag & BLE_QTCIOT_OTA_RECV_DATA_BIT) {
+        sg_iot_ble_llsync.ota.ota_flag &= (~BLE_QTCIOT_OTA_RECV_DATA_BIT);
     }
     sg_iot_ble_llsync.ota.timeout_cnt++;
     Log_i("reply in the timer. count : %d", sg_iot_ble_llsync.ota.timeout_cnt);
     ble_ota_reply_ota_data(&sg_iot_ble_llsync.ota);
-    if (sg_iot_ble_llsync.ota.timeout_cnt >= BLE_QIOT_OTA_MAX_RETRY_COUNT) {
+    if (sg_iot_ble_llsync.ota.timeout_cnt >= BLE_QTCIOT_OTA_MAX_RETRY_COUNT) {
         sg_iot_ble_llsync.ota.ota_flag = 0;
         POINTER_SANITY_CHECK_RTN(sg_iot_ble_llsync.callback.ota_callback.delete_ota_timer);
         POINTER_SANITY_CHECK_RTN(sg_iot_ble_llsync.callback.ota_callback.ota_stop);
         sg_iot_ble_llsync.callback.ota_callback.delete_ota_timer(sg_iot_ble_llsync.usr_data,
                                                                  sg_iot_ble_llsync.ota.ota_timer);
-        sg_iot_ble_llsync.callback.ota_callback.ota_stop(sg_iot_ble_llsync.usr_data, BLE_QIOT_OTA_ERR_TIMEOUT);
+        sg_iot_ble_llsync.callback.ota_callback.ota_stop(sg_iot_ble_llsync.usr_data, BLE_QTCIOT_OTA_ERR_TIMEOUT);
     }
     return;
 }
 
 static int ble_ota_request_handle(const char *in_buf, int buf_len)
 {
-    BUFF_LEN_SANITY_CHECK(buf_len, sizeof(BleOtaFileInfo) - BLE_QIOT_OTA_MAX_VERSION_STR, QCLOUD_ERR_INVAL);
+    BUFF_LEN_SANITY_CHECK(buf_len, sizeof(BleOtaFileInfo) - BLE_QTCIOT_OTA_MAX_VERSION_STR, QCLOUD_ERR_INVAL);
 
     int             rc          = 0;
     uint8_t         reply_flag  = 0;
@@ -957,22 +969,22 @@ static int ble_ota_request_handle(const char *in_buf, int buf_len)
     POINTER_SANITY_CHECK(sg_iot_ble_llsync.callback.ota_callback.allow_ota, QCLOUD_ERR_INVAL);
     rc = sg_iot_ble_llsync.callback.ota_callback.allow_ota(sg_iot_ble_llsync.usr_data, (const char *)p);
     if (BLE_OTA_ENABLE == rc) {
-        reply_flag                      = BLE_QIOT_OTA_ENABLE;
-        ota_reply_info.package_nums     = BLE_QIOT_TOTAL_PACKAGES;
-        ota_reply_info.package_size     = BLE_QIOT_PACKAGE_LENGTH + BLE_QIOT_OTA_DATA_HEADER_LEN;
-        ota_reply_info.retry_timeout    = BLE_QIOT_RETRY_TIMEOUT;
-        ota_reply_info.reboot_timeout   = BLE_QIOT_REBOOT_TIME;
+        reply_flag                      = BLE_QTCIOT_OTA_ENABLE;
+        ota_reply_info.package_nums     = BLE_QTCIOT_TOTAL_PACKAGES;
+        ota_reply_info.package_size     = BLE_QTCIOT_PACKAGE_LENGTH + BLE_QTCIOT_OTA_DATA_HEADER_LEN;
+        ota_reply_info.retry_timeout    = BLE_QTCIOT_RETRY_TIMEOUT;
+        ota_reply_info.reboot_timeout   = BLE_QTCIOT_REBOOT_TIME;
         ota_reply_info.last_file_size   = 0;
-        ota_reply_info.package_interval = BLE_QIOT_PACKAGE_INTERVAL;
-#if BLE_QIOT_SUPPORT_RESUMING
-        reply_flag |= BLE_QIOT_OTA_RESUME_ENABLE;
+        ota_reply_info.package_interval = BLE_QTCIOT_PACKAGE_INTERVAL;
+#if BLE_QTCIOT_SUPPORT_RESUMING
+        reply_flag |= BLE_QTCIOT_OTA_RESUME_ENABLE;
         // check file crc to determine its the same file, download the new file if its different
-        if (sg_iot_ble_llsync.ota.ota_info_record.valid_flag == BLE_QIOT_OTA_PAGE_VALID_VAL &&
+        if (sg_iot_ble_llsync.ota.ota_info_record.valid_flag == BLE_QTCIOT_OTA_PAGE_VALID_VAL &&
             file_crc == sg_iot_ble_llsync.ota.ota_info_record.download_file_info.file_crc &&
             file_size == sg_iot_ble_llsync.ota.ota_info_record.download_file_info.file_size) {
             ota_reply_info.last_file_size = HTONL(sg_iot_ble_llsync.ota.download_file_size);
         }
-#endif  // BLE_QIOT_SUPPORT_RESUMING
+#endif  // BLE_QTCIOT_SUPPORT_RESUMING
 
         sg_iot_ble_llsync.ota.ota_info_record.download_file_info.file_size = file_size;
         sg_iot_ble_llsync.ota.ota_info_record.download_file_info.file_crc  = file_crc;
@@ -988,23 +1000,23 @@ static int ble_ota_request_handle(const char *in_buf, int buf_len)
         POINTER_SANITY_CHECK(sg_iot_ble_llsync.ota.ota_timer, QCLOUD_ERR_INVAL);
         POINTER_SANITY_CHECK(sg_iot_ble_llsync.callback.ota_callback.start_ota_timer, QCLOUD_ERR_INVAL);
         rc = sg_iot_ble_llsync.callback.ota_callback.start_ota_timer(
-            sg_iot_ble_llsync.usr_data, sg_iot_ble_llsync.ota.ota_timer, BLE_QIOT_RETRY_TIMEOUT * 1000);
+            sg_iot_ble_llsync.usr_data, sg_iot_ble_llsync.ota.ota_timer, BLE_QTCIOT_RETRY_TIMEOUT * 1000);
         if (rc) {
             Log_e("start ble ota timer fial. rc : %d", rc);
         }
 
         // handler the ota data after ota request
-        sg_iot_ble_llsync.ota.ota_flag |= BLE_QIOT_OTA_REQUEST_BIT;
+        sg_iot_ble_llsync.ota.ota_flag |= BLE_QTCIOT_OTA_REQUEST_BIT;
         notify_data = (char *)&ota_reply_info;
         notify_len  = sizeof(BleOtaReplyInfo) - sizeof(ota_reply_info.rsv);
     } else {
-        reply_flag &= ~BLE_QIOT_OTA_ENABLE;
+        reply_flag &= ~BLE_QTCIOT_OTA_ENABLE;
         notify_data = (char *)&rc;  // ota not alload
         notify_len  = sizeof(uint8_t);
     }
     // uplink
     LLsyncUpLinkData uplink_data = DEFAULT_LLSYNC_UPLINK_DATA;
-    uplink_data.type             = BLE_QIOT_EVENT_UP_REPLY_OTA_REPORT;
+    uplink_data.type             = BLE_QTCIOT_EVENT_UP_REPLY_OTA_REPORT;
     uplink_data.header           = &reply_flag;
     uplink_data.header_len       = sizeof(uint8_t);
     uplink_data.buf              = (const char *)notify_data;
@@ -1043,19 +1055,19 @@ int ble_qiot_ota_data_saved(BleOta *ota, char *data, uint16_t data_len)
             ota->download_percent = percent;
             Log_i("download percent : %d", percent);
             // save write info
-#if BLE_QIOT_SUPPORT_RESUMING
-            ota->ota_info_record.valid_flag     = BLE_QIOT_OTA_PAGE_VALID_VAL;
+#if BLE_QTCIOT_SUPPORT_RESUMING
+            ota->ota_info_record.valid_flag     = BLE_QTCIOT_OTA_PAGE_VALID_VAL;
             ota->ota_info_record.last_file_size = ota->download_file_size;
             ota->ota_info_record.last_address   = ota->download_address;
             POINTER_SANITY_CHECK(sg_iot_ble_llsync.callback.ota_callback.write_flash, QCLOUD_ERR_INVAL);
             rc = sg_iot_ble_llsync.callback.ota_callback.write_flash(
-                sg_iot_ble_llsync.usr_data, BLE_QIOT_OTA_INFO_FLASH_ADDR, (uint8_t *)&ota->ota_info_record,
+                sg_iot_ble_llsync.usr_data, BLE_QTCIOT_OTA_INFO_FLASH_ADDR, (uint8_t *)&ota->ota_info_record,
                 sizeof(BleOtaInfoRecord));
             if (rc) {
                 Log_e("record ota download info fail. rc : %d", rc);
                 return rc;
             }
-#endif  // BLE_QIOT_SUPPORT_RESUMING
+#endif  // BLE_QTCIOT_SUPPORT_RESUMING
         }
         memset(ota->data_buf, 0, sizeof(ota->data_buf));
         ota->data_buf_size = 0;
@@ -1079,7 +1091,7 @@ int ble_qiot_ota_data_saved(BleOta *ota, char *data, uint16_t data_len)
         }
         ble_ota_reply_ota_data(ota);
         // set the file receive end bit
-        ota->ota_flag |= BLE_QIOT_OTA_RECV_END_BIT;
+        ota->ota_flag |= BLE_QTCIOT_OTA_RECV_END_BIT;
         memset(ota->data_buf, 0, sizeof(ota->data_buf));
         ota->data_buf_size = 0;
     }
@@ -1095,7 +1107,7 @@ static int ble_ota_data_handle(const char *in_buf, int buf_len)
     char    *data     = NULL;
     uint16_t data_len = 0;
 
-    if (!(sg_iot_ble_llsync.ota.ota_flag & BLE_QIOT_OTA_REQUEST_BIT)) {
+    if (!(sg_iot_ble_llsync.ota.ota_flag & BLE_QTCIOT_OTA_REQUEST_BIT)) {
         Log_e("ota request is need first");
         return QCLOUD_ERR_FAILURE;
     }
@@ -1104,10 +1116,10 @@ static int ble_ota_data_handle(const char *in_buf, int buf_len)
     data     = (char *)in_buf + 1;
     data_len = (uint16_t)buf_len - 1;
 
-    // ble_qiot_log_hex(BLE_QIOT_LOG_LEVEL_ERR, "data", in_buf, buf_len);
+    // ble_qiot_log_hex(BLE_QTCIOT_LOG_LEVEL_ERR, "data", in_buf, buf_len);
     if (seq == sg_iot_ble_llsync.ota.next_seq) {
-        sg_iot_ble_llsync.ota.ota_flag |= BLE_QIOT_OTA_RECV_DATA_BIT;
-        sg_iot_ble_llsync.ota.ota_flag |= BLE_QIOT_OTA_FIRST_RETRY_BIT;
+        sg_iot_ble_llsync.ota.ota_flag |= BLE_QTCIOT_OTA_RECV_DATA_BIT;
+        sg_iot_ble_llsync.ota.ota_flag |= BLE_QTCIOT_OTA_FIRST_RETRY_BIT;
         sg_iot_ble_llsync.ota.timeout_cnt = 0;
         sg_iot_ble_llsync.ota.next_seq++;
 
@@ -1117,21 +1129,21 @@ static int ble_ota_data_handle(const char *in_buf, int buf_len)
             Log_e("stop ota. because save data failed, rc : %d", rc);
             return rc;
         }
-        if (sg_iot_ble_llsync.ota.ota_flag & BLE_QIOT_OTA_RECV_END_BIT) {
+        if (sg_iot_ble_llsync.ota.ota_flag & BLE_QTCIOT_OTA_RECV_END_BIT) {
             return QCLOUD_RET_SUCCESS;
         }
         // reply the server if received the last package in the loop
-        if (BLE_QIOT_TOTAL_PACKAGES == sg_iot_ble_llsync.ota.next_seq) {
+        if (BLE_QTCIOT_TOTAL_PACKAGES == sg_iot_ble_llsync.ota.next_seq) {
             ble_ota_reply_ota_data(&sg_iot_ble_llsync.ota);
             sg_iot_ble_llsync.ota.next_seq = 0;
         }
-        sg_iot_ble_llsync.ota.ota_flag |= BLE_QIOT_OTA_RECV_DATA_BIT;
+        sg_iot_ble_llsync.ota.ota_flag |= BLE_QTCIOT_OTA_RECV_DATA_BIT;
     } else {
         // request data only once in the loop, controlled by the flag
         Log_w("unexpect seq %d, expect seq %d", seq, sg_iot_ble_llsync.ota.next_seq);
-        if (sg_iot_ble_llsync.ota.ota_flag & BLE_QIOT_OTA_FIRST_RETRY_BIT) {
-            sg_iot_ble_llsync.ota.ota_flag &= (~BLE_QIOT_OTA_FIRST_RETRY_BIT);
-            sg_iot_ble_llsync.ota.ota_flag &= (~BLE_QIOT_OTA_RECV_DATA_BIT);
+        if (sg_iot_ble_llsync.ota.ota_flag & BLE_QTCIOT_OTA_FIRST_RETRY_BIT) {
+            sg_iot_ble_llsync.ota.ota_flag &= (~BLE_QTCIOT_OTA_FIRST_RETRY_BIT);
+            sg_iot_ble_llsync.ota.ota_flag &= (~BLE_QTCIOT_OTA_RECV_DATA_BIT);
             ble_ota_reply_ota_data(&sg_iot_ble_llsync.ota);
             // refresh the timer
             POINTER_SANITY_CHECK(sg_iot_ble_llsync.callback.ota_callback.stop_ota_timer, QCLOUD_ERR_INVAL);
@@ -1142,7 +1154,7 @@ static int ble_ota_data_handle(const char *in_buf, int buf_len)
             }
             POINTER_SANITY_CHECK(sg_iot_ble_llsync.callback.ota_callback.start_ota_timer, QCLOUD_ERR_INVAL);
             rc = sg_iot_ble_llsync.callback.ota_callback.start_ota_timer(
-                sg_iot_ble_llsync.usr_data, sg_iot_ble_llsync.ota.ota_timer, BLE_QIOT_RETRY_TIMEOUT * 1000);
+                sg_iot_ble_llsync.usr_data, sg_iot_ble_llsync.ota.ota_timer, BLE_QTCIOT_RETRY_TIMEOUT * 1000);
             if (rc) {
                 Log_e("start ble ota timer fial. rc : %d", rc);
             }
@@ -1156,7 +1168,7 @@ static inline int ble_ota_report_check_result(uint8_t firmware_valid, uint8_t er
     uint8_t result = firmware_valid | error_code;
     // uplink
     LLsyncUpLinkData uplink_data = DEFAULT_LLSYNC_UPLINK_DATA;
-    uplink_data.type             = BLE_QIOT_EVENT_UP_REPORT_CHECK_RESULT;
+    uplink_data.type             = BLE_QTCIOT_EVENT_UP_REPORT_CHECK_RESULT;
     uplink_data.header           = NULL;
     uplink_data.header_len       = 0;
     uplink_data.buf              = (const char *)&result;
@@ -1209,15 +1221,15 @@ static int ble_ota_file_end_handle(void)
             (const char *)sg_iot_ble_llsync.ota.ota_info_record.download_file_info.file_version);
 
         if (!rc) {
-            ble_ota_report_check_result(BLE_QIOT_OTA_VALID_SUCCESS, 0);
-            rc = BLE_QIOT_OTA_SUCCESS;
+            ble_ota_report_check_result(BLE_QTCIOT_OTA_VALID_SUCCESS, 0);
+            rc = BLE_QTCIOT_OTA_SUCCESS;
         } else {
-            ble_ota_report_check_result(BLE_QIOT_OTA_VALID_FAIL, BLE_QIOT_OTA_FILE_ERROR);
-            rc = BLE_QIOT_OTA_ERR_FILE;
+            ble_ota_report_check_result(BLE_QTCIOT_OTA_VALID_FAIL, BLE_QTCIOT_OTA_FILE_ERROR);
+            rc = BLE_QTCIOT_OTA_ERR_FILE;
         }
     } else {
-        ble_ota_report_check_result(BLE_QIOT_OTA_VALID_FAIL, BLE_QIOT_OTA_CRC_ERROR);
-        rc = BLE_QIOT_OTA_ERR_CRC;
+        ble_ota_report_check_result(BLE_QTCIOT_OTA_VALID_FAIL, BLE_QTCIOT_OTA_CRC_ERROR);
+        rc = BLE_QTCIOT_OTA_ERR_CRC;
     }
     POINTER_SANITY_CHECK(sg_iot_ble_llsync.callback.ota_callback.ota_stop, QCLOUD_ERR_INVAL);
     sg_iot_ble_llsync.callback.ota_callback.ota_stop(sg_iot_ble_llsync.usr_data, rc);
@@ -1251,9 +1263,9 @@ static int ble_ota_msg_handle(const char *buf, uint16_t len)
         return QCLOUD_ERR_FAILURE;
     }
 
-    data_type  = (buf[0] == BLE_QIOT_OTA_MSG_REQUEST) ? BLE_QIOT_OTA_MSG_REQUEST : buf[0];
-    slice_flag = (buf[0] == BLE_QIOT_OTA_MSG_REQUEST) ? buf[1] : buf[0];
-    if (data_type >= BLE_QIOT_OTA_MSG_BUTT) {
+    data_type  = (buf[0] == BLE_QTCIOT_OTA_MSG_REQUEST) ? BLE_QTCIOT_OTA_MSG_REQUEST : buf[0];
+    slice_flag = (buf[0] == BLE_QTCIOT_OTA_MSG_REQUEST) ? buf[1] : buf[0];
+    if (data_type >= BLE_QTCIOT_OTA_MSG_BUTT) {
         Log_e("invalid data type %d", data_type);
         return QCLOUD_ERR_FAILURE;
     }
@@ -1261,20 +1273,20 @@ static int ble_ota_msg_handle(const char *buf, uint16_t len)
     p_data_len = len;
 
     // Log_i("ota data type %d, flag %d", data_type, slice_flag);
-    if (BLE_QIOT_IS_SLICE_PACKAGE(slice_flag)) {
+    if (BLE_QTCIOT_IS_SLICE_PACKAGE(slice_flag)) {
         Log_dump("tlv", p_data, p_data_len);
         header_len = ble_ota_type_header_len(data_type);
         rc         = ble_package_slice_data(data_type, slice_flag, header_len, buf, len);
         if (rc < 0) {
             return QCLOUD_ERR_FAILURE;
         } else if (rc == 0) {
-            if (data_type == BLE_QIOT_OTA_MSG_REQUEST) {
+            if (data_type == BLE_QTCIOT_OTA_MSG_REQUEST) {
                 tmp_len = HTONS(sg_ble_slice_data.buf_len - header_len);
                 memcpy(&sg_ble_slice_data.buf[1], &tmp_len, sizeof(tmp_len));
             } else {
                 sg_ble_slice_data.buf[1] = sg_ble_slice_data.buf_len - header_len;
             }
-            if (data_type == BLE_QIOT_OTA_MSG_DATA) {
+            if (data_type == BLE_QTCIOT_OTA_MSG_DATA) {
                 sg_ble_slice_data.buf[2] = buf[2];
             }
             p_data     = sg_ble_slice_data.buf;
@@ -1286,13 +1298,13 @@ static int ble_ota_msg_handle(const char *buf, uint16_t len)
 
     // Log_dump( "tlv", p_data, p_data_len);
     switch (data_type) {
-        case BLE_QIOT_OTA_MSG_REQUEST:
+        case BLE_QTCIOT_OTA_MSG_REQUEST:
             rc = ble_ota_request_handle(p_data + 3, p_data_len);
             break;
-        case BLE_QIOT_OTA_MSG_DATA:
+        case BLE_QTCIOT_OTA_MSG_DATA:
             rc = ble_ota_data_handle(p_data + 2, p_data_len - 2);
             break;
-        case BLE_QIOT_OTA_MSG_END:
+        case BLE_QTCIOT_OTA_MSG_END:
             rc = ble_ota_file_end_handle();
             break;
         default:
@@ -1306,7 +1318,7 @@ static int ble_ota_msg_handle(const char *buf, uint16_t len)
 int iot_llsync_get_ota_buffer(uint8_t **buffer, uint32_t *buffer_size)
 {
     *buffer      = sg_iot_ble_llsync.ota.data_buf;
-    *buffer_size = BLE_QIOT_OTA_BUF_SIZE;
+    *buffer_size = BLE_QTCIOT_OTA_BUF_SIZE;
     return QCLOUD_RET_SUCCESS;
 }
 
@@ -1323,7 +1335,7 @@ int iot_llsync_get_ota_buffer(uint8_t **buffer, uint32_t *buffer_size)
     return QCLOUD_ERR_MALLOC;
 }
 
-#endif  // BLE_QIOT_SUPPORT_OTA
+#endif  // BLE_QTCIOT_SUPPORT_OTA
 
 #else 
 
@@ -1337,9 +1349,9 @@ static int ble_ota_msg_handle(const char *buf, uint16_t len)
     return QCLOUD_RET_SUCCESS;
 }
 
-#endif  // BLE_QIOT_LLSYNC_STANDARD
+#endif  // BLE_QTCIOT_LLSYNC_STANDARD
 
-#if BLE_QIOT_LLSYNC_GATEWAY
+#if BLE_QTCIOT_LLSYNC_GATEWAY
 
 typedef enum {
     TYPE_LLSYNC_SUBDEV_CTRL = 0,
@@ -1368,7 +1380,7 @@ static int ble_subdev_ctrl_msg_handle(const char *in_buf, int in_len)
     // E_DEV_MSG_SYNC_TIME, E_DEV_MSG_CONN_VALID, E_DEV_MSG_BIND_SUCC, E_DEV_MSG_UNBIND this 4 type
     // of message has more than one bytes data, it may cut to several slices, here need to merge them
     // together, other type message only has 1 byte data, not need merge.
-    if ((in_len > 3) && BLE_QIOT_IS_SLICE_PACKAGE(in_buf[1])) {
+    if ((in_len > 3) && BLE_QTCIOT_IS_SLICE_PACKAGE(in_buf[1])) {
         // Log_dump( "slice", p_data, p_data_len);
         header_len = ble_msg_type_header_len(in_buf[0]);
         rc         = ble_package_slice_data(in_buf[0], in_buf[1], header_len, in_buf, in_len);
@@ -1405,7 +1417,7 @@ int ble_subdev_ctrl_msg_handle(const char *buf, uint16_t len)
 {
     return QCLOUD_RET_SUCCESS;
 }
-#endif  // BLE_QIOT_LLSYNC_GATEWAY
+#endif  // BLE_QTCIOT_LLSYNC_GATEWAY
 
 // -----------------------------------------------------------------------------
 // llsync link device
@@ -1424,9 +1436,9 @@ static void _llsync_disconnect_callback(void *usr_data, void *addr, size_t addr_
     llsync_mtu_update(ATT_MTU_TO_LLSYNC_MTU(ATT_DEFAULT_MTU));
     llsync_connection_state_set(E_LLSYNC_DISCONNECTED);
     ble_connection_state_set(E_BLE_DISCONNECTED);
-#if BLE_QIOT_SUPPORT_OTA
+#if BLE_QTCIOT_SUPPORT_OTA
     ble_ota_stop();
-#endif  // BLE_QIOT_SUPPORT_OTA
+#endif  // BLE_QTCIOT_SUPPORT_OTA
     if (sg_iot_ble_llsync.callback.disconnect_callback) {
         sg_iot_ble_llsync.callback.disconnect_callback(sg_iot_ble_llsync.usr_data);
     }
@@ -1485,17 +1497,17 @@ IotBool iot_llsync_is_init(void)
  * @param usr_data
  * @return 0 for success
  */
-int iot_llsync_init(IOTBLELLsyncInitParams init_params)
+int iot_llsync_init(TCIOTBLELLsyncInitParams init_params)
 {
     if (sg_iot_ble_llsync.init_flag) {
         return QCLOUD_RET_SUCCESS;
     }
     // init
-    memset(&sg_iot_ble_llsync, 0, sizeof(IOTBLELLsync));
+    memset(&sg_iot_ble_llsync, 0, sizeof(TCIOTBLELLsync));
     int               rc = 0;
     uint8_t           mac[6];
     IotLinkInitParams params;
-    IotLinkNetwork    ble               = IOT_LINK_NETWORK_BLE;
+    IotLinkNetwork    ble               = TCIOT_LINK_NETWORK_BLE;
     sg_iot_ble_llsync.usr_data          = init_params.usr_data;
     sg_iot_ble_llsync.callback          = init_params.callback;
     sg_iot_ble_llsync.wifi_usr_data     = NULL;
@@ -1505,7 +1517,7 @@ int iot_llsync_init(IOTBLELLsyncInitParams init_params)
     params.callback.sync_mtu_callback   = _llsync_sync_mtu_callback;
     params.network                      = ble;
     params.usr_data                     = NULL;
-    sg_iot_ble_llsync.link              = qcloud_iot_link_create(&params);
+    sg_iot_ble_llsync.link              = qcloud_iot_link_create(&params) ;
     rc                                  = qcloud_iot_link_get_uuid(sg_iot_ble_llsync.link, NULL, 0, mac, 6);
     if (rc) {
         Log_e("get mac fail.");
@@ -1516,7 +1528,7 @@ int iot_llsync_init(IOTBLELLsyncInitParams init_params)
         Log_e("llsync data init fail.");
         goto exit;
     }
-    sg_iot_ble_llsync.init_flag = IOT_BOOL_TRUE;
+    sg_iot_ble_llsync.init_flag = TCIOT_BOOL_TRUE;
     return iot_llsync_start_adv(init_params.start_adv);
 exit:
     qcloud_iot_link_destroy(sg_iot_ble_llsync.link);
@@ -1570,7 +1582,7 @@ int iot_llsync_stop_adv(void)
  * @param callback wifi callback function
  * @param usr_data
  */
-void iot_llsync_register_wifi_callback(IOTBLELLsyncWifiCallback callback, void *usr_data)
+void iot_llsync_register_wifi_callback(TCIOTBLELLsyncWifiCallback callback, void *usr_data)
 {
     sg_iot_ble_llsync.wifi_callback = callback;
     sg_iot_ble_llsync.wifi_usr_data = usr_data;
@@ -1582,6 +1594,6 @@ void iot_llsync_register_wifi_callback(IOTBLELLsyncWifiCallback callback, void *
  */
 void iot_llsync_unregister_wifi_callback(void)
 {
-    memset(&sg_iot_ble_llsync.wifi_callback, 0, sizeof(IOTBLELLsyncWifiCallback));
+    memset(&sg_iot_ble_llsync.wifi_callback, 0, sizeof(TCIOTBLELLsyncWifiCallback));
     sg_iot_ble_llsync.wifi_usr_data = NULL;
 }

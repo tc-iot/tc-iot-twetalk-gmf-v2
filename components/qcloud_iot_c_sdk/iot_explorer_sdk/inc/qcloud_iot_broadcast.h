@@ -26,8 +26,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_HUB_QCLOUD_IOT_BROADCAST_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_HUB_QCLOUD_IOT_BROADCAST_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_HUB_QCLOUD_TCIOT_BROADCAST_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_HUB_QCLOUD_TCIOT_BROADCAST_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,7 +52,7 @@ typedef void (*OnBroadcastArrivedCallback)(void *client, const char *msg, int ms
  * @param[in] usr_data usr data using in callback
  * @return @see IotReturnCode
  */
-int IOT_Broadcast_Init(void *client, OnBroadcastArrivedCallback callback, void *usr_data);
+int TCIOT_Broadcast_Init(void *client, OnBroadcastArrivedCallback callback, void *usr_data);
 
 /**
  * @brief Unsubscribe broadcast topic.
@@ -60,10 +60,10 @@ int IOT_Broadcast_Init(void *client, OnBroadcastArrivedCallback callback, void *
  * @param[in,out] client pointer to mqtt client
  * @return @see IotReturnCode
  */
-int IOT_Broadcast_Deinit(void *client);
+int TCIOT_Broadcast_Deinit(void *client);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_HUB_QCLOUD_IOT_BROADCAST_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_HUB_QCLOUD_TCIOT_BROADCAST_H_

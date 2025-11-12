@@ -587,7 +587,7 @@ int qcloud_iot_link_ble_send(void *handle, void *addr, size_t addr_len, uint8_t 
     uint8_t  index_array[]  = {IDX_CHAR_VAL_C, IDX_CHAR_VAL_F};
     return esp_ble_gatts_send_indicate(
         sg_llsync_profile_tab[PROFILE_APP_IDX].gatts_if, sg_llsync_profile_tab[PROFILE_APP_IDX].conn_id,
-        _get_char_val_handle(character_addr, index_array, sizeof(index_array)), data_len, data, IOT_BOOL_FALSE);
+        _get_char_val_handle(character_addr, index_array, sizeof(index_array)), data_len, data, TCIOT_BOOL_FALSE);
 }
 
 int qcloud_iot_link_ble_get_uuid(void *handle, void *addr, size_t addr_len, uint8_t *uuid, size_t uuid_len)

@@ -41,20 +41,20 @@ static int _get_property_node(char* json_buf, int buf_len, const DataTemplatePro
     int len, i;
     switch (property->type) {
         case DATA_TEMPLATE_TYPE_INT:
-            return HAL_Snprintf(json_buf, buf_len, "\"%s\":%d", property->key, property->value.value_int);
+            return TCI_HAL_Snprintf(json_buf, buf_len, "\"%s\":%d", property->key, property->value.value_int);
         case DATA_TEMPLATE_TYPE_BOOL:
-            return HAL_Snprintf(json_buf, buf_len, "\"%s\":%u", property->key, property->value.value_byte);
+            return TCI_HAL_Snprintf(json_buf, buf_len, "\"%s\":%u", property->key, property->value.value_byte);
         case DATA_TEMPLATE_TYPE_UINT:
-            return HAL_Snprintf(json_buf, buf_len, "\"%s\":%u", property->key, property->value.value_uint);
+            return TCI_HAL_Snprintf(json_buf, buf_len, "\"%s\":%u", property->key, property->value.value_uint);
         case DATA_TEMPLATE_TYPE_STRING:
             if (!property->value.value_string.str) {
                 return 0;
             }
-            return HAL_Snprintf(json_buf, buf_len, "\"%s\":\"%s\"", property->key, property->value.value_string);
+            return TCI_HAL_Snprintf(json_buf, buf_len, "\"%s\":\"%s\"", property->key, property->value.value_string);
         case DATA_TEMPLATE_TYPE_FLOAT:
-            return HAL_Snprintf(json_buf, buf_len, "\"%s\":%f", property->key, property->value.value_float);
+            return TCI_HAL_Snprintf(json_buf, buf_len, "\"%s\":%f", property->key, property->value.value_float);
         case DATA_TEMPLATE_TYPE_STRUCT:
-            len = HAL_Snprintf(json_buf, buf_len, "\"%s\":{", property->key);
+            len = TCI_HAL_Snprintf(json_buf, buf_len, "\"%s\":{", property->key);
             for (i = 0; i < property->value.value_struct.count; i++) {
                 len += _get_property_node(json_buf + len, buf_len - len, property->value.value_struct.property + i);
                 json_buf[len++] = ',';
@@ -91,7 +91,7 @@ int iot_data_template_action_reply(DataTemplate* data_template, void* client, ch
     action[index].reply.code         = code;
     action[index].reply.client_token = client_token;
     action[index].reply.response     = response;
-    return IOT_DataTemplate_ActionReply(client, buf, buf_len, action[index].reply);
+    return TCIOT_DataTemplate_ActionReply(client, buf, buf_len, action[index].reply);
 }
 
 /**
@@ -126,7 +126,7 @@ int iot_data_template_property_report(DataTemplate* data_template, void* client,
     params[--param_offset] = '}';
 
     if (param_offset) {
-        return IOT_DataTemplate_PropertyReport(client, buf, buf_len, params);
+        return TCIOT_DataTemplate_PropertyReport(client, buf, buf_len, params);
     }
     return QCLOUD_RET_SUCCESS;
 }
@@ -154,5 +154,5 @@ void iot_data_template_event_post(DataTemplate* data_template, void* client, cha
         .params   = event[event_id].params,
         .type     = event[event_id].type,
     };
-    IOT_DataTemplate_EventPost(client, buf, buf_len, data);
+    TCIOT_DataTemplate_EventPost(client, buf, buf_len, data);
 }

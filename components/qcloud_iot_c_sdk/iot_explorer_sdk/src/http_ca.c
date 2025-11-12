@@ -28,7 +28,7 @@
 
 #include "qcloud_iot_http_client.h"
 
-#if !defined(AUTH_WITH_NO_TLS)
+#if !defined(ENABLE_AUTH_NO_TLS)
 static const char *sg_iot_https_ca_crt = {
     // AAA Certificate Services
     "-----BEGIN CERTIFICATE-----\r\n"
@@ -157,9 +157,9 @@ static const char *sg_iot_https_ca_crt = {
  *
  * @return ca string
  */
-const char *IOT_HTTPS_CA(void)
+const char *TCIOT_HTTPS_CA(void)
 {
-#if !defined(AUTH_WITH_NO_TLS)
+#if !defined(ENABLE_AUTH_NO_TLS)
     return sg_iot_https_ca_crt;
 #else
     return NULL;

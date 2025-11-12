@@ -65,9 +65,9 @@ static int _softap_udp_msg_parse(WifiInfo *info, uint8_t *recv_buf, int recv_len
 static int _wifi_connect(const char *ssid, int ssid_len, const char *pwd, int pwd_len)
 {
     Log_i("STA to connect ssid: %.*s, password : %.*s", ssid_len, ssid, pwd_len, pwd);
-    int rc = HAL_Wifi_ModeSet(TC_IOT_WIFI_MODE_STA);
-    rc |= HAL_Wifi_StaInfoSet(ssid, ssid_len, pwd, pwd_len);
-    rc |= HAL_Wifi_StaConnect(30000);
+    int rc = TCI_HAL_Wifi_ModeSet(TCI_TCIOT_WIFI_MODE_STA);
+    rc |= TCI_HAL_Wifi_StaInfoSet(ssid, ssid_len, pwd, pwd_len);
+    rc |= TCI_HAL_Wifi_StaConnect(30000);
     return rc;
 }
 
@@ -78,9 +78,9 @@ static int _softap_wifi_config(int fd, WifiInfo *info, IotWifiBindTime *bind_tim
     char    ip[WIFI_UDP_ADDR_MAX_LENGTH] = {0};
     char    port[6]                      = {0};
 
-    QcloudIotTimer timer = 0;
-    IOT_Timer_CountdownMs(&timer, timeout_ms);
-    while (!IOT_Timer_Expired(&timer)) {
+    TCI_Timer timer;
+    TCI_HAL_TimerCountdownMs(&timer, timeout_ms);
+    while (!TCI_HAL_TimerExpired(&timer)) {
         rc = iot_wifi_udp_recv(fd, ip, sizeof(ip), port, sizeof(port), udp_recv_buf, sizeof(udp_recv_buf), 1000);
         if (!rc) {  // nothing recv
             iot_wifi_udp_broadcast_local_ip(fd, 0, 0);
@@ -94,7 +94,7 @@ static int _softap_wifi_config(int fd, WifiInfo *info, IotWifiBindTime *bind_tim
                 Log_e("select-recv error(%d) cnt: %d", rc, select_err_cnt);
                 break;
             }
-            HAL_SleepMs(500);
+            TCI_HAL_SleepMs(500);
             continue;
         }
 
@@ -103,15 +103,15 @@ static int _softap_wifi_config(int fd, WifiInfo *info, IotWifiBindTime *bind_tim
         if (rc) {
             continue;
         }
-        bind_time->get_ssid_time = bind_time->get_token_time = HAL_Timer_CurrentMs();
+        bind_time->get_ssid_time = bind_time->get_token_time = TCI_HAL_GetTimeMs();
 
         iot_wifi_udp_device_reply(fd, ip, port);
-        HAL_SleepMs(1000);
-        HAL_SoftAP_Stop();
+        TCI_HAL_SleepMs(1000);
+        TCI_HAL_SoftAP_Stop();
 
         rc = _wifi_connect(info->ssid, strlen(info->ssid), info->pwd, strlen(info->pwd));
         if (!rc) {
-            bind_time->wifi_connected_time = HAL_Timer_CurrentMs();
+            bind_time->wifi_connected_time = TCI_HAL_GetTimeMs();
         }
         return rc;
     }
@@ -136,11 +136,11 @@ int iot_wifi_config_softap(const IotWifiConfigParams *params, WifiInfo *info, Io
 {
     int rc = 0;
 
-    QcloudIotTimer timer = 0;
-    IOT_Timer_CountdownMs(&timer, timeout_ms);
-    bind_time->start_time = HAL_Timer_CurrentMs();
+    TCI_Timer timer;
+    TCI_HAL_TimerCountdownMs(&timer, timeout_ms);
+    bind_time->start_time = TCI_HAL_GetTimeMs();
 
-    rc = HAL_SoftAP_Start(params->softap.ssid, params->softap.pwd, params->softap.ch);
+    rc = TCI_HAL_SoftAP_Start(params->softap.ssid, params->softap.pwd, params->softap.ch);
     if (rc) {
         return rc;
     }
@@ -149,7 +149,7 @@ int iot_wifi_config_softap(const IotWifiConfigParams *params, WifiInfo *info, Io
     if (fd < 0) {
         return QCLOUD_ERR_FAILURE;
     }
-    rc = _softap_wifi_config(fd, info, bind_time, IOT_Timer_Remain(&timer));
+    rc = _softap_wifi_config(fd, info, bind_time, TCI_HAL_TimerRemain(&timer));
     iot_wifi_udp_deinit(fd);
     return rc;
 }

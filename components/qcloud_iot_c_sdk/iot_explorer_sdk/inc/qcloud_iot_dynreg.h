@@ -26,8 +26,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_DYNREG_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_DYNREG_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_DYNREG_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_DYNREG_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,7 +45,7 @@ extern "C" {
  * @param[in] params @see DeviceInfo
  * @return 0 is success other is failed
  */
-int IOT_DynReg_Device(DeviceInfo *device_info);
+int TCIOT_DynReg_Device(DeviceInfo *device_info);
 
 /**
  * @brief Create dynamic registration http header sign
@@ -57,7 +57,7 @@ int IOT_DynReg_Device(DeviceInfo *device_info);
  * @param time_stamp
  * @return 0 for success
  */
-int IOT_DynReg_CreatSign(uint8_t *sign_out_buf, int sign_out_buf_len, DeviceInfo *device_info, int nonce,
+int TCIOT_DynReg_CreatSign(uint8_t *sign_out_buf, int sign_out_buf_len, DeviceInfo *device_info, int nonce,
                          uint32_t time_stamp);
 
 /**
@@ -69,7 +69,7 @@ int IOT_DynReg_CreatSign(uint8_t *sign_out_buf, int sign_out_buf_len, DeviceInfo
  * @param device_secret copy device secret into this.
  * @return 0 for success.
  */
-int IOT_DynReg_ParseResult(uint8_t *response, size_t response_len, const char *product_secret, char *device_secret);
+int TCIOT_DynReg_ParseResult(uint8_t *response, size_t response_len, const char *product_secret, char *device_secret);
 
 /**
  * @brief dynreg device as proxy
@@ -82,11 +82,11 @@ int IOT_DynReg_ParseResult(uint8_t *response, size_t response_len, const char *p
  * @param payload_len
  * @return 0 for success
  */
-int IOT_DynReg_DeviceProxy(DeviceInfo *device_info, uint32_t time_stamp, int nonce, const uint8_t *sign,
+int TCIOT_DynReg_DeviceProxy(DeviceInfo *device_info, uint32_t time_stamp, int nonce, const uint8_t *sign,
                            uint8_t *payload, size_t *payload_len);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_DYNREG_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_DYNREG_H_

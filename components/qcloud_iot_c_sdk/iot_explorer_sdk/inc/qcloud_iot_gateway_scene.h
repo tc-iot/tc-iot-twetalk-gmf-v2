@@ -26,8 +26,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_IOT_GATEWAY_SCENE_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_IOT_GATEWAY_SCENE_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_TCIOT_GATEWAY_SCENE_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_TCIOT_GATEWAY_SCENE_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,10 +47,10 @@ extern "C" {
  *
  */
 typedef enum {
-    IOT_GATEWAY_ACTION_TYPE_DEVICE_CONTROL = 0,
-    IOT_GATEWAY_ACTION_TYPE_SCENE          = 2,
-    IOT_GATEWAY_ACTION_TYPE_GROUP          = 5,
-    IOT_GATEWAY_ACTION_TYPE_INNER_SCENE    = 6,
+    TCIOT_GATEWAY_ACTION_TYPE_DEVICE_CONTROL = 0,
+    TCIOT_GATEWAY_ACTION_TYPE_SCENE          = 2,
+    TCIOT_GATEWAY_ACTION_TYPE_GROUP          = 5,
+    TCIOT_GATEWAY_ACTION_TYPE_INNER_SCENE    = 6,
 } IoTGatewayActionType;
 
 /**
@@ -84,14 +84,14 @@ typedef struct {
  * @param[in] usr_data usr data used in callback
  * @return 0 for success, or err code (<0) @see IotReturnCode
  */
-int IOT_GatewayScene_Init(void *client, IoTGatewaySceneCallback callback, void *usr_data);
+int TCIOT_GatewayScene_Init(void *client, IoTGatewaySceneCallback callback, void *usr_data);
 
 /**
  * @brief Gateway scene deinit, unregister handler from server list.
  *
  * @param[in,out] client pointer to mqtt client
  */
-void IOT_GatewayScene_Deinit(void *client);
+void TCIOT_GatewayScene_Deinit(void *client);
 
 /**
  * @brief reload gateway scene from cloud.
@@ -101,7 +101,7 @@ void IOT_GatewayScene_Deinit(void *client);
  * @param[in] buf_len buffer len
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_GatewayScene_Reload(void *client, char *buf, int buf_len);
+int TCIOT_GatewayScene_Reload(void *client, char *buf, int buf_len);
 
 /**
  * @brief report gateway local scene
@@ -113,11 +113,11 @@ int IOT_GatewayScene_Reload(void *client, char *buf, int buf_len);
  * @param list_count local scene list count
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_GatewayScene_ReportInnerList(void *client, char *buf, int buf_len, IoTGatewaySceneInnerList *list,
+int TCIOT_GatewayScene_ReportInnerList(void *client, char *buf, int buf_len, IoTGatewaySceneInnerList *list,
                                      int list_count);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_IOT_GATEWAY_SCENE_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_TCIOT_GATEWAY_SCENE_H_

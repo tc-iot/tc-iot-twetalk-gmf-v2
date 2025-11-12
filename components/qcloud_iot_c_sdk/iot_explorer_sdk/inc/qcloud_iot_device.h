@@ -26,8 +26,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_IOT_DEVICE_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_IOT_DEVICE_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_TCIOT_DEVICE_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_TCIOT_DEVICE_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -100,14 +100,14 @@ typedef struct {
     char device_name[MAX_SIZE_OF_DEVICE_NAME + 1];
     char device_version[MAX_SIZE_OF_DEVICE_VERSION_LENGTH + 1];
 
-#ifdef AUTH_MODE_CERT
+#ifdef ENABLE_AUTH_MODE_CERT
     char dev_cert_file_name[MAX_SIZE_OF_DEVICE_CERT_FILE_NAME + 1];
     char dev_key_file_name[MAX_SIZE_OF_DEVICE_SECRET_FILE_NAME + 1];
 #else
     char device_secret[MAX_SIZE_OF_DEVICE_SECRET + 1];
 #endif
 
-#ifdef DEV_DYN_REG_ENABLED
+#ifdef ENABLE_DYNAMIC_DEVICE_REG
     char product_secret[MAX_SIZE_OF_PRODUCT_SECRET + 1];
 #endif
 } DeviceInfo;
@@ -117,4 +117,4 @@ typedef struct {
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_IOT_DEVICE_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_TCIOT_DEVICE_H_

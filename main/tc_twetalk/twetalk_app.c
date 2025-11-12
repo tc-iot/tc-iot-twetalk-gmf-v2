@@ -41,6 +41,7 @@
 #include "freertos/task.h"
 #include "qcloud_iot_common.h"
 #include "twetalk.h"
+#include "twetalk_ws.h"
 #include "utils_log.h"
 #ifndef CONFIG_KEY_PRESS_DIALOG_MODE
 #include "esp_gmf_afe.h"
@@ -106,9 +107,9 @@ static void audio_data_read_task(void* pv)
         ret = audio_recorder_read_data(data, DEFAULT_BUFFER_SIZE);
         // ESP_LOGI("send","%d",ret);
         if (sg_key_record_mode == 0 && sg_wakeup_start) {  // 唤醒对话模式 && sg_vad_start
-            tc_twetalk_ws_send_audio(sg_twetalk_handle, data, ret);
+tc_twetalk_ws_send_audio(sg_twetalk_handle, data, ret);
         } else if (sg_key_record_mode == 1 && sg_key_pressed) {  // 按键对话模式
-            tc_twetalk_ws_send_audio(sg_twetalk_handle, data, ret);
+tc_twetalk_ws_send_audio(sg_twetalk_handle, data, ret);
         }
     }
     esp_gmf_oal_thread_delete(read_thread);
@@ -269,7 +270,7 @@ static int get_twetalk_language(void)
 {
     // 使用nvs实现
     nvs_handle_t nvs_handle;
-    int language = 0;  // 默认语言
+    int32_t language = 0;  // 默认语言
     esp_err_t err;
 
     err = nvs_open(DEVICEINFO_NVS_NAMESPACE, NVS_READONLY, &nvs_handle);
@@ -378,7 +379,7 @@ static int _twetalk_recv_event_cb(TWeTalkEventType type, TWeTalkEventMsg* msg, v
         case TWETALK_EVENT_RECV_ROOMID: {
             Log_i("calling roomid: %.*s", msg->RecvCalling.room_id.value_len, msg->RecvCalling.room_id.value);
             // TODO 自定义是否接听
-            tc_twetalk_call_response(sg_twetalk_handle, TWETALK_EVENT_DEVICE_ANSWER,
+            tc_twetalk_ws_call_response(sg_twetalk_handle, TWETALK_EVENT_DEVICE_ANSWER,
                                      &msg->RecvCalling.room_id);  // 接听
             // tc_twetalk_call_response(sg_twetalk_handle, TWETALK_EVENT_DEVICE_REJECTS, &msg->RecvCalling.room_id); //
             // 拒接
@@ -468,28 +469,28 @@ static void twetalk_thread_entry(void* param)
     }
 #endif  // CONFIG_TWETALK_USE_DYNAMIC_REGISTER
 #endif
-    HAL_SetDevInfo(&device_info);
+    TCI_HAL_SetDevInfo((uint8_t *)&device_info, sizeof(DeviceInfo));
 
-    HAL_Printf("\r\n\r\n");
-    HAL_Printf("==================================================\r\n");
-    HAL_Printf("current version: %s\r\n", _get_firmware_version());
-    HAL_Printf("build time     : %s %s\r\n", __DATE__, __TIME__);
-    HAL_Printf("device_id      : %s_%s\r\n", device_info.product_id, device_info.device_name);
-    HAL_Printf("==================================================\r\n");
-    HAL_Printf("\r\n\r\n");
+    TCI_HAL_Printf("\r\n\r\n");
+    TCI_HAL_Printf("==================================================\r\n");
+    TCI_HAL_Printf("current version: %s\r\n", _get_firmware_version());
+    TCI_HAL_Printf("build time     : %s %s\r\n", __DATE__, __TIME__);
+    TCI_HAL_Printf("device_id      : %s_%s\r\n", device_info.product_id, device_info.device_name);
+    TCI_HAL_Printf("==================================================\r\n");
+    TCI_HAL_Printf("\r\n\r\n");
 
     if (sg_is_net_connected == 0) {
         ESP_LOGW(TAG, "net not connect");
         IotWifiConfigParams params = {0};
-        rc                         = iot_wifi_config(IOT_WIFI_BIND_TYPE_LLSYNC_BLE, &params, 5 * 60 * 1000);
+        rc                         = iot_wifi_config(TCIOT_WIFI_BIND_TYPE_LLSYNC_BLE, &params, 5 * 60 * 1000);
         if (rc) {
             Log_e("wifi config failed: %d", rc);
         }
         audio_prompt_play(tone_uri[LOCALPLAY_CONNECTING]);
         // TODO: 配网的时候可能执行了动态注册，所以这里再保存一次,保证下次可以正常读取到设备密钥
-        HAL_GetDevInfo(&device_info);
+        TCI_HAL_GetDevInfo((uint8_t *)&device_info, sizeof(DeviceInfo));
         HAL_NVS_Write(DEVICEINFO_NVS_NAMESPACE, (const uint8_t*)&device_info, sizeof(device_info));
-        HAL_SleepMs(5000);
+        TCI_HAL_SleepMs(5000);
         esp_restart();
     }
 
@@ -498,7 +499,7 @@ static void twetalk_thread_entry(void* param)
     _setup_connect_init_params(&init_params, &device_info);
 
     // create MQTT client and connect with server
-    void* client = IOT_MQTT_Construct(&init_params);
+    void* client = TCIOT_MQTT_Construct(&init_params);
     if (client) {
         Log_i("Cloud Device Construct Success");
     } else {
@@ -509,11 +510,11 @@ static void twetalk_thread_entry(void* param)
     rc = usr_data_template_init(client);
     if (rc) {
         Log_e("usr data template init failed: %d", rc);
-        IOT_MQTT_Destroy(&client);
+        TCIOT_MQTT_Destroy(&client);
         return;
     }
 
-    TWeTalkWsInitParams twetalk_params      = DEFAULT_TWETALK_WS_INIT_PARAMS;
+    TWeTalkWsInitParams twetalk_params = DEFAULT_TWETALK_WS_INIT_PARAMS;
     twetalk_params.mqtt_client              = client;
     twetalk_params.recv_audio_cb            = _twetalk_recv_audio_cb;
     twetalk_params.recv_event_cb            = _twetalk_recv_event_cb;
@@ -531,7 +532,7 @@ static void twetalk_thread_entry(void* param)
     if (sg_twetalk_handle == NULL) {
         Log_e("TWeTalk WebSocket init failed!");
         usr_data_template_deinit(client);
-        IOT_MQTT_Destroy(&client);
+        TCIOT_MQTT_Destroy(&client);
         goto ret;
     }
 
@@ -540,7 +541,7 @@ static void twetalk_thread_entry(void* param)
     if (rc) {
         Log_e("ota task init failed: %d", rc);
         usr_data_template_deinit(client);
-        IOT_MQTT_Destroy(&client);
+        TCIOT_MQTT_Destroy(&client);
         goto ret;
     }
 
@@ -552,12 +553,12 @@ static void twetalk_thread_entry(void* param)
     memset(openids, 0, sizeof(openids));
     strcpy(openids[0].name, CONFIG_TWETALK_CALLING_NAME);       //
     strcpy(openids[0].open_id, CONFIG_TWETALK_CALLING_OPENID);  //
-    tc_twetalk_call_sync_openids(sg_twetalk_handle, openids, 1);
+    tc_twetalk_ws_call_sync_openids(sg_twetalk_handle, openids, 1);
 
     do {
-        rc = IOT_MQTT_Yield(client, 200);
+        rc = TCIOT_MQTT_Yield(client, 200);
         if (rc == QCLOUD_ERR_MQTT_ATTEMPTING_RECONNECT) {
-            HAL_SleepMs(1000);
+            TCI_HAL_SleepMs(1000);
             continue;
         } else if (rc != QCLOUD_RET_SUCCESS && rc != QCLOUD_RET_MQTT_RECONNECTED) {
             Log_e("exit with error: %d", rc);
@@ -583,7 +584,7 @@ static void twetalk_thread_entry(void* param)
     rc |= tc_twetalk_ws_exit(sg_twetalk_handle);
     rc |= usr_data_template_deinit(client);
     iot_ota_deinit();
-    rc |= IOT_MQTT_Destroy(&client);
+    rc |= TCIOT_MQTT_Destroy(&client);
 ret:
     Log_w("twetalk thread exit with error: %d", rc);
     button_key_deinit();
@@ -633,7 +634,7 @@ static void btn_event_process(struct ebtn_btn* btn, ebtn_evt_t evt)
             extern void erase_wifi_info(void);
             erase_wifi_info();
             audio_prompt_play(tone_uri[LOCALPLAY_CLEAR_NETWORK]);
-            HAL_SleepMs(6000);
+            TCI_HAL_SleepMs(6000);
             esp_restart();
         }
     } else if (evt == EBTN_EVT_ONPRESS) {

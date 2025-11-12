@@ -26,8 +26,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_IOT_DEBUG_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_IOT_DEBUG_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_TCIOT_DEBUG_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_TCIOT_DEBUG_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,28 +37,28 @@ extern "C" {
 #include "qcloud_iot_config.h"
 #include "qcloud_iot_platform.h"
 
-#ifdef IOT_DEBUG
-#define IOT_FUNC_ENTRY        \
+#ifdef ENABLE_SDK_DEBUG
+#define TCIOT_FUNC_ENTRY        \
     {                         \
         Log_d("FUNC_ENTRY:"); \
     }
-#define IOT_FUNC_EXIT        \
+#define TCIOT_FUNC_EXIT        \
     {                        \
         Log_d("FUNC_EXIT:"); \
         return;              \
     }
-#define IOT_FUNC_EXIT_RC(x)                       \
+#define TCIOT_FUNC_EXIT_RC(x)                       \
     {                                             \
         Log_d("FUNC_EXIT:  Return Code : %d", x); \
         return x;                                 \
     }
 #else
-#define IOT_FUNC_ENTRY
-#define IOT_FUNC_EXIT \
+#define TCIOT_FUNC_ENTRY
+#define TCIOT_FUNC_EXIT \
     {                 \
         return;       \
     }
-#define IOT_FUNC_EXIT_RC(x) \
+#define TCIOT_FUNC_EXIT_RC(x) \
     {                       \
         return x;           \
     }
@@ -68,4 +68,4 @@ extern "C" {
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_IOT_DEBUG_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_TCIOT_DEBUG_H_

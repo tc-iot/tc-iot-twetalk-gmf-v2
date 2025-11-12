@@ -69,7 +69,7 @@ typedef struct {
 static int _service_mqtt_topic_generate(char *buf, int buf_len, ServiceTopicDirection direction, const char *product_id,
                                         const char *device_name)
 {
-    return HAL_Snprintf(buf, buf_len, "$thing/%s/service/%s/%s", direction ? "down" : "up",
+    return TCI_HAL_Snprintf(buf, buf_len, "$thing/%s/service/%s/%s", direction ? "down" : "up",
                         STRING_PTR_PRINT_SANITY_CHECK(product_id), STRING_PTR_PRINT_SANITY_CHECK(device_name));
 }
 
@@ -84,7 +84,7 @@ static int _service_mqtt_topic_generate(char *buf, int buf_len, ServiceTopicDire
  */
 static ServiceMqttContext *_service_mqtt_context_malloc(void)
 {
-    ServiceMqttContext *context = (ServiceMqttContext *)HAL_Malloc(sizeof(ServiceMqttContext));
+    ServiceMqttContext *context = (ServiceMqttContext *)TCI_HAL_Malloc(sizeof(ServiceMqttContext));
     if (!context) {
         return NULL;
     }
@@ -92,7 +92,7 @@ static ServiceMqttContext *_service_mqtt_context_malloc(void)
     UtilsListFunc func    = DEFAULT_LIST_FUNCS;
     context->service_list = utils_list_create(func, 10);
     if (!context->service_list) {
-        HAL_Free(context);
+        TCI_HAL_Free(context);
         context = NULL;
     }
     return context;
@@ -107,7 +107,7 @@ static void _service_mqtt_context_free(void *usr_data)
 {
     ServiceMqttContext *context = (ServiceMqttContext *)usr_data;
     utils_list_destroy(context->service_list);
-    HAL_Free(context);
+    TCI_HAL_Free(context);
 }
 
 /**
@@ -120,9 +120,9 @@ static ServiceMqttContext *_service_mqtt_context_get(void *client)
 {
     char service_mqtt_topic[MAX_SIZE_OF_CLOUD_TOPIC];
     _service_mqtt_topic_generate(service_mqtt_topic, MAX_SIZE_OF_CLOUD_TOPIC, SERVICE_TOPIC_DIRECTION_DOWN,
-                                 IOT_MQTT_GetDeviceInfo(client)->product_id,
-                                 IOT_MQTT_GetDeviceInfo(client)->device_name);
-    return (ServiceMqttContext *)IOT_MQTT_GetSubUsrData(client, service_mqtt_topic);
+                                 TCIOT_MQTT_GetDeviceInfo(client)->product_id,
+                                 TCIOT_MQTT_GetDeviceInfo(client)->device_name);
+    return (ServiceMqttContext *)TCIOT_MQTT_GetSubUsrData(client, service_mqtt_topic);
 }
 
 // ----------------------------------------------------------------------------
@@ -250,12 +250,12 @@ int _service_mqtt_topic_check_and_sub(void *client)
 {
     char service_mqtt_topic[MAX_SIZE_OF_CLOUD_TOPIC];
     _service_mqtt_topic_generate(service_mqtt_topic, MAX_SIZE_OF_CLOUD_TOPIC, SERVICE_TOPIC_DIRECTION_DOWN,
-                                 IOT_MQTT_GetDeviceInfo(client)->product_id,
-                                 IOT_MQTT_GetDeviceInfo(client)->device_name);
+                                 TCIOT_MQTT_GetDeviceInfo(client)->product_id,
+                                 TCIOT_MQTT_GetDeviceInfo(client)->device_name);
 
     int rc = 0;
 
-    if (IOT_MQTT_IsSubReady(client, service_mqtt_topic)) {
+    if (TCIOT_MQTT_IsSubReady(client, service_mqtt_topic)) {
         return 0;
     }
 
@@ -270,7 +270,7 @@ int _service_mqtt_topic_check_and_sub(void *client)
     sub_params.user_data          = context;
     sub_params.user_data_free     = _service_mqtt_context_free;
 
-    rc = IOT_MQTT_SubscribeSync(client, service_mqtt_topic, &sub_params);
+    rc = TCIOT_MQTT_SubscribeSync(client, service_mqtt_topic, &sub_params);
     if (rc) {
         _service_mqtt_context_free(context);
         Log_e("subscribe topic %s failed!", service_mqtt_topic);
@@ -288,9 +288,9 @@ int _service_mqtt_unsubscribe(void *client)
 {
     char service_mqtt_topic[MAX_SIZE_OF_CLOUD_TOPIC];
     _service_mqtt_topic_generate(service_mqtt_topic, MAX_SIZE_OF_CLOUD_TOPIC, SERVICE_TOPIC_DIRECTION_DOWN,
-                                 IOT_MQTT_GetDeviceInfo(client)->product_id,
-                                 IOT_MQTT_GetDeviceInfo(client)->device_name);
-    return IOT_MQTT_Unsubscribe(client, service_mqtt_topic);
+                                 TCIOT_MQTT_GetDeviceInfo(client)->product_id,
+                                 TCIOT_MQTT_GetDeviceInfo(client)->device_name);
+    return TCIOT_MQTT_Unsubscribe(client, service_mqtt_topic);
 }
 
 // ----------------------------------------------------------------------------
@@ -338,14 +338,14 @@ int service_mqtt_publish(void *client, QoS qos, const char *payload, int payload
 {
     char service_mqtt_topic[MAX_SIZE_OF_CLOUD_TOPIC];
     _service_mqtt_topic_generate(service_mqtt_topic, MAX_SIZE_OF_CLOUD_TOPIC, SERVICE_TOPIC_DIRECTION_UP,
-                                 IOT_MQTT_GetDeviceInfo(client)->product_id,
-                                 IOT_MQTT_GetDeviceInfo(client)->device_name);
+                                 TCIOT_MQTT_GetDeviceInfo(client)->product_id,
+                                 TCIOT_MQTT_GetDeviceInfo(client)->device_name);
 
     PublishParams pub_params = DEFAULT_PUB_PARAMS;
     pub_params.qos           = qos;
     pub_params.payload       = (void *)payload;
     pub_params.payload_len   = payload_len;
-    return IOT_MQTT_Publish(client, service_mqtt_topic, &pub_params);
+    return TCIOT_MQTT_Publish(client, service_mqtt_topic, &pub_params);
 }
 
 /**

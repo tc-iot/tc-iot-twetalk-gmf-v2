@@ -57,10 +57,10 @@ static int _cos_download_connect(HTTPCosDownloadHandle *handle)
     IotHTTPConnectParams connect_params = {
         .url    = handle->params.url,
         .port   = handle->params.is_https_enabled ? "443" : "80",
-        .ca_crt = handle->params.is_https_enabled ? IOT_HTTPS_CA() : NULL,
+        .ca_crt = handle->params.is_https_enabled ? TCIOT_HTTPS_CA() : NULL,
 
     };
-    return IOT_HTTP_Connect(handle->http_client, &connect_params);
+    return TCIOT_HTTP_Connect(handle->http_client, &connect_params);
 }
 
 /**
@@ -74,7 +74,7 @@ static int _cos_download_connect(HTTPCosDownloadHandle *handle)
  */
 static int _cos_download_request_header_construct(char *header, int is_fragmentation, int begin_byte, int end_byte)
 {
-    int len = HAL_Snprintf(header, HTTP_COS_DOWNLOAD_REQUEST_HEADER_LEN,
+    int len = TCI_HAL_Snprintf(header, HTTP_COS_DOWNLOAD_REQUEST_HEADER_LEN,
                            "Accept:text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n"
                            "Accept-Encoding:gzip, deflate\r\nRange:bytes=%d-%d\r\n",
                            begin_byte, end_byte);
@@ -120,10 +120,10 @@ static int _cos_download_request(HTTPCosDownloadHandle *handle, int max_len)
     }
 
     handle->http_request.url            = handle->params.url;
-    handle->http_request.method         = IOT_HTTP_METHOD_GET;
+    handle->http_request.method         = TCIOT_HTTP_METHOD_GET;
     handle->http_request.content_length = 0;
     handle->http_request.content = handle->http_request.content_type = NULL;
-    return IOT_HTTP_Request(handle->http_client, &handle->http_request);
+    return TCIOT_HTTP_Request(handle->http_client, &handle->http_request);
 }
 
 /**
@@ -137,7 +137,7 @@ static int _cos_download_request(HTTPCosDownloadHandle *handle, int max_len)
  */
 static int _cos_download_recv_data(HTTPCosDownloadHandle *handle, uint8_t *buf, int buf_len, uint32_t timeout_ms)
 {
-    int rc = IOT_HTTP_Recv(handle->http_client, buf, buf_len, timeout_ms);
+    int rc = TCIOT_HTTP_Recv(handle->http_client, buf, buf_len, timeout_ms);
     if (rc > 0) {
         handle->download_size += rc;
     }
@@ -154,21 +154,21 @@ static int _cos_download_recv_data(HTTPCosDownloadHandle *handle, uint8_t *buf, 
  * @param[in] params @see IotCosDownloadParams
  * @return pointer to cos download handle
  */
-void *IOT_COS_DownloadInit(IotCosDownloadParams *params)
+void *TCIOT_COS_DownloadInit(IotCosDownloadParams *params)
 {
     POINTER_SANITY_CHECK(params, NULL);
 
-    HTTPCosDownloadHandle *handle = HAL_Malloc(sizeof(HTTPCosDownloadHandle));
+    HTTPCosDownloadHandle *handle = TCI_HAL_Malloc(sizeof(HTTPCosDownloadHandle));
     if (!handle) {
         goto exit;
     }
 
-    handle->http_client = IOT_HTTP_Init();
+    handle->http_client = TCIOT_HTTP_Init();
     if (!handle->http_client) {
         goto exit;
     }
 
-    handle->http_request.header = HAL_Malloc(HTTP_COS_DOWNLOAD_REQUEST_HEADER_LEN);
+    handle->http_request.header = TCI_HAL_Malloc(HTTP_COS_DOWNLOAD_REQUEST_HEADER_LEN);
     if (!handle->http_request.header) {
         goto exit;
     }
@@ -183,9 +183,9 @@ void *IOT_COS_DownloadInit(IotCosDownloadParams *params)
     return handle;
 exit:
     if (handle) {
-        HAL_Free(handle->http_request.header);
-        IOT_HTTP_Deinit(handle->http_client);
-        HAL_Free(handle);
+        TCI_HAL_Free(handle->http_request.header);
+        TCIOT_HTTP_Deinit(handle->http_client);
+        TCI_HAL_Free(handle);
     }
     return NULL;
 }
@@ -199,7 +199,7 @@ exit:
  * @param timeout_ms timeout for fetching
  * @return >= 0 for recv data len. others @see IotReturnCode
  */
-int IOT_COS_DownloadFetch(void *handle, uint8_t *buf, uint32_t buf_len, uint32_t timeout_ms)
+int TCIOT_COS_DownloadFetch(void *handle, uint8_t *buf, uint32_t buf_len, uint32_t timeout_ms)
 {
     POINTER_SANITY_CHECK(handle, QCLOUD_ERR_INVAL);
     int rc = 0;
@@ -207,7 +207,7 @@ int IOT_COS_DownloadFetch(void *handle, uint8_t *buf, uint32_t buf_len, uint32_t
     HTTPCosDownloadHandle *download_handle = (HTTPCosDownloadHandle *)handle;
 
     // download finish
-    if (IOT_COS_DownloadIsFinished(handle)) {
+    if (TCIOT_COS_DownloadIsFinished(handle)) {
         return 0;
     }
 
@@ -221,7 +221,7 @@ int IOT_COS_DownloadFetch(void *handle, uint8_t *buf, uint32_t buf_len, uint32_t
         return _cos_download_recv_data(download_handle, buf, buf_len, timeout_ms);
     }
 
-    if (download_handle->params.is_fragmentation && IOT_HTTP_IsRecvFinished(download_handle->http_client)) {
+    if (download_handle->params.is_fragmentation && TCIOT_HTTP_IsRecvFinished(download_handle->http_client)) {
         rc = _cos_download_request(download_handle, buf_len);
         if (rc) {
             Log_e("cos request failed %d", rc);
@@ -236,13 +236,13 @@ int IOT_COS_DownloadFetch(void *handle, uint8_t *buf, uint32_t buf_len, uint32_t
  * @brief Is download finished.
  *
  * @param[in,out] handle pointer to cos download handle, @see HTTPCosDownloadHandle
- * @return IOT_BOOL_TRUE for finished
+ * @return TCIOT_BOOL_TRUE for finished
  */
-IotBool IOT_COS_DownloadIsFinished(void *handle)
+IotBool TCIOT_COS_DownloadIsFinished(void *handle)
 {
-    POINTER_SANITY_CHECK(handle, IOT_BOOL_FALSE);
+    POINTER_SANITY_CHECK(handle, TCIOT_BOOL_FALSE);
     HTTPCosDownloadHandle *download_handle = (HTTPCosDownloadHandle *)handle;
-    return download_handle->download_size == download_handle->params.file_size ? IOT_BOOL_TRUE : IOT_BOOL_FALSE;
+    return download_handle->download_size == download_handle->params.file_size ? TCIOT_BOOL_TRUE : TCIOT_BOOL_FALSE;
 }
 
 /**
@@ -250,12 +250,12 @@ IotBool IOT_COS_DownloadIsFinished(void *handle)
  *
  * @param[in,out] handle pointer to cos download handle, @see HTTPCosDownloadHandle
  */
-void IOT_COS_DownloadDeinit(void *handle)
+void TCIOT_COS_DownloadDeinit(void *handle)
 {
     POINTER_SANITY_CHECK_RTN(handle);
     HTTPCosDownloadHandle *download_handle = (HTTPCosDownloadHandle *)handle;
-    IOT_HTTP_Disconnect(download_handle->http_client);
-    IOT_HTTP_Deinit(download_handle->http_client);
-    HAL_Free(download_handle->http_request.header);
-    HAL_Free(download_handle);
+    TCIOT_HTTP_Disconnect(download_handle->http_client);
+    TCIOT_HTTP_Deinit(download_handle->http_client);
+    TCI_HAL_Free(download_handle->http_request.header);
+    TCI_HAL_Free(download_handle);
 }

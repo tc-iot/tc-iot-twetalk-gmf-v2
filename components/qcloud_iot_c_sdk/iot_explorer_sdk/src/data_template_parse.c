@@ -53,7 +53,7 @@ static char* _data_template_console_json_get_id(DataTemplateProperty* parent_pro
         return NULL;
     }
 
-    char* value = (char*)HAL_Malloc(id.value_len + 1);
+    char* value = (char*)TCI_HAL_Malloc(id.value_len + 1);
     if (!value) {
         Log_e("%s json malloc failed", key);
         return NULL;
@@ -146,12 +146,12 @@ static char* _data_template_console_json_get_strbuff(DataTemplateProperty* paren
     int    ret       = utils_json_get_int(key, key_len, params.value, params.value_len, (int*)&max_value);
     if (ret || max_value > DATA_TEMPLATE_JSON_KEY_OBJECT_PROPERTY_STR_LENMAX) {
         if (parent_type == DATA_TEMPLATE_TYPE_STRING_ENUM) {
-            return HAL_Malloc(DATA_TEMPLATE_JSON_KEY_OBJECT_PROPERTY_STRENUM_LEN + 1);
+            return TCI_HAL_Malloc(DATA_TEMPLATE_JSON_KEY_OBJECT_PROPERTY_STRENUM_LEN + 1);
         }
         Log_e("%s json get failed %d, %d", key, ret, max_value);
         return NULL;
     }
-    return HAL_Malloc(max_value + 1);
+    return TCI_HAL_Malloc(max_value + 1);
 }
 
 static int _data_template_console_json_get_property(DataTemplateProperty* parent_property, UtilsJsonValue params);
@@ -205,7 +205,7 @@ static UtilsJsonArrayIterResult _data_template_console_json_array_property_callb
             }
             break;
         case DATA_TEMPLATE_TYPE_ARRAY:
-            property->value.value_string.str = HAL_Malloc(DATA_TEMPLATE_JSON_KEY_OBJECT_PROPERTY_ARRAY_LEN + 1);
+            property->value.value_string.str = TCI_HAL_Malloc(DATA_TEMPLATE_JSON_KEY_OBJECT_PROPERTY_ARRAY_LEN + 1);
             if (!property->value.value_string.str) {
                 Log_e("json get array buff failed");
                 return UTILS_JSON_ARRAY_ITER_STOP;
@@ -273,7 +273,7 @@ static int _data_template_console_json_get_property(DataTemplateProperty* parent
     }
 
     /* malloc */
-    parent_property->value.value_struct.property = HAL_Malloc(sizeof(DataTemplateProperty) * count);
+    parent_property->value.value_struct.property = TCI_HAL_Malloc(sizeof(DataTemplateProperty) * count);
     if (!parent_property->value.value_struct.property) {
         Log_e("property malloc failed size : %d", sizeof(DataTemplateProperty) * count);
         return QCLOUD_ERR_MALLOC;
@@ -296,9 +296,9 @@ static void _data_template_console_json_free_property(DataTemplateProperty* pare
 
     for (int i = 0; i < parent_property->value.value_struct.count; i++) {
         DataTemplateProperty* property = parent_property->value.value_struct.property + i;
-        HAL_Free((void*)property->key);
+        TCI_HAL_Free((void*)property->key);
         if (property->type == DATA_TEMPLATE_TYPE_STRING || property->type == DATA_TEMPLATE_TYPE_ARRAY) {
-            HAL_Free(property->value.value_string.str);
+            TCI_HAL_Free(property->value.value_string.str);
             property->value.value_string.str_len = 0;
         } else if (property->type == DATA_TEMPLATE_TYPE_STRUCT) {
             DataTemplateProperty parent_property_struct;
@@ -306,11 +306,11 @@ static void _data_template_console_json_free_property(DataTemplateProperty* pare
             parent_property_struct.value.value_struct.property = property->value.value_struct.property;
             parent_property_struct.value.value_struct.count    = property->value.value_struct.count;
             _data_template_console_json_free_property(&parent_property_struct);
-            HAL_Free(property->value.value_struct.property);
+            TCI_HAL_Free(property->value.value_struct.property);
         }
     }
 
-    HAL_Free(parent_property->value.value_struct.property);
+    TCI_HAL_Free(parent_property->value.value_struct.property);
     parent_property->value.value_struct.property = NULL;
     parent_property->value.value_struct.count    = 0;
 }

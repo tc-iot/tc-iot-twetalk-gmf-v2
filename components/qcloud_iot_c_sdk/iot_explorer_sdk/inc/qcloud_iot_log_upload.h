@@ -26,8 +26,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_LOG_UPLOAD_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_LOG_UPLOAD_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_LOG_UPLOAD_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_LOG_UPLOAD_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,13 +44,13 @@ extern "C" {
  *
  */
 // callback for saving logs into NVS(files/FLASH) after upload fail
-typedef size_t (*LogSaveFunc)(const char *filename, const void *buf, size_t write_len, size_t offset);
+typedef int (*LogSaveFunc)(const char *filename, const void *buf, size_t write_len, size_t offset);
 // callback for reading logs from NVS(files/FLASH) when upload ready
-typedef size_t (*LogReadFunc)(const char *filename, void *buf, size_t read_len, size_t offset);
+typedef int (*LogReadFunc)(const char *filename, void *buf, size_t read_len, size_t offset);
 // callback for deleting logs in NVS(files/FLASH). return 0 when success
 typedef int (*LogDelFunc)(const char *filename);
 // callback for reading the size of logs in NVS(files/FLASH). return 0 when nothing exist
-typedef size_t (*LogGetSizeFunc)(const char *filename);
+typedef long (*LogGetSizeFunc)(const char *filename);
 
 /**
  * @brief Data structure to init feature of log upload.
@@ -88,7 +88,7 @@ typedef struct {
  * @param[in] init_params @see LogUploadInitParams
  * @return @see IotReturnCode
  */
-int IOT_Log_Upload_InitPre(const LogUploadInitParams *init_params);
+int TCIOT_Log_Upload_InitPre(const LogUploadInitParams *init_params);
 
 /**
  * @brief Init log upload module.
@@ -96,14 +96,14 @@ int IOT_Log_Upload_InitPre(const LogUploadInitParams *init_params);
  * @param[in,out] client pointer to mqtt client
  * @return @see IotReturnCode
  */
-int IOT_Log_Upload_Init(void *client);
+int TCIOT_Log_Upload_Init(void *client);
 
 /**
  * @brief Stop log upload add release resources.
  *
  * @return @see IotReturnCode
  */
-int IOT_Log_Upload_Deinit(void);
+int TCIOT_Log_Upload_Deinit(void);
 
 /**
  * @brief Append need report log to log upload buffer.
@@ -111,7 +111,7 @@ int IOT_Log_Upload_Deinit(void);
  * @param[in] log_level @see LogLevel
  * @param[in] log_content data of need to report
  */
-void IOT_Log_Upload_AppendToUploadBuffer(LogLevel log_level, const char *log_content);
+void TCIOT_Log_Upload_AppendToUploadBuffer(LogLevel log_level, const char *log_content);
 
 /**
  * @brief Do log upload.
@@ -119,10 +119,10 @@ void IOT_Log_Upload_AppendToUploadBuffer(LogLevel log_level, const char *log_con
  * @param[in] force_upload force upload when error
  * @return @see IotReturnCode
  */
-int IOT_Log_Upload(IotBool force_upload);
+int TCIOT_Log_Upload(IotBool force_upload);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_LOG_UPLOAD_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_LOG_UPLOAD_H_

@@ -26,8 +26,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_HTTP_CLIENT_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_HTTP_CLIENT_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_HTTP_CLIENT_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_HTTP_CLIENT_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,11 +62,11 @@ typedef struct {
  *
  */
 typedef enum {
-    IOT_HTTP_METHOD_GET = 0,
-    IOT_HTTP_METHOD_POST,
-    IOT_HTTP_METHOD_PUT,
-    IOT_HTTP_METHOD_DELETE,
-    IOT_HTTP_METHOD_HEAD,
+    TCIOT_HTTP_METHOD_GET = 0,
+    TCIOT_HTTP_METHOD_POST,
+    TCIOT_HTTP_METHOD_PUT,
+    TCIOT_HTTP_METHOD_DELETE,
+    TCIOT_HTTP_METHOD_HEAD,
 } IotHTTPMethod;
 
 /**
@@ -88,13 +88,13 @@ typedef struct {
  *
  * @return pointer to http client
  */
-void *IOT_HTTP_Init(void);
+void *TCIOT_HTTP_Init(void);
 
 /**
  * @brief Free http client.
  *
  */
-void IOT_HTTP_Deinit(void *client);
+void TCIOT_HTTP_Deinit(void *client);
 
 /**
  * @brief Connect http server.
@@ -103,7 +103,7 @@ void IOT_HTTP_Deinit(void *client);
  * @param[in] params params needed to connect http server, @see IotHTTPConnectParams
  * @return 0 for success. others @see IotReturnCode
  */
-int IOT_HTTP_Connect(void *client, IotHTTPConnectParams *params);
+int TCIOT_HTTP_Connect(void *client, IotHTTPConnectParams *params);
 
 /**
  * @brief Request http server.
@@ -112,7 +112,7 @@ int IOT_HTTP_Connect(void *client, IotHTTPConnectParams *params);
  * @param[in] params params needed to send request to http server, @see IotHTTPRequestParams
  * @return 0 for success. others @see IotReturnCode
  */
-int IOT_HTTP_Request(void *client, IotHTTPRequestParams *params);
+int TCIOT_HTTP_Request(void *client, IotHTTPRequestParams *params);
 
 /**
  * @brief Send data to http server.
@@ -122,7 +122,7 @@ int IOT_HTTP_Request(void *client, IotHTTPRequestParams *params);
  * @param[out] data_len data len
  * @return 0 for success. others @see IotReturnCode
  */
-int IOT_HTTP_Send(void *client, uint8_t *data, int data_len);
+int TCIOT_HTTP_Send(void *client, uint8_t *data, int data_len);
 
 /**
  * @brief Recv data from http server.
@@ -133,32 +133,32 @@ int IOT_HTTP_Send(void *client, uint8_t *data, int data_len);
  * @param timeout_ms timeout for recv
  * @return >= 0 for recv data len. others @see IotReturnCode
  */
-int IOT_HTTP_Recv(void *client, uint8_t *buf, int buf_len, uint32_t timeout_ms);
+int TCIOT_HTTP_Recv(void *client, uint8_t *buf, int buf_len, uint32_t timeout_ms);
 
 /**
  * @brief Check is recv finished.
  *
  * @param[in,out] client pointer to http client
- * @return IOT_BOOL_TRUE for finished.
+ * @return TCIOT_BOOL_TRUE for finished.
  */
-IotBool IOT_HTTP_IsRecvFinished(void *client);
+IotBool TCIOT_HTTP_IsRecvFinished(void *client);
 
 /**
  * @brief Disconnect http server.
  *
  * @param[in,out] client pointer to http client
  */
-void IOT_HTTP_Disconnect(void *client);
+void TCIOT_HTTP_Disconnect(void *client);
 
 /**
  * @brief Return https ca.
  *
  * @return ca string
  */
-const char *IOT_HTTPS_CA(void);
+const char *TCIOT_HTTPS_CA(void);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_HTTP_CLIENT_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_HTTP_CLIENT_H_

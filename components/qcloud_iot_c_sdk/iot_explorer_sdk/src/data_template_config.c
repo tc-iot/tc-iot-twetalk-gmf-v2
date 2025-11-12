@@ -125,35 +125,35 @@ static void _parse_property_array(const char* json_buf, int buf_len, DataTemplat
 DataTemplate* iot_data_template_create(size_t property_count, size_t property_data_size, size_t event_count,
                                        size_t action_count, size_t action_data_size)
 {
-    DataTemplate* data_template = HAL_Malloc(sizeof(DataTemplate));
+    DataTemplate* data_template = TCI_HAL_Malloc(sizeof(DataTemplate));
     if (!data_template) {
         return NULL;
     }
     memset(data_template, 0, sizeof(DataTemplate));
 
     if (property_count) {
-        data_template->property = HAL_Malloc(sizeof(DataTemplateProperty) * property_count);
+        data_template->property = TCI_HAL_Malloc(sizeof(DataTemplateProperty) * property_count);
         memset(data_template->property, 0, sizeof(DataTemplateProperty) * property_count);
         data_template->property_count = property_count;
     }
     if (property_data_size) {
-        data_template->property_data  = HAL_Malloc(property_data_size);
+        data_template->property_data  = TCI_HAL_Malloc(property_data_size);
         memset(data_template->property_data, 0, property_data_size);
     }
 
     if (event_count) {
-        data_template->event = HAL_Malloc(sizeof(DataTemplateEvent) * event_count);
+        data_template->event = TCI_HAL_Malloc(sizeof(DataTemplateEvent) * event_count);
         memset(data_template->event, 0, sizeof(DataTemplateEvent) * event_count);
         data_template->event_count = event_count;
     }
 
     if (action_count) {
-        data_template->action = HAL_Malloc(sizeof(DataTemplateAction) * action_count);
+        data_template->action = TCI_HAL_Malloc(sizeof(DataTemplateAction) * action_count);
         memset(data_template->action, 0, sizeof(DataTemplateAction) * action_count);
         data_template->action_count = action_count;
     }
     if (action_data_size) {
-        data_template->action_data  = HAL_Malloc(action_data_size);
+        data_template->action_data  = TCI_HAL_Malloc(action_data_size);
         memset(data_template->action_data, 0, action_data_size);
     }
 
@@ -176,12 +176,12 @@ exit:
 void iot_data_template_destroy(DataTemplate* data_template)
 {
     POINTER_SANITY_CHECK_RTN(data_template);
-    HAL_Free(data_template->property);
-    HAL_Free(data_template->property_data);
-    HAL_Free(data_template->event);
-    HAL_Free(data_template->action);
-    HAL_Free(data_template->action_data);
-    HAL_Free(data_template);
+    TCI_HAL_Free(data_template->property);
+    TCI_HAL_Free(data_template->property_data);
+    TCI_HAL_Free(data_template->event);
+    TCI_HAL_Free(data_template->action);
+    TCI_HAL_Free(data_template->action_data);
+    TCI_HAL_Free(data_template);
 }
 
 /**

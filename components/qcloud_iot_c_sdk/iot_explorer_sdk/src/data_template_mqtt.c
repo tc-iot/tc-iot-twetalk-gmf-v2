@@ -59,7 +59,7 @@ static int _data_template_topic_generate(char *buf, int buf_len, DataTemplateDir
         [DATA_TEMPLATE_TYPE_ACTION]   = "action",
     };
     // $thing/down/property/C283SMY3W3/test1
-    return HAL_Snprintf(buf, buf_len, "$thing/%s/%s/%s/%s", direction ? "down" : "up", topic_method[type],
+    return TCI_HAL_Snprintf(buf, buf_len, "$thing/%s/%s/%s/%s", direction ? "down" : "up", topic_method[type],
                         STRING_PTR_PRINT_SANITY_CHECK(product_id), STRING_PTR_PRINT_SANITY_CHECK(device_name));
 }
 
@@ -93,9 +93,9 @@ int data_template_topic_check_and_sub(void *client, DataTemplateType type, DataT
 
     char data_template_topic[MAX_SIZE_OF_CLOUD_TOPIC];
     _data_template_topic_generate(data_template_topic, MAX_SIZE_OF_CLOUD_TOPIC, DATA_TEMPLATE_DIRECTION_DOWN, type,
-                                  IOT_MQTT_GetDeviceInfo(client)->product_id,
-                                  IOT_MQTT_GetDeviceInfo(client)->device_name);
-    if (IOT_MQTT_IsSubReady(client, data_template_topic)) {
+                                  TCIOT_MQTT_GetDeviceInfo(client)->product_id,
+                                  TCIOT_MQTT_GetDeviceInfo(client)->device_name);
+    if (TCIOT_MQTT_IsSubReady(client, data_template_topic)) {
         return data_template_context_register(client, type, context);
     }
 
@@ -103,7 +103,7 @@ int data_template_topic_check_and_sub(void *client, DataTemplateType type, DataT
 
     UtilsListFunc func = DEFAULT_LIST_FUNCS;
 
-    void *data_template_context_list = utils_list_create(func, QCLOUD_IOT_MQTT_MAX_MESSAGE_HANDLERS);
+    void *data_template_context_list = utils_list_create(func, QCLOUD_TCIOT_MQTT_MAX_MESSAGE_HANDLERS);
     if (!data_template_context_list) {
         return QCLOUD_ERR_MALLOC;
     }
@@ -119,7 +119,7 @@ int data_template_topic_check_and_sub(void *client, DataTemplateType type, DataT
     sub_params.user_data          = data_template_context_list;
     sub_params.user_data_free     = utils_list_destroy;
 
-    rc = IOT_MQTT_SubscribeSync(client, data_template_topic, &sub_params);
+    rc = TCIOT_MQTT_SubscribeSync(client, data_template_topic, &sub_params);
     if (rc) {
         Log_e("subscribe topic %s failed!", data_template_topic);
         utils_list_destroy(data_template_context_list);
@@ -140,12 +140,12 @@ int data_template_context_register(void *client, DataTemplateType type, DataTemp
     // register topic
     char data_template_topic[MAX_SIZE_OF_CLOUD_TOPIC];
     _data_template_topic_generate(data_template_topic, MAX_SIZE_OF_CLOUD_TOPIC, DATA_TEMPLATE_DIRECTION_DOWN, type,
-                                  IOT_MQTT_GetDeviceInfo(client)->product_id,
-                                  IOT_MQTT_GetDeviceInfo(client)->device_name);
-    if (!IOT_MQTT_IsSubReady(client, data_template_topic)) {
+                                  TCIOT_MQTT_GetDeviceInfo(client)->product_id,
+                                  TCIOT_MQTT_GetDeviceInfo(client)->device_name);
+    if (!TCIOT_MQTT_IsSubReady(client, data_template_topic)) {
         return data_template_topic_check_and_sub(client, type, context);
     }
-    return _data_template_context_push(IOT_MQTT_GetSubUsrData(client, data_template_topic), context);
+    return _data_template_context_push(TCIOT_MQTT_GetSubUsrData(client, data_template_topic), context);
 }
 
 /**
@@ -159,9 +159,9 @@ int data_template_topic_unsubscribe(void *client, DataTemplateType type)
 {
     char data_template_topic[MAX_SIZE_OF_CLOUD_TOPIC];
     _data_template_topic_generate(data_template_topic, MAX_SIZE_OF_CLOUD_TOPIC, DATA_TEMPLATE_DIRECTION_DOWN, type,
-                                  IOT_MQTT_GetDeviceInfo(client)->product_id,
-                                  IOT_MQTT_GetDeviceInfo(client)->device_name);
-    return IOT_MQTT_Unsubscribe(client, data_template_topic);
+                                  TCIOT_MQTT_GetDeviceInfo(client)->product_id,
+                                  TCIOT_MQTT_GetDeviceInfo(client)->device_name);
+    return TCIOT_MQTT_Unsubscribe(client, data_template_topic);
 }
 
 /**
@@ -180,12 +180,12 @@ int data_template_publish(void *client, DataTemplateType type, QoS qos, const ch
 
     char data_template_topic[MAX_SIZE_OF_CLOUD_TOPIC];
     _data_template_topic_generate(data_template_topic, MAX_SIZE_OF_CLOUD_TOPIC, DATA_TEMPLATE_DIRECTION_UP, type,
-                                  IOT_MQTT_GetDeviceInfo(client)->product_id,
-                                  IOT_MQTT_GetDeviceInfo(client)->device_name);
+                                  TCIOT_MQTT_GetDeviceInfo(client)->product_id,
+                                  TCIOT_MQTT_GetDeviceInfo(client)->device_name);
 
     PublishParams pub_params = DEFAULT_PUB_PARAMS;
     pub_params.qos           = qos;
     pub_params.payload       = (void *)payload;
     pub_params.payload_len   = payload_len;
-    return IOT_MQTT_Publish(client, data_template_topic, &pub_params);
+    return TCIOT_MQTT_Publish(client, data_template_topic, &pub_params);
 }

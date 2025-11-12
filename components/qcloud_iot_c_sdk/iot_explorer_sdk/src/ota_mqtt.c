@@ -157,11 +157,11 @@ static int _ota_mqtt_update_topic_check_and_sub(void *client, IotOTAUpdateCallba
     int  rc = 0;
     char ota_result_topic[MAX_SIZE_OF_CLOUD_TOPIC];
 
-    HAL_Snprintf(ota_result_topic, MAX_SIZE_OF_CLOUD_TOPIC, "$ota/update/%s/%s",
-                 STRING_PTR_PRINT_SANITY_CHECK(IOT_MQTT_GetDeviceInfo(client)->product_id),
-                 STRING_PTR_PRINT_SANITY_CHECK(IOT_MQTT_GetDeviceInfo(client)->device_name));
+    TCI_HAL_Snprintf(ota_result_topic, MAX_SIZE_OF_CLOUD_TOPIC, "$ota/update/%s/%s",
+                 STRING_PTR_PRINT_SANITY_CHECK(TCIOT_MQTT_GetDeviceInfo(client)->product_id),
+                 STRING_PTR_PRINT_SANITY_CHECK(TCIOT_MQTT_GetDeviceInfo(client)->device_name));
 
-    OTAUpdateContext *ota_update_context = (OTAUpdateContext *)HAL_Malloc(sizeof(OTAUpdateContext));
+    OTAUpdateContext *ota_update_context = (OTAUpdateContext *)TCI_HAL_Malloc(sizeof(OTAUpdateContext));
     if (!ota_update_context) {
         return QCLOUD_ERR_MALLOC;
     }
@@ -172,11 +172,11 @@ static int _ota_mqtt_update_topic_check_and_sub(void *client, IotOTAUpdateCallba
     sub_params.on_message_handler = _ota_mqtt_message_callback;
     sub_params.qos                = QOS1;
     sub_params.user_data          = ota_update_context;
-    sub_params.user_data_free     = HAL_Free;
+    sub_params.user_data_free     = TCI_HAL_Free;
 
-    rc = IOT_MQTT_SubscribeSync(client, ota_result_topic, &sub_params);
+    rc = TCIOT_MQTT_SubscribeSync(client, ota_result_topic, &sub_params);
     if (rc) {
-        HAL_Free(ota_update_context);
+        TCI_HAL_Free(ota_update_context);
     }
     return rc;
 }
@@ -190,10 +190,10 @@ static int _ota_mqtt_update_topic_check_and_sub(void *client, IotOTAUpdateCallba
 static int _ota_mqtt_update_topic_unsubscribe(void *client)
 {
     char ota_result_topic[MAX_SIZE_OF_CLOUD_TOPIC];
-    HAL_Snprintf(ota_result_topic, MAX_SIZE_OF_CLOUD_TOPIC, "$ota/update/%s/%s",
-                 STRING_PTR_PRINT_SANITY_CHECK(IOT_MQTT_GetDeviceInfo(client)->product_id),
-                 STRING_PTR_PRINT_SANITY_CHECK(IOT_MQTT_GetDeviceInfo(client)->device_name));
-    return IOT_MQTT_Unsubscribe(client, ota_result_topic);
+    TCI_HAL_Snprintf(ota_result_topic, MAX_SIZE_OF_CLOUD_TOPIC, "$ota/update/%s/%s",
+                 STRING_PTR_PRINT_SANITY_CHECK(TCIOT_MQTT_GetDeviceInfo(client)->product_id),
+                 STRING_PTR_PRINT_SANITY_CHECK(TCIOT_MQTT_GetDeviceInfo(client)->device_name));
+    return TCIOT_MQTT_Unsubscribe(client, ota_result_topic);
 }
 
 /**
@@ -208,15 +208,15 @@ static int _ota_mqtt_update_topic_unsubscribe(void *client)
 static int _ota_mqtt_publish(void *client, QoS qos, const char *payload, int payload_len)
 {
     char ota_report_topic[MAX_SIZE_OF_CLOUD_TOPIC];
-    HAL_Snprintf(ota_report_topic, sizeof(ota_report_topic), "$ota/report/%s/%s",
-                 STRING_PTR_PRINT_SANITY_CHECK(IOT_MQTT_GetDeviceInfo(client)->product_id),
-                 STRING_PTR_PRINT_SANITY_CHECK(IOT_MQTT_GetDeviceInfo(client)->device_name));
+    TCI_HAL_Snprintf(ota_report_topic, sizeof(ota_report_topic), "$ota/report/%s/%s",
+                 STRING_PTR_PRINT_SANITY_CHECK(TCIOT_MQTT_GetDeviceInfo(client)->product_id),
+                 STRING_PTR_PRINT_SANITY_CHECK(TCIOT_MQTT_GetDeviceInfo(client)->device_name));
 
     PublishParams pub_params = DEFAULT_PUB_PARAMS;
     pub_params.qos           = qos;
     pub_params.payload       = (void *)payload;
     pub_params.payload_len   = payload_len;
-    return IOT_MQTT_Publish(client, ota_report_topic, &pub_params);
+    return TCIOT_MQTT_Publish(client, ota_report_topic, &pub_params);
 }
 
 /**
@@ -227,7 +227,7 @@ static int _ota_mqtt_publish(void *client, QoS qos, const char *payload, int pay
  * @param[in] usr_data usr data used in callback
  * @return 0 for success, or err code (<0) @see IotReturnCode
  */
-int IOT_OTA_Init(void *client, IotOTAUpdateCallback callback, void *usr_data)
+int TCIOT_OTA_Init(void *client, IotOTAUpdateCallback callback, void *usr_data)
 {
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
     return _ota_mqtt_update_topic_check_and_sub(client, callback, usr_data);
@@ -238,7 +238,7 @@ int IOT_OTA_Init(void *client, IotOTAUpdateCallback callback, void *usr_data)
  *
  * @param[in,out] client pointer to mqtt client
  */
-void IOT_OTA_Deinit(void *client)
+void TCIOT_OTA_Deinit(void *client)
 {
     POINTER_SANITY_CHECK_RTN(client);
     _ota_mqtt_update_topic_unsubscribe(client);
@@ -251,11 +251,11 @@ void IOT_OTA_Deinit(void *client)
  * @param[out] buf publish message buffer
  * @param[in] buf_len buffer len
  * @param[in] report_type @see IotOTAReportType
- * @param[in] progress progress using in IOT_OTA_REPORT_TYPE_DOWNLOADING
+ * @param[in] progress progress using in TCIOT_OTA_REPORT_TYPE_DOWNLOADING
  * @param[in] version update firmware version
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_OTA_ReportProgress(void *client, char *buf, int buf_len, IotOTAReportType report_type, int progress,
+int TCIOT_OTA_ReportProgress(void *client, char *buf, int buf_len, IotOTAReportType report_type, int progress,
                            const char *version)
 {
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
@@ -268,44 +268,44 @@ int IOT_OTA_ReportProgress(void *client, char *buf, int buf_len, IotOTAReportTyp
      *
      */
     const char *ota_state[] = {
-        [IOT_OTA_REPORT_TYPE_DOWNLOADING] = "downloading", [IOT_OTA_REPORT_TYPE_UPGRADE_BEGIN] = "burning",
-        [IOT_OTA_REPORT_TYPE_UPGRADE_SUCCESS] = "done",    [IOT_OTA_REPORT_TYPE_DOWNLOAD_TIMEOUT] = "fail",
-        [IOT_OTA_REPORT_TYPE_FILE_NOT_EXIST] = "fail",     [IOT_OTA_REPORT_TYPE_AUTH_FAIL] = "fail",
-        [IOT_OTA_REPORT_TYPE_MD5_NOT_MATCH] = "fail",      [IOT_OTA_REPORT_TYPE_UPGRADE_FAIL] = "fail",
+        [TCIOT_OTA_REPORT_TYPE_DOWNLOADING] = "downloading", [TCIOT_OTA_REPORT_TYPE_UPGRADE_BEGIN] = "burning",
+        [TCIOT_OTA_REPORT_TYPE_UPGRADE_SUCCESS] = "done",    [TCIOT_OTA_REPORT_TYPE_DOWNLOAD_TIMEOUT] = "fail",
+        [TCIOT_OTA_REPORT_TYPE_FILE_NOT_EXIST] = "fail",     [TCIOT_OTA_REPORT_TYPE_AUTH_FAIL] = "fail",
+        [TCIOT_OTA_REPORT_TYPE_MD5_NOT_MATCH] = "fail",      [TCIOT_OTA_REPORT_TYPE_UPGRADE_FAIL] = "fail",
     };
     int result_code[] = {
-        [IOT_OTA_REPORT_TYPE_DOWNLOADING] = 0,     [IOT_OTA_REPORT_TYPE_UPGRADE_BEGIN] = 0,
-        [IOT_OTA_REPORT_TYPE_UPGRADE_SUCCESS] = 0, [IOT_OTA_REPORT_TYPE_DOWNLOAD_TIMEOUT] = -1,
-        [IOT_OTA_REPORT_TYPE_FILE_NOT_EXIST] = -2, [IOT_OTA_REPORT_TYPE_AUTH_FAIL] = -3,
-        [IOT_OTA_REPORT_TYPE_MD5_NOT_MATCH] = -4,  [IOT_OTA_REPORT_TYPE_UPGRADE_FAIL] = -5,
+        [TCIOT_OTA_REPORT_TYPE_DOWNLOADING] = 0,     [TCIOT_OTA_REPORT_TYPE_UPGRADE_BEGIN] = 0,
+        [TCIOT_OTA_REPORT_TYPE_UPGRADE_SUCCESS] = 0, [TCIOT_OTA_REPORT_TYPE_DOWNLOAD_TIMEOUT] = -1,
+        [TCIOT_OTA_REPORT_TYPE_FILE_NOT_EXIST] = -2, [TCIOT_OTA_REPORT_TYPE_AUTH_FAIL] = -3,
+        [TCIOT_OTA_REPORT_TYPE_MD5_NOT_MATCH] = -4,  [TCIOT_OTA_REPORT_TYPE_UPGRADE_FAIL] = -5,
     };
     const char *result_msg[] = {
-        [IOT_OTA_REPORT_TYPE_DOWNLOADING]      = "",
-        [IOT_OTA_REPORT_TYPE_UPGRADE_BEGIN]    = "",
-        [IOT_OTA_REPORT_TYPE_UPGRADE_SUCCESS]  = "",
-        [IOT_OTA_REPORT_TYPE_DOWNLOAD_TIMEOUT] = "timeout",
-        [IOT_OTA_REPORT_TYPE_FILE_NOT_EXIST]   = "file not exit",
-        [IOT_OTA_REPORT_TYPE_AUTH_FAIL]        = "auth fail",
-        [IOT_OTA_REPORT_TYPE_MD5_NOT_MATCH]    = "md5 not match",
-        [IOT_OTA_REPORT_TYPE_UPGRADE_FAIL]     = "upgrade fail",
+        [TCIOT_OTA_REPORT_TYPE_DOWNLOADING]      = "",
+        [TCIOT_OTA_REPORT_TYPE_UPGRADE_BEGIN]    = "",
+        [TCIOT_OTA_REPORT_TYPE_UPGRADE_SUCCESS]  = "",
+        [TCIOT_OTA_REPORT_TYPE_DOWNLOAD_TIMEOUT] = "timeout",
+        [TCIOT_OTA_REPORT_TYPE_FILE_NOT_EXIST]   = "file not exit",
+        [TCIOT_OTA_REPORT_TYPE_AUTH_FAIL]        = "auth fail",
+        [TCIOT_OTA_REPORT_TYPE_MD5_NOT_MATCH]    = "md5 not match",
+        [TCIOT_OTA_REPORT_TYPE_UPGRADE_FAIL]     = "upgrade fail",
     };
 
     int len;
     switch (report_type) {
-        case IOT_OTA_REPORT_TYPE_DOWNLOADING:
-            len = HAL_Snprintf(buf, buf_len,
+        case TCIOT_OTA_REPORT_TYPE_DOWNLOADING:
+            len = TCI_HAL_Snprintf(buf, buf_len,
                                "{\"type\":\"report_progress\",\"report\":{\"progress\":{\"state\":\"%s\",\"percent\":"
                                "\"%d\",\"result_code\":\"%d\",\"result_msg\":\"\"},\"version\":\"%s\"}}",
                                ota_state[report_type], progress, result_code[report_type], version);
             break;
-        case IOT_OTA_REPORT_TYPE_UPGRADE_BEGIN:
-        case IOT_OTA_REPORT_TYPE_UPGRADE_SUCCESS:
-        case IOT_OTA_REPORT_TYPE_DOWNLOAD_TIMEOUT:
-        case IOT_OTA_REPORT_TYPE_FILE_NOT_EXIST:
-        case IOT_OTA_REPORT_TYPE_AUTH_FAIL:
-        case IOT_OTA_REPORT_TYPE_MD5_NOT_MATCH:
-        case IOT_OTA_REPORT_TYPE_UPGRADE_FAIL:
-            len = HAL_Snprintf(buf, buf_len,
+        case TCIOT_OTA_REPORT_TYPE_UPGRADE_BEGIN:
+        case TCIOT_OTA_REPORT_TYPE_UPGRADE_SUCCESS:
+        case TCIOT_OTA_REPORT_TYPE_DOWNLOAD_TIMEOUT:
+        case TCIOT_OTA_REPORT_TYPE_FILE_NOT_EXIST:
+        case TCIOT_OTA_REPORT_TYPE_AUTH_FAIL:
+        case TCIOT_OTA_REPORT_TYPE_MD5_NOT_MATCH:
+        case TCIOT_OTA_REPORT_TYPE_UPGRADE_FAIL:
+            len = TCI_HAL_Snprintf(buf, buf_len,
                                "{\"type\":\"report_progress\",\"report\":{\"progress\":{\"state\":\"%s\",\"result_"
                                "code\":\"%d\",\"result_msg\":\"%s\"},\"version\":\"%s\"}}",
                                ota_state[report_type], result_code[report_type], result_msg[report_type], version);
@@ -325,9 +325,9 @@ int IOT_OTA_ReportProgress(void *client, char *buf, int buf_len, IotOTAReportTyp
  * @param[in] version current firmware version
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_OTA_ReportVersion(void *client, char *buf, int buf_len, const char *version)
+int TCIOT_OTA_ReportVersion(void *client, char *buf, int buf_len, const char *version)
 {
-    int len = HAL_Snprintf(buf, buf_len, "{\"type\":\"report_version\",\"report\":{\"version\":\"%s\"}}",
+    int len = TCI_HAL_Snprintf(buf, buf_len, "{\"type\":\"report_version\",\"report\":{\"version\":\"%s\"}}",
                            STRING_PTR_PRINT_SANITY_CHECK(version));
     return _ota_mqtt_publish(client, QOS0, buf, len);
 }

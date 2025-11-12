@@ -41,7 +41,7 @@
  * @param device_secret copy device secret into this.
  * @return 0 for success.
  */
-int IOT_DynReg_ParseResult(uint8_t *response, size_t response_len, const char *product_secret, char *device_secret)
+int TCIOT_DynReg_ParseResult(uint8_t *response, size_t response_len, const char *product_secret, char *device_secret)
 {
     int            rc = 0;
     UtilsJsonValue value;
@@ -87,7 +87,7 @@ exit:
  * @param time_stamp
  * @return 0 for success
  */
-int IOT_DynReg_CreatSign(uint8_t *sign_out_buf, int sign_out_buf_len, DeviceInfo *device_info, int nonce,
+int TCIOT_DynReg_CreatSign(uint8_t *sign_out_buf, int sign_out_buf_len, DeviceInfo *device_info, int nonce,
                          uint32_t time_stamp)
 {
 #define QCLOUD_SUPPORT_HMACSHA1 "hmacsha1"
@@ -95,14 +95,14 @@ int IOT_DynReg_CreatSign(uint8_t *sign_out_buf, int sign_out_buf_len, DeviceInfo
     char request_buf_sha1[SHA1_DIGEST_SIZE * 2 + 1] = {0};
     char sign_string[256]                           = {0};
     int  request_body_len =
-        HAL_Snprintf(sign_string, DYN_RESPONSE_BUFF_LEN, "{\"ProductId\":\"%s\",\"DeviceName\":\"%s\"}",
+        TCI_HAL_Snprintf(sign_string, DYN_RESPONSE_BUFF_LEN, "{\"ProductId\":\"%s\",\"DeviceName\":\"%s\"}",
                      device_info->product_id, device_info->device_name);
 
     /* cal hmac sha1 */
     utils_sha1_hex((const uint8_t *)sign_string, request_body_len, (uint8_t *)request_buf_sha1);
     memset(sign_string, 0, sizeof(sign_string));
     /* create sign string */
-    HAL_Snprintf(sign_string, sizeof(sign_string), "%s\n%s\n%s\n%s\n%s\n%d\n%d\n%s", "POST", DYN_REG_SERVER_URL,
+    TCI_HAL_Snprintf(sign_string, sizeof(sign_string), "%s\n%s\n%s\n%s\n%s\n%d\n%d\n%s", "POST", DYN_REG_SERVER_URL,
                  DYN_REG_URI_PATH, "", QCLOUD_SUPPORT_HMACSHA1, time_stamp, nonce, request_buf_sha1);
     return utils_hmac_sha1((const uint8_t *)sign_string, strlen(sign_string), (uint8_t *)device_info->product_secret,
                            strlen(device_info->product_secret), sign_out_buf)

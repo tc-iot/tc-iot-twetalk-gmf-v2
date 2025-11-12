@@ -27,8 +27,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_SYSTEM_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_SYSTEM_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_SYSTEM_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_SYSTEM_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,7 +47,7 @@ extern "C" {
  * @param[out] time time from system topic
  * @return @see IotReturnCode
  */
-int IOT_Sys_GetTime(void *client, uint32_t *time);
+int TCIOT_Sys_GetTime(void *client, uint32_t *time);
 
 /**
  * @brief Get ntp time and set to system.
@@ -55,7 +55,7 @@ int IOT_Sys_GetTime(void *client, uint32_t *time);
  * @param[in,out] client pointer to mqtt client
  * @return @see IotReturnCode
  */
-int IOT_Sys_SyncNTPTime(void *client);
+int TCIOT_Sys_SyncNTPTime(void *client);
 
 /**
  * @brief Get serverip from system result topic
@@ -64,10 +64,10 @@ int IOT_Sys_SyncNTPTime(void *client);
  * @param[out] server_ip serverip from system result topic
  * @return @see IotReturnCode
  */
-int IOT_Sys_GetServerIp(void *client, char *server_ip);
+int TCIOT_Sys_GetServerIp(void *client, char *server_ip);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_SYSTEM_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_SYSTEM_H_

@@ -62,13 +62,13 @@ static void _lower(char md5_lower[33], const char md5[33])
  * @brief 32-bit integer manipulation macros (little endian)
  *
  */
-#define IOT_MD5_GET_UINT32_LE(n, b, i)                                                                \
+#define TCIOT_MD5_GET_UINT32_LE(n, b, i)                                                                \
     {                                                                                                 \
         (n) = ((uint32_t)(b)[(i)]) | ((uint32_t)(b)[(i) + 1] << 8) | ((uint32_t)(b)[(i) + 2] << 16) | \
               ((uint32_t)(b)[(i) + 3] << 24);                                                         \
     }
 
-#define IOT_MD5_PUT_UINT32_LE(n, b, i)                \
+#define TCIOT_MD5_PUT_UINT32_LE(n, b, i)                \
     {                                                 \
         (b)[(i)]     = (uint8_t)(((n)) & 0xFF);       \
         (b)[(i) + 1] = (uint8_t)(((n) >> 8) & 0xFF);  \
@@ -121,22 +121,22 @@ static void _utils_md5_process(IotMd5Context *ctx, const uint8_t data[64])
 {
     uint32_t X[16], A, B, C, D;
 
-    IOT_MD5_GET_UINT32_LE(X[0], data, 0);
-    IOT_MD5_GET_UINT32_LE(X[1], data, 4);
-    IOT_MD5_GET_UINT32_LE(X[2], data, 8);
-    IOT_MD5_GET_UINT32_LE(X[3], data, 12);
-    IOT_MD5_GET_UINT32_LE(X[4], data, 16);
-    IOT_MD5_GET_UINT32_LE(X[5], data, 20);
-    IOT_MD5_GET_UINT32_LE(X[6], data, 24);
-    IOT_MD5_GET_UINT32_LE(X[7], data, 28);
-    IOT_MD5_GET_UINT32_LE(X[8], data, 32);
-    IOT_MD5_GET_UINT32_LE(X[9], data, 36);
-    IOT_MD5_GET_UINT32_LE(X[10], data, 40);
-    IOT_MD5_GET_UINT32_LE(X[11], data, 44);
-    IOT_MD5_GET_UINT32_LE(X[12], data, 48);
-    IOT_MD5_GET_UINT32_LE(X[13], data, 52);
-    IOT_MD5_GET_UINT32_LE(X[14], data, 56);
-    IOT_MD5_GET_UINT32_LE(X[15], data, 60);
+    TCIOT_MD5_GET_UINT32_LE(X[0], data, 0);
+    TCIOT_MD5_GET_UINT32_LE(X[1], data, 4);
+    TCIOT_MD5_GET_UINT32_LE(X[2], data, 8);
+    TCIOT_MD5_GET_UINT32_LE(X[3], data, 12);
+    TCIOT_MD5_GET_UINT32_LE(X[4], data, 16);
+    TCIOT_MD5_GET_UINT32_LE(X[5], data, 20);
+    TCIOT_MD5_GET_UINT32_LE(X[6], data, 24);
+    TCIOT_MD5_GET_UINT32_LE(X[7], data, 28);
+    TCIOT_MD5_GET_UINT32_LE(X[8], data, 32);
+    TCIOT_MD5_GET_UINT32_LE(X[9], data, 36);
+    TCIOT_MD5_GET_UINT32_LE(X[10], data, 40);
+    TCIOT_MD5_GET_UINT32_LE(X[11], data, 44);
+    TCIOT_MD5_GET_UINT32_LE(X[12], data, 48);
+    TCIOT_MD5_GET_UINT32_LE(X[13], data, 52);
+    TCIOT_MD5_GET_UINT32_LE(X[14], data, 56);
+    TCIOT_MD5_GET_UINT32_LE(X[15], data, 60);
 
 #define S(x, n) ((x << n) | ((x & 0xFFFFFFFF) >> (32 - n)))
 
@@ -313,8 +313,8 @@ void utils_md5_finish(IotMd5Context *ctx)
     high = (ctx->total[0] >> 29) | (ctx->total[1] << 3);
     low  = (ctx->total[0] << 3);
 
-    IOT_MD5_PUT_UINT32_LE(low, msglen, 0);
-    IOT_MD5_PUT_UINT32_LE(high, msglen, 4);
+    TCIOT_MD5_PUT_UINT32_LE(low, msglen, 0);
+    TCIOT_MD5_PUT_UINT32_LE(high, msglen, 4);
 
     last = ctx->total[0] & 0x3F;
     padn = (last < 56) ? (56 - last) : (120 - last);
@@ -322,10 +322,10 @@ void utils_md5_finish(IotMd5Context *ctx)
     utils_md5_update(ctx, sg_iot_md5_padding, padn);
     utils_md5_update(ctx, msglen, 8);
 
-    IOT_MD5_PUT_UINT32_LE(ctx->state[0], ctx->md5sum_str, 0);
-    IOT_MD5_PUT_UINT32_LE(ctx->state[1], ctx->md5sum_str, 4);
-    IOT_MD5_PUT_UINT32_LE(ctx->state[2], ctx->md5sum_str, 8);
-    IOT_MD5_PUT_UINT32_LE(ctx->state[3], ctx->md5sum_str, 12);
+    TCIOT_MD5_PUT_UINT32_LE(ctx->state[0], ctx->md5sum_str, 0);
+    TCIOT_MD5_PUT_UINT32_LE(ctx->state[1], ctx->md5sum_str, 4);
+    TCIOT_MD5_PUT_UINT32_LE(ctx->state[2], ctx->md5sum_str, 8);
+    TCIOT_MD5_PUT_UINT32_LE(ctx->state[3], ctx->md5sum_str, 12);
 
     for (i = 0; i < 16; ++i) {
         ctx->md5sum[i * 2]     = _hb2hex(ctx->md5sum_str[i] >> 4);

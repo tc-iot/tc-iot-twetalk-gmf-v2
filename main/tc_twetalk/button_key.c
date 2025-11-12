@@ -65,8 +65,8 @@ uint8_t prv_btn_get_state(struct ebtn_btn *btn)
 static void button_key_thread_entry(void *arg)
 {
     while (!sg_button_thread_exit) {
-        ebtn_process(HAL_Timer_CurrentMs());
-        HAL_SleepMs(10);
+        ebtn_process(TCI_HAL_GetTicksTimeMs());
+        TCI_HAL_SleepMs(10);
     }
     esp_gmf_oal_thread_delete(button_thread); 
 }

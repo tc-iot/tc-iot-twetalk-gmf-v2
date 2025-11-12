@@ -91,14 +91,14 @@ error:
 int data_template_event_reply_publish(void *client, char *buf, int buf_len, IotDataTemplateEventData data)
 {
     const char *event_type[] = {
-        [IOT_DATA_TEMPLATE_EVENT_TYPE_INFO]  = "info",
-        [IOT_DATA_TEMPLATE_EVENT_TYPE_ALERT] = "alert",
-        [IOT_DATA_TEMPLATE_EVENT_TYPE_FAULT] = "fault",
+        [TCIOT_DATA_TEMPLATE_EVENT_TYPE_INFO]  = "info",
+        [TCIOT_DATA_TEMPLATE_EVENT_TYPE_ALERT] = "alert",
+        [TCIOT_DATA_TEMPLATE_EVENT_TYPE_FAULT] = "fault",
     };
 
-    int len = HAL_Snprintf(buf, buf_len,
+    int len = TCI_HAL_Snprintf(buf, buf_len,
                            "{\"method\":\"event_post\",\"clientToken\":\"event-%" SCNu64
                            "\",\"eventId\":\"%s\",\"type\":\"%s\",\"params\":%s}",
-                           IOT_Timer_CurrentSec(), data.event_id, event_type[data.type], data.params);
+                           TCI_HAL_GetTimeSecond(), data.event_id, event_type[data.type], data.params);
     return data_template_publish(client, DATA_TEMPLATE_TYPE_EVENT, QOS0, buf, len);
 }

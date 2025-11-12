@@ -45,52 +45,52 @@ typedef enum {
  */
 static int _mqtt_connect(QcloudIotClient *client)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     uint8_t session_present, connack_rc;
     int     rc, packet_len;
 
     // TCP or TLS network connect
     rc = client->network_stack.connect(&(client->network_stack));
     if (rc) {
-        IOT_FUNC_EXIT_RC(rc);
+        TCIOT_FUNC_EXIT_RC(rc);
     }
 
     // send MQTT CONNECT packet
-    HAL_MutexLock(client->lock_write_buf);
+    TCI_HAL_MutexLock(client->lock_write_buf);
     packet_len = mqtt_connect_packet_serialize(client->write_buf, client->write_buf_size, &client->options);
     if (packet_len > 0) {
         rc = send_mqtt_packet(client, packet_len);
     } else {
         rc = packet_len == MQTT_ERR_SHORT_BUFFER ? QCLOUD_ERR_BUF_TOO_SHORT : QCLOUD_ERR_FAILURE;
     }
-    HAL_MutexUnlock(client->lock_write_buf);
+    TCI_HAL_MutexUnlock(client->lock_write_buf);
     if (rc) {
-        IOT_FUNC_EXIT_RC(rc);
+        TCIOT_FUNC_EXIT_RC(rc);
     }
 
     // recv MQTT CONNACK packet
     rc = qcloud_iot_mqtt_wait_for_read(client, CONNACK);
     if (rc) {
-        IOT_FUNC_EXIT_RC(rc);
+        TCIOT_FUNC_EXIT_RC(rc);
     }
 
     rc = mqtt_connack_packet_deserialize(client->read_buf, client->read_buf_size, &session_present, &connack_rc);
     if (rc) {
-        IOT_FUNC_EXIT_RC(rc);
+        TCIOT_FUNC_EXIT_RC(rc);
     }
 
     if (CONNACK_CONNECTION_ACCEPTED != connack_rc) {
-        IOT_FUNC_EXIT_RC(connack_rc);
+        TCIOT_FUNC_EXIT_RC(connack_rc);
     }
 
     // set connect state
     set_client_conn_state(client, CONNECTED);
 
-    HAL_MutexLock(client->lock_generic);
+    TCI_HAL_MutexLock(client->lock_generic);
     client->was_manually_disconnected = client->is_ping_outstanding = 0;
-    IOT_Timer_Countdown(&client->ping_timer, client->options.keep_alive_interval);
-    HAL_MutexUnlock(client->lock_generic);
-    IOT_FUNC_EXIT_RC(rc);
+    TCI_HAL_TimerCountdown(&client->ping_timer, client->options.keep_alive_interval);
+    TCI_HAL_MutexUnlock(client->lock_generic);
+    TCIOT_FUNC_EXIT_RC(rc);
 }
 
 /**
@@ -103,10 +103,10 @@ static int _mqtt_connect(QcloudIotClient *client)
 static void _mqtt_switch_domain(QcloudIotClient *client, DomainMode mode)
 {
     if (mode == BACKUP_DOMAIN && client->backup_host) {
-        HAL_Snprintf(client->host_addr, HOST_STR_LENGTH, "%s.%s", client->device_info->product_id, client->backup_host);
+        TCI_HAL_Snprintf(client->host_addr, HOST_STR_LENGTH, "%s.%s", client->device_info->product_id, client->backup_host);
         client->network_stack.host = client->host_addr;
     } else if (mode == HOST_DOMAIN && client->main_host) {
-        HAL_Snprintf(client->host_addr, HOST_STR_LENGTH, "%s.%s", client->device_info->product_id, client->main_host);
+        TCI_HAL_Snprintf(client->host_addr, HOST_STR_LENGTH, "%s.%s", client->device_info->product_id, client->main_host);
         client->network_stack.host = client->host_addr;
     }
 }
@@ -120,10 +120,10 @@ static void _mqtt_switch_domain(QcloudIotClient *client, DomainMode mode)
  */
 static int _mqtt_set_srv_ip(QcloudIotClient *client, const char *srv_ip)
 {
-    int size = HAL_Snprintf(client->host_addr, HOST_STR_LENGTH, "%s", srv_ip);
+    int size = TCI_HAL_Snprintf(client->host_addr, HOST_STR_LENGTH, "%s", srv_ip);
     if (size < 0 || size > HOST_STR_LENGTH - 1) {
         Log_e("gen host name failed: %d", size);
-        IOT_FUNC_EXIT_RC(QCLOUD_ERR_FAILURE);
+        TCIOT_FUNC_EXIT_RC(QCLOUD_ERR_FAILURE);
     } else {
         client->network_stack.host = client->host_addr;
         Log_i("using HOST IP : %s", srv_ip);
@@ -140,12 +140,12 @@ static int _mqtt_set_srv_ip(QcloudIotClient *client, const char *srv_ip)
  */
 int qcloud_iot_mqtt_connect(QcloudIotClient *client, ConnMode mode)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     int rc = 0;
 
     // check connection state first
     if (get_client_conn_state(client)) {
-        IOT_FUNC_EXIT_RC(QCLOUD_RET_MQTT_ALREADY_CONNECTED);
+        TCIOT_FUNC_EXIT_RC(QCLOUD_RET_MQTT_ALREADY_CONNECTED);
     }
 
     int connect_fail_cnt            = 0;
@@ -181,7 +181,7 @@ int qcloud_iot_mqtt_connect(QcloudIotClient *client, ConnMode mode)
     if (!rc && mode == RECONNECT) {
         _mqtt_switch_domain(client, HOST_DOMAIN);
     }
-    IOT_FUNC_EXIT_RC(rc);
+    TCIOT_FUNC_EXIT_RC(rc);
 }
 
 /**
@@ -192,33 +192,33 @@ int qcloud_iot_mqtt_connect(QcloudIotClient *client, ConnMode mode)
  */
 int qcloud_iot_mqtt_attempt_reconnect(QcloudIotClient *client)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     int rc = 0;
 
     Log_i("attempt to reconnect...");
 
     if (get_client_conn_state(client)) {
-        IOT_FUNC_EXIT_RC(QCLOUD_RET_MQTT_ALREADY_CONNECTED);
+        TCIOT_FUNC_EXIT_RC(QCLOUD_RET_MQTT_ALREADY_CONNECTED);
     }
 
     rc = qcloud_iot_mqtt_connect(client, RECONNECT);
 
     if (!get_client_conn_state(client)) {
-        IOT_FUNC_EXIT_RC(rc);
+        TCIOT_FUNC_EXIT_RC(rc);
     }
 
 #if 0  // clean session is 0, user don't need resubscribe only if mqtt server error.
     if (!client->options.clean_session) {
-        IOT_FUNC_EXIT_RC(QCLOUD_RET_MQTT_RECONNECTED);
+        TCIOT_FUNC_EXIT_RC(QCLOUD_RET_MQTT_RECONNECTED);
     }
 #endif
 
     rc = qcloud_iot_mqtt_resubscribe(client);
     if (rc) {
-        IOT_FUNC_EXIT_RC(rc);
+        TCIOT_FUNC_EXIT_RC(rc);
     }
 
-    IOT_FUNC_EXIT_RC(QCLOUD_RET_MQTT_RECONNECTED);
+    TCIOT_FUNC_EXIT_RC(QCLOUD_RET_MQTT_RECONNECTED);
 }
 
 /**
@@ -229,23 +229,23 @@ int qcloud_iot_mqtt_attempt_reconnect(QcloudIotClient *client)
  */
 int qcloud_iot_mqtt_disconnect(QcloudIotClient *client)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     int rc, packet_len = 0;
 
     if (!get_client_conn_state(client)) {
-        IOT_FUNC_EXIT_RC(QCLOUD_ERR_MQTT_NO_CONN);
+        TCIOT_FUNC_EXIT_RC(QCLOUD_ERR_MQTT_NO_CONN);
     }
 
-    HAL_MutexLock(client->lock_write_buf);
+    TCI_HAL_MutexLock(client->lock_write_buf);
     packet_len = mqtt_disconnect_packet_serialize(client->write_buf, client->write_buf_size);
     if (packet_len > 0) {
         rc = send_mqtt_packet(client, packet_len);
     } else {
         rc = packet_len == MQTT_ERR_SHORT_BUFFER ? QCLOUD_ERR_BUF_TOO_SHORT : QCLOUD_ERR_FAILURE;
     }
-    HAL_MutexUnlock(client->lock_write_buf);
+    TCI_HAL_MutexUnlock(client->lock_write_buf);
     if (rc) {
-        IOT_FUNC_EXIT_RC(rc);
+        TCIOT_FUNC_EXIT_RC(rc);
     }
 
     client->network_stack.disconnect(&(client->network_stack));
@@ -254,7 +254,7 @@ int qcloud_iot_mqtt_disconnect(QcloudIotClient *client)
 
     Log_i("mqtt disconnect!");
 
-    IOT_FUNC_EXIT_RC(QCLOUD_RET_SUCCESS);
+    TCIOT_FUNC_EXIT_RC(QCLOUD_RET_SUCCESS);
 }
 
 /**
@@ -266,10 +266,10 @@ int qcloud_iot_mqtt_disconnect(QcloudIotClient *client)
  */
 int qcloud_iot_mqtt_pingreq(QcloudIotClient *client, int try_times)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     int rc, packet_len, i = 0;
 
-    HAL_MutexLock(client->lock_write_buf);
+    TCI_HAL_MutexLock(client->lock_write_buf);
     packet_len = mqtt_pingreq_packet_serialize(client->write_buf, client->write_buf_size);
     if (packet_len > 0) {
         do {
@@ -278,6 +278,6 @@ int qcloud_iot_mqtt_pingreq(QcloudIotClient *client, int try_times)
     } else {
         rc = packet_len == MQTT_ERR_SHORT_BUFFER ? QCLOUD_ERR_BUF_TOO_SHORT : QCLOUD_ERR_FAILURE;
     }
-    HAL_MutexUnlock(client->lock_write_buf);
-    IOT_FUNC_EXIT_RC(rc);
+    TCI_HAL_MutexUnlock(client->lock_write_buf);
+    TCIOT_FUNC_EXIT_RC(rc);
 }

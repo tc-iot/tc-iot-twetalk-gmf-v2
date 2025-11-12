@@ -36,14 +36,14 @@ typedef struct {
 void *qcloud_iot_link_create(IotLinkInitParams *params)
 {
     POINTER_SANITY_CHECK(params, NULL);
-    IotLink *link = HAL_Malloc(sizeof(IotLink));
+    IotLink *link = TCI_HAL_Malloc(sizeof(IotLink));
     if (!link) {
         return NULL;
     }
     link->network = params->network;
     link->handle  = params->network.init(params->callback, params->usr_data);
     if (!link->handle) {
-        HAL_Free(link);
+        TCI_HAL_Free(link);
         link = NULL;
     }
     return link;
@@ -146,7 +146,7 @@ void qcloud_iot_link_destroy(void *link)
     POINTER_SANITY_CHECK_RTN(link);
     IotLink *iot_link = link;
     iot_link->network.deinit(iot_link->handle);
-    HAL_Free(iot_link);
+    TCI_HAL_Free(iot_link);
 }
 
 int qcloud_iot_link_device_describe_sync(void *link, void *cloud_dev_list)

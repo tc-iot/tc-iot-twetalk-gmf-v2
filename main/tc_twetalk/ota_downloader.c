@@ -157,17 +157,17 @@ static void _report_download_result(ResourceDownloaderHandle* handle, UtilsDownl
     int buf_len = sizeof(buf);
     switch (status) {
         case UTILS_DOWNLOADER_STATUS_SUCCESS:
-            IOT_OTA_ReportProgress(handle->mqtt_client, buf, buf_len,
-                                   result ? IOT_OTA_REPORT_TYPE_UPGRADE_SUCCESS : IOT_OTA_REPORT_TYPE_MD5_NOT_MATCH, 0,
+            TCIOT_OTA_ReportProgress(handle->mqtt_client, buf, buf_len,
+                                   result ? TCIOT_OTA_REPORT_TYPE_UPGRADE_SUCCESS : TCIOT_OTA_REPORT_TYPE_MD5_NOT_MATCH, 0,
                                    handle->download_now.version);
             break;
         case UTILS_DOWNLOADER_STATUS_NETWORK_FAILED:
-            IOT_OTA_ReportProgress(handle->mqtt_client, buf, buf_len, IOT_OTA_REPORT_TYPE_DOWNLOAD_TIMEOUT, 0,
+            TCIOT_OTA_ReportProgress(handle->mqtt_client, buf, buf_len, TCIOT_OTA_REPORT_TYPE_DOWNLOAD_TIMEOUT, 0,
                                    handle->download_now.version);
             break;
         case UTILS_DOWNLOADER_STATUS_BREAK_POINT_FAILED:
         case UTILS_DOWNLOADER_STATUS_DATA_DOWNLOAD_FAILED:
-            IOT_OTA_ReportProgress(handle->mqtt_client, buf, buf_len, IOT_OTA_REPORT_TYPE_UPGRADE_FAIL, 0,
+            TCIOT_OTA_ReportProgress(handle->mqtt_client, buf, buf_len, TCIOT_OTA_REPORT_TYPE_UPGRADE_FAIL, 0,
                                    handle->download_now.version);
             break;
         default:
@@ -257,7 +257,7 @@ static int _resource_break_point_save(void* usr_data)
     }
 
     if (handle->download_percent != percent && (percent - handle->download_percent >= 10)) {
-        IOT_OTA_ReportProgress(handle->mqtt_client, buf, buf_len, IOT_OTA_REPORT_TYPE_DOWNLOADING, percent,
+        TCIOT_OTA_ReportProgress(handle->mqtt_client, buf, buf_len, TCIOT_OTA_REPORT_TYPE_DOWNLOADING, percent,
                                handle->break_point.file_id.version);
         handle->download_percent = percent;
         Log_i("downloading %d%%...", percent);
@@ -306,7 +306,7 @@ static int _resource_break_point_restore(void* usr_data)
     while (size > 0) {
         rlen = (size > RESOURCE_HTTP_BUF_SIZE) ? RESOURCE_HTTP_BUF_SIZE : size;
 
-        rc = HAL_OTA_read_flash(handle, total_read, handle->download_buff, rlen);
+        rc = TCI_HAL_OTA_read_flash(handle, total_read, handle->download_buff, rlen);
         if (rc) {
             Log_e("read data failed rc : %d", rc);
             handle->break_point.downloaded_size = 0;
@@ -334,10 +334,10 @@ static int _resource_data_download_init(void* usr_data)
              .url              = handle->download_url,
              .offset           = handle->break_point.downloaded_size,
              .file_size        = handle->break_point.file_id.file_size,
-             .is_fragmentation = IOT_BOOL_FALSE,
-             .is_https_enabled = IOT_BOOL_FALSE,
+             .is_fragmentation = TCIOT_BOOL_FALSE,
+             .is_https_enabled = TCIOT_BOOL_FALSE,
     };
-    handle->cos_download = IOT_COS_DownloadInit(&params);
+    handle->cos_download = TCIOT_COS_DownloadInit(&params);
     return handle->cos_download ? 0 : -1;
 }
 
@@ -349,7 +349,7 @@ static int _resource_data_download_init(void* usr_data)
 static void _resource_data_download_deinit(void* usr_data)
 {
     ResourceDownloaderHandle* handle = (ResourceDownloaderHandle*)usr_data;
-    IOT_COS_DownloadDeinit(handle->cos_download);
+    TCIOT_COS_DownloadDeinit(handle->cos_download);
 }
 
 /**
@@ -376,7 +376,7 @@ static int _resource_data_download_recv(void* usr_data)
     // download data using http
     ResourceDownloaderHandle* handle = (ResourceDownloaderHandle*)usr_data;
     // TODO: https download
-    handle->download_size = IOT_COS_DownloadFetch(handle->cos_download, handle->download_buff, RESOURCE_HTTP_BUF_SIZE,
+    handle->download_size = TCIOT_COS_DownloadFetch(handle->cos_download, handle->download_buff, RESOURCE_HTTP_BUF_SIZE,
                                                   RESOURCE_HTTP_TIMEOUT_MS);
     return handle->download_size > 0 ? 0 : -1;
 }
@@ -390,7 +390,7 @@ static int _resource_data_download_recv(void* usr_data)
 static int _resource_data_download_save(void* usr_data)
 {
     ResourceDownloaderHandle* handle = (ResourceDownloaderHandle*)usr_data;
-    return handle->download_size > 0 ? HAL_OTA_write_flash(usr_data, handle->break_point.downloaded_size,
+    return handle->download_size > 0 ? TCI_HAL_OTA_write_flash(usr_data, handle->break_point.downloaded_size,
                                                            handle->download_buff, handle->download_size)
                                      : 0;
 }
@@ -449,8 +449,8 @@ int _resource_downloader_init(void* client)
 {
     // downloader init
     UtilsDownloaderFunction ota_callback = {
-        .downloader_malloc = HAL_Malloc,
-        .downloader_free   = HAL_Free,
+        .downloader_malloc = TCI_HAL_Malloc,
+        .downloader_free   = TCI_HAL_Free,
         // break point
         .break_point_init    = _resource_break_point_init,
         .break_point_deinit  = _resource_break_point_deinit,
@@ -523,7 +523,7 @@ static void _update_firmware_callback(UtilsJsonValue version, UtilsJsonValue url
     strncpy(resource_info.md5sum, md5sum.value, md5sum.value_len);
     resource_info.file_size = file_size;
     _resource_downloader_info_set(&resource_info, url.value, url.value_len);
-    HAL_SemaphorePost(sg_resource_downloader_handle.resource_sem);
+    TCI_HAL_SemaphorePost(sg_resource_downloader_handle.resource_sem);
 }
 
 int iot_ota_init(void* client, const IotOtaInitParams* params)
@@ -536,14 +536,14 @@ int iot_ota_init(void* client, const IotOtaInitParams* params)
     }
 
     if (!sg_resource_downloader_handle.resource_sem) {
-        sg_resource_downloader_handle.resource_sem = HAL_SemaphoreCreate();
+        sg_resource_downloader_handle.resource_sem = TCI_HAL_SemaphoreCreate();
         if (!sg_resource_downloader_handle.resource_sem) {
             Log_e("resource sem create failed");
             return QCLOUD_ERR_MALLOC;
         }
     }
     if (!sg_resource_downloader_handle.resource_mutex) {
-        sg_resource_downloader_handle.resource_mutex = HAL_MutexCreate();
+        sg_resource_downloader_handle.resource_mutex = TCI_HAL_MutexCreate();
         if (!sg_resource_downloader_handle.resource_mutex) {
             Log_e("resource task mutex failed");
             return QCLOUD_ERR_MALLOC;
@@ -557,7 +557,7 @@ int iot_ota_init(void* client, const IotOtaInitParams* params)
         .report_version_reply_callback = NULL,
     };
 
-    rc = IOT_OTA_Init(client, ota_callback, NULL);
+    rc = TCIOT_OTA_Init(client, ota_callback, NULL);
     if (rc) {
         Log_e("OTA init failed!, rc=%d", rc);
         return rc;
@@ -568,16 +568,16 @@ int iot_ota_init(void* client, const IotOtaInitParams* params)
 
 void iot_ota_process(void* param)
 {
-    HAL_MutexLock(sg_resource_downloader_handle.resource_mutex);
+    TCI_HAL_MutexLock(sg_resource_downloader_handle.resource_mutex);
 
     while (!sg_resource_downloader_handle.is_ota_process_exit) {
-        HAL_SemaphoreWait(sg_resource_downloader_handle.resource_sem, 0xffffffff);
+        TCI_HAL_SemaphoreWait(sg_resource_downloader_handle.resource_sem, 0xffffffff);
         if (UTILS_DOWNLOADER_STATUS_DOWNLOADING == sg_resource_downloader_handle.download_status) {
             utils_downloader_process(sg_resource_downloader_handle.downloader);
-            HAL_SleepMs(10);
+            TCI_HAL_SleepMs(10);
         }
     }
-    HAL_MutexUnlock(sg_resource_downloader_handle.resource_mutex);
+    TCI_HAL_MutexUnlock(sg_resource_downloader_handle.resource_mutex);
     esp_gmf_oal_thread_delete(param);
 }
 
@@ -585,7 +585,7 @@ int iot_ota_report_version(void)
 {
     int rc        = 0;
     char buf[256] = {0};
-    rc            = IOT_OTA_ReportVersion(sg_resource_downloader_handle.mqtt_client, buf, sizeof(buf),
+    rc            = TCIOT_OTA_ReportVersion(sg_resource_downloader_handle.mqtt_client, buf, sizeof(buf),
                                           sg_resource_downloader_handle.get_firmware_version());
     return rc < 0;
 }
@@ -595,16 +595,16 @@ void iot_ota_deinit(void)
     sg_resource_downloader_handle.is_ota_process_exit = 1;
 
     if (sg_resource_downloader_handle.resource_sem) {
-        HAL_SemaphorePost(sg_resource_downloader_handle.resource_sem);
+        TCI_HAL_SemaphorePost(sg_resource_downloader_handle.resource_sem);
     }
 
     if (sg_resource_downloader_handle.resource_mutex) {
-        HAL_MutexLock(sg_resource_downloader_handle.resource_mutex);
-        HAL_MutexUnlock(sg_resource_downloader_handle.resource_mutex);
+        TCI_HAL_MutexLock(sg_resource_downloader_handle.resource_mutex);
+        TCI_HAL_MutexUnlock(sg_resource_downloader_handle.resource_mutex);
     }
 
-    HAL_MutexDestroy(sg_resource_downloader_handle.resource_mutex);
-    HAL_SemaphoreDestroy(sg_resource_downloader_handle.resource_sem);
-    IOT_OTA_Deinit(sg_resource_downloader_handle.mqtt_client);
+    TCI_HAL_MutexDestroy(sg_resource_downloader_handle.resource_mutex);
+    TCI_HAL_SemaphoreDestroy(sg_resource_downloader_handle.resource_sem);
+    TCIOT_OTA_Deinit(sg_resource_downloader_handle.mqtt_client);
     _resource_downloader_deinit();
 }

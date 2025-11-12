@@ -49,13 +49,13 @@ static int _send_request(char *response, size_t response_len, const char *produc
                          const char *product_secret, const char *sign, uint32_t time_stamp, int nonce)
 {
     /* constructor dynreg http body */
-    int request_body_len = HAL_Snprintf(response, DYN_RESPONSE_BUFF_LEN, "{\"ProductId\":\"%s\",\"DeviceName\":\"%s\"}",
+    int request_body_len = TCI_HAL_Snprintf(response, DYN_RESPONSE_BUFF_LEN, "{\"ProductId\":\"%s\",\"DeviceName\":\"%s\"}",
                                         product_id, device_name);
 
     HttpSignedParams params = {
         .host            = DYN_REG_SERVER_URL,
         .uri             = DYN_REG_URI_PATH,
-        .need_recv       = IOT_BOOL_TRUE,
+        .need_recv       = TCIOT_BOOL_TRUE,
         .recv_timeout_ms = 2000,
         .secret_key      = product_secret,
         .sign            = sign,
@@ -63,7 +63,7 @@ static int _send_request(char *response, size_t response_len, const char *produc
         .time_stamp      = time_stamp,
         .nonce           = nonce,
     };
-    return IOT_HTTP_SignedRequest(&params, response, request_body_len, (uint8_t *)response, DYN_RESPONSE_BUFF_LEN);
+    return TCIOT_HTTP_SignedRequest(&params, response, request_body_len, (uint8_t *)response, DYN_RESPONSE_BUFF_LEN);
 }
 
 /**
@@ -92,7 +92,7 @@ static int _parse_response_result(char *response_buf, int response_len, DeviceIn
         Log_e("base64 decode error.");
         return QCLOUD_ERR_FAILURE;
     }
-    return IOT_DynReg_ParseResult((uint8_t *)base64_decode_buf, (uint32_t)olen, device_info->product_secret,
+    return TCIOT_DynReg_ParseResult((uint8_t *)base64_decode_buf, (uint32_t)olen, device_info->product_secret,
                                   device_info->device_secret);
 }
 
@@ -102,7 +102,7 @@ static int _parse_response_result(char *response_buf, int response_len, DeviceIn
  * @param[in] params @see DeviceInfo
  * @return 0 is success other is failed
  */
-int IOT_DynReg_Device(DeviceInfo *device_info)
+int TCIOT_DynReg_Device(DeviceInfo *device_info)
 {
     int rc = 0;
     POINTER_SANITY_CHECK(device_info, QCLOUD_ERR_INVAL);
@@ -114,12 +114,12 @@ int IOT_DynReg_Device(DeviceInfo *device_info)
     }
     char     response[DYN_RESPONSE_BUFF_LEN] = {0};
     uint8_t  sign[SHA1_DIGEST_SIZE]          = {0};
-    int      nonce                           = IOT_Timer_GetRandomNumber();
+    int      nonce                           = TCI_HAL_Random();
     uint32_t timestamp                       = 1609430400;  // default timestamp
     char     sign_base64[31]                 = {0};
     size_t   olen                            = 0;
 
-    IOT_DynReg_CreatSign(sign, sizeof(sign), device_info, nonce, timestamp);
+    TCIOT_DynReg_CreatSign(sign, sizeof(sign), device_info, nonce, timestamp);
     rc = utils_base64encode(sign_base64, sizeof(sign_base64), &olen, sign, SHA1_DIGEST_SIZE);
     if (rc) {
         return rc;
@@ -145,7 +145,7 @@ exit:
  * @param payload_len
  * @return 0 for success
  */
-int IOT_DynReg_DeviceProxy(DeviceInfo *device_info, uint32_t time_stamp, int nonce, const uint8_t *sign,
+int TCIOT_DynReg_DeviceProxy(DeviceInfo *device_info, uint32_t time_stamp, int nonce, const uint8_t *sign,
                            uint8_t *payload, size_t *payload_len)
 {
     int rc = 0;

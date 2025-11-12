@@ -26,8 +26,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_GATEWAY_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_GATEWAY_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_GATEWAY_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_GATEWAY_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,19 +41,19 @@ extern "C" {
  *
  */
 typedef enum {
-    IOT_GATEWAY_RET_SUCCESS                 = 0,
-    IOT_GATEWAY_ERR_UNBIND                  = -1,
-    IOT_GATEWAY_ERR_FAIL                    = -2,
-    IOT_GATEWAY_ERR_PARAM                   = 801,
-    IOT_GATEWAY_ERR_SUBDEV_INVALID          = 802,
-    IOT_GATEWAY_ERR_SIGN_FAIL               = 803,
-    IOT_GATEWAY_ERR_SIGN_METHOD_UNSUPPORTED = 804,
-    IOT_GATEWAY_ERR_SIGN_EXPIRED            = 805,
-    IOT_GATEWAY_ERR_SUBDEV_BIND_ALREADY     = 806,
-    IOT_GATEWAY_ERR_SUBDEV_TYPE_NORMAL      = 807,
-    IOT_GATEWAY_ERR_OPERATION_UNSUPPORTED   = 808,
-    IOT_GATEWAY_ERR_BIND_REPEAT             = 809,
-    IOT_GATEWAY_ERR_SUBDEV_UNSUPPORTED      = 810
+    TCIOT_GATEWAY_RET_SUCCESS                 = 0,
+    TCIOT_GATEWAY_ERR_UNBIND                  = -1,
+    TCIOT_GATEWAY_ERR_FAIL                    = -2,
+    TCIOT_GATEWAY_ERR_PARAM                   = 801,
+    TCIOT_GATEWAY_ERR_SUBDEV_INVALID          = 802,
+    TCIOT_GATEWAY_ERR_SIGN_FAIL               = 803,
+    TCIOT_GATEWAY_ERR_SIGN_METHOD_UNSUPPORTED = 804,
+    TCIOT_GATEWAY_ERR_SIGN_EXPIRED            = 805,
+    TCIOT_GATEWAY_ERR_SUBDEV_BIND_ALREADY     = 806,
+    TCIOT_GATEWAY_ERR_SUBDEV_TYPE_NORMAL      = 807,
+    TCIOT_GATEWAY_ERR_OPERATION_UNSUPPORTED   = 808,
+    TCIOT_GATEWAY_ERR_BIND_REPEAT             = 809,
+    TCIOT_GATEWAY_ERR_SUBDEV_UNSUPPORTED      = 810
 } IotGatewayResult;
 
 /**
@@ -77,14 +77,14 @@ typedef struct {
  * @param[in] usr_data usr data using in callback
  * @return @see IotReturnCode
  */
-int IOT_Gateway_Init(void *client, IotGatewayMessageCallback callback, void *usr_data);
+int TCIOT_Gateway_Init(void *client, IotGatewayMessageCallback callback, void *usr_data);
 
 /**
  * @brief Unsubscribe gateway topic.
  *
  * @param[in,out] client pointer to mqtt client
  */
-void IOT_Gateway_Deinit(void *client);
+void TCIOT_Gateway_Deinit(void *client);
 
 /**
  * @brief Get gateway init usr data.
@@ -92,7 +92,7 @@ void IOT_Gateway_Deinit(void *client);
  * @param [in,out] client pointer to mqtt client
  * @return usr data or NULL
  */
-void *IOT_Gateway_GetUsrData(void *client);
+void *TCIOT_Gateway_GetUsrData(void *client);
 
 /**
  * @brief Publish subdevice online/offline message. @ref https://cloud.tencent.com/document/product/1081/47442
@@ -105,7 +105,7 @@ void *IOT_Gateway_GetUsrData(void *client);
  * @param[in] is_online 1: online; 0: offline
  * @return @see packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_Gateway_SubOnOffLine(void *client, char *buf, int buf_len, const DeviceInfo *sub_dev_list[], int num,
+int TCIOT_Gateway_SubOnOffLine(void *client, char *buf, int buf_len, const DeviceInfo *sub_dev_list[], int num,
                              IotBool is_online);
 
 /**
@@ -119,7 +119,7 @@ int IOT_Gateway_SubOnOffLine(void *client, char *buf, int buf_len, const DeviceI
  * @param[in] is_bind 1: bind; 0: unbind
  * @return @see packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_Gateway_BindUnbind(void *client, char *buf, int buf_len, const DeviceInfo *sub_dev_list[], int num,
+int TCIOT_Gateway_BindUnbind(void *client, char *buf, int buf_len, const DeviceInfo *sub_dev_list[], int num,
                            IotBool is_bind);
 
 /**
@@ -134,7 +134,7 @@ int IOT_Gateway_BindUnbind(void *client, char *buf, int buf_len, const DeviceInf
  * @param[in] signature device bind signature
  * @return @see packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_Gateway_BindOne(void *client, char *buf, int buf_len, DeviceInfo *dev_info, uint32_t timestamp, uint32_t nonce,
+int TCIOT_Gateway_BindOne(void *client, char *buf, int buf_len, DeviceInfo *dev_info, uint32_t timestamp, uint32_t nonce,
                         char *signature);
 
 /**
@@ -144,7 +144,7 @@ int IOT_Gateway_BindOne(void *client, char *buf, int buf_len, DeviceInfo *dev_in
  * @param[in,out] client pointer to mqtt client
  * @return @see packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_Gateway_Describe(void *client);
+int TCIOT_Gateway_Describe(void *client);
 
 /**
  * @brief Publish search device reply message.
@@ -156,7 +156,7 @@ int IOT_Gateway_Describe(void *client);
  * @param[in] result 0: success; 1: fail
  * @return @see packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_Gateway_SearchDeviceReply(void *client, IotBool is_on, int result);
+int TCIOT_Gateway_SearchDeviceReply(void *client, IotBool is_on, int result);
 
 /**
  * @brief Publish unbind all reply message.
@@ -165,10 +165,10 @@ int IOT_Gateway_SearchDeviceReply(void *client, IotBool is_on, int result);
  * @param[in] result 0: success; 1: fail
  * @return @see packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_Gateway_UnbindAllReply(void *client, int result);
+int TCIOT_Gateway_UnbindAllReply(void *client, int result);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_GATEWAY_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_GATEWAY_H_

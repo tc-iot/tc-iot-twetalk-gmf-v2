@@ -28,7 +28,7 @@
 
 #include "utils_aes.h"
 
-#ifdef AUTH_WITH_NO_TLS
+#ifdef ENABLE_AUTH_NO_TLS
 
 /**
  * \brief The AES context-type definition.

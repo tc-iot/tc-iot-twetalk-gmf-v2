@@ -26,8 +26,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_TOKEN_API_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_TOKEN_API_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_TOKEN_API_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_TOKEN_API_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,21 +44,21 @@ extern "C" {
 #define HTTP_TOKEN_API_WAIT_MAX_TIMEOUT_MS (5000)
 
 typedef enum {
-    IOT_TOKEN_API_ACTION_GET_PRODUCT_INFO,            // https://cloud.tencent.com/document/product/1081/48764
-    IOT_TOKEN_API_ACTION_CONTROL_DEVICE_DATA,         // https://cloud.tencent.com/document/product/1081/40805
-    IOT_TOKEN_API_ACTION_GET_FAMILY_LIST,             // https://cloud.tencent.com/document/product/1081/40811
-    IOT_TOKEN_API_ACTION_GET_ROOM_LIST,               // https://cloud.tencent.com/document/product/1081/40816
-    IOT_TOKEN_API_ACTION_GET_DEVICE_LIST,             // https://cloud.tencent.com/document/product/1081/40803
-    IOT_TOKEN_API_ACTION_GET_DEVICE_STATUS,           // https://cloud.tencent.com/document/product/1081/40804
-    IOT_TOKEN_API_ACTION_GET_DEVICE_IN_FAMILY,        // https://cloud.tencent.com/document/product/1081/40807
-    IOT_TOKEN_API_ACTION_GET_DEVICE_SUB_DEVICE_LIST,  // https://cloud.tencent.com/document/product/1081/48130
-    IOT_TOKEN_API_ACTION_GET_SCENE_LIST,              // https://cloud.tencent.com/document/product/1081/50211
-    IOT_TOKEN_API_ACTION_RUN_SCENE,                   // https://cloud.tencent.com/document/product/1081/50214
-    IOT_TOKEN_API_ACTION_GET_AUTOMATION_LIST,         // https://cloud.tencent.com/document/product/1081/50216
-    IOT_TOKEN_API_ACTION_MODIFY_AUTOMATION_STATUS,    // https://cloud.tencent.com/document/product/1081/50220
-    IOT_TOKEN_API_ACTION_APP_SMART_HOME_DISCOVER,
-    IOT_TOKEN_API_ACTION_SMART_HOME_DISCOVER,
-    IOT_TOKEN_API_ACTION_GET_PRODUCT_CATEGORY,
+    TCIOT_TOKEN_API_ACTION_GET_PRODUCT_INFO,            // https://cloud.tencent.com/document/product/1081/48764
+    TCIOT_TOKEN_API_ACTION_CONTROL_DEVICE_DATA,         // https://cloud.tencent.com/document/product/1081/40805
+    TCIOT_TOKEN_API_ACTION_GET_FAMILY_LIST,             // https://cloud.tencent.com/document/product/1081/40811
+    TCIOT_TOKEN_API_ACTION_GET_ROOM_LIST,               // https://cloud.tencent.com/document/product/1081/40816
+    TCIOT_TOKEN_API_ACTION_GET_DEVICE_LIST,             // https://cloud.tencent.com/document/product/1081/40803
+    TCIOT_TOKEN_API_ACTION_GET_DEVICE_STATUS,           // https://cloud.tencent.com/document/product/1081/40804
+    TCIOT_TOKEN_API_ACTION_GET_DEVICE_IN_FAMILY,        // https://cloud.tencent.com/document/product/1081/40807
+    TCIOT_TOKEN_API_ACTION_GET_DEVICE_SUB_DEVICE_LIST,  // https://cloud.tencent.com/document/product/1081/48130
+    TCIOT_TOKEN_API_ACTION_GET_SCENE_LIST,              // https://cloud.tencent.com/document/product/1081/50211
+    TCIOT_TOKEN_API_ACTION_RUN_SCENE,                   // https://cloud.tencent.com/document/product/1081/50214
+    TCIOT_TOKEN_API_ACTION_GET_AUTOMATION_LIST,         // https://cloud.tencent.com/document/product/1081/50216
+    TCIOT_TOKEN_API_ACTION_MODIFY_AUTOMATION_STATUS,    // https://cloud.tencent.com/document/product/1081/50220
+    TCIOT_TOKEN_API_ACTION_APP_SMART_HOME_DISCOVER,
+    TCIOT_TOKEN_API_ACTION_SMART_HOME_DISCOVER,
+    TCIOT_TOKEN_API_ACTION_GET_PRODUCT_CATEGORY,
 } IotTokenApiAction;
 
 /**
@@ -108,11 +108,11 @@ typedef union {
     } smart_home_discover;
 
     struct {
-        // IOT_TOKEN_API_ACTION_GET_FAMILY_LIST: NULL
-        // IOT_TOKEN_API_ACTION_GET_ROOM_LIST: family_id
-        // IOT_TOKEN_API_ACTION_GET_DEVICE_LIST: family_id
-        // IOT_TOKEN_API_ACTION_GET_SCENE_LIST: family_id
-        // IOT_TOKEN_API_ACTION_GET_AUTOMATION_LIST: family_id
+        // TCIOT_TOKEN_API_ACTION_GET_FAMILY_LIST: NULL
+        // TCIOT_TOKEN_API_ACTION_GET_ROOM_LIST: family_id
+        // TCIOT_TOKEN_API_ACTION_GET_DEVICE_LIST: family_id
+        // TCIOT_TOKEN_API_ACTION_GET_SCENE_LIST: family_id
+        // TCIOT_TOKEN_API_ACTION_GET_AUTOMATION_LIST: family_id
         const char *family_id;
         size_t      family_id_len;
     } default_params;
@@ -128,10 +128,10 @@ typedef union {
  * @param[in] access_token access_token get from cloud
  * @return response length
  */
-size_t IOT_TokenApi_Request(IotTokenApiAction action, IotTokenApiActionParams *params, char *buf, size_t buf_len,
+size_t TCIOT_TokenApi_Request(IotTokenApiAction action, IotTokenApiActionParams *params, char *buf, size_t buf_len,
                             const char *access_token);
 
-// 1. IOT_TOKEN_API_ACTION_GET_PRODUCT_INFO
+// 1. TCIOT_TOKEN_API_ACTION_GET_PRODUCT_INFO
 // req:
 //   "ProductIds":["FVYYYEL4ON"]
 // rep:
@@ -148,12 +148,12 @@ size_t IOT_TokenApi_Request(IotTokenApiAction action, IotTokenApiActionParams *p
 //       "ProductType":0,
 //       "UpdateTime":1600159203
 //   }
-// 2. IOT_TOKEN_API_ACTION_CONTROL_DEVICE_DATA:
+// 2. TCIOT_TOKEN_API_ACTION_CONTROL_DEVICE_DATA:
 // req:
 //   "ProductId":"22F9Y6II7O","DeviceName":"light1","Data":"{\"light_switch\":0}"
 // rep:
 //   {"Data":"","RequestId":"req_1"}
-// 3. IOT_TOKEN_API_ACTION_GET_FAMILY_LIST:
+// 3. TCIOT_TOKEN_API_ACTION_GET_FAMILY_LIST:
 // rep:
 //  "FamilyList":[{
 //      "FamilyId":"a1c6939b39d345b897b168313f8ca12c",
@@ -162,7 +162,7 @@ size_t IOT_TokenApi_Request(IotTokenApiAction action, IotTokenApiActionParams *p
 //      "CreateTime":1570786578,
 //      "UpdateTime":1570790807
 //  }]
-// 4. IOT_TOKEN_API_ACTION_GET_ROOM_LIST
+// 4. TCIOT_TOKEN_API_ACTION_GET_ROOM_LIST
 // req:
 //  "FamilyId":"f_9****c1"
 // rep:
@@ -173,7 +173,7 @@ size_t IOT_TokenApi_Request(IotTokenApiAction action, IotTokenApiActionParams *p
 //      "CreateTime":1570786578,
 //      "UpdateTime":1570790807
 //   }]
-// 5. IOT_TOKEN_API_ACTION_GET_DEVICE_LIST
+// 5. TCIOT_TOKEN_API_ACTION_GET_DEVICE_LIST
 // req:
 //  "FamilyId":"e0e23a2b33a24652b606ef9107c9a1cf","RoomId" : "5",  // ""表示所有 "0"表示默认
 // rep:
@@ -188,7 +188,7 @@ size_t IOT_TokenApi_Request(IotTokenApiAction action, IotTokenApiActionParams *p
 //      "CreateTime": 1574664969,
 //      "UpdateTime": 1574668779
 //  }]
-// 6. IOT_TOKEN_API_ACTION_GET_DEVICE_STATUS:
+// 6. TCIOT_TOKEN_API_ACTION_GET_DEVICE_STATUS:
 // req:
 //  "DeviceIds": ["HY4DHFM5P6/81386276"]
 // rep:
@@ -198,7 +198,7 @@ size_t IOT_TokenApi_Request(IotTokenApiAction action, IotTokenApiActionParams *p
 //      "DeviceName":"light1",
 //      "Online":0  // 0 在线；1：离线
 //  }]
-// 7. IOT_TOKEN_API_ACTION_GET_DEVICE_IN_FAMILY
+// 7. TCIOT_TOKEN_API_ACTION_GET_DEVICE_IN_FAMILY
 // req:
 //  "ProductId":"R32ONVL0EU","FamilyId":"xxx","DeviceName":"df2eSJyY"
 // rep:
@@ -214,7 +214,7 @@ size_t IOT_TokenApi_Request(IotTokenApiAction action, IotTokenApiActionParams *p
 //      "CreateTime" : 1574931773,
 //      "UpdateTime" : 1574931945
 //  }
-// 8. IOT_TOKEN_API_ACTION_GET_DEVICE_SUB_DEVICE_LIST
+// 8. TCIOT_TOKEN_API_ACTION_GET_DEVICE_SUB_DEVICE_LIST
 // req:
 //  "GatewayProductId":"NJ27OVLZT4","GatewayDeviceName":"gwdev"
 // rep:
@@ -230,7 +230,7 @@ size_t IOT_TokenApi_Request(IotTokenApiAction action, IotTokenApiActionParams *p
 //     "CreateTime": 1583492992,
 //     "UpdateTime": 1583492992
 // }]
-// 9. IOT_TOKEN_API_ACTION_GET_SCENE_LIST
+// 9. TCIOT_TOKEN_API_ACTION_GET_SCENE_LIST
 // req:
 //  "FamilyId": "f_9b309********4c3d9588fcc1","Offset" : 0,"Limit" : 10
 // rep:
@@ -260,12 +260,12 @@ size_t IOT_TokenApi_Request(IotTokenApiAction action, IotTokenApiActionParams *p
 //        "Status": 0 // 场景运行状态 0未运行，1运行中
 //      }
 //  ]
-// 10. IOT_TOKEN_API_ACTION_RUN_SCENE
+// 10. TCIOT_TOKEN_API_ACTION_RUN_SCENE
 // req:
 //  "SceneId" : "s_527cb5*********53cb6a46f653"
 // rep:
 //  {"RequestId":"req_1"}
-// 11. IOT_TOKEN_API_ACTION_GET_AUTOMATION_LIST:
+// 11. TCIOT_TOKEN_API_ACTION_GET_AUTOMATION_LIST:
 // req:
 //  "FamilyId":"f_9****c1"
 // rep:
@@ -275,7 +275,7 @@ size_t IOT_TokenApi_Request(IotTokenApiAction action, IotTokenApiActionParams *p
 //      "Name" : "autoName",
 //      "Status" : 0
 //  } ]
-// 12. IOT_TOKEN_API_ACTION_SMART_HOME_DISCOVER:
+// 12. TCIOT_TOKEN_API_ACTION_SMART_HOME_DISCOVER:
 // req:
 //  "FamilyId":"f_9****c1"
 // rep:
@@ -323,12 +323,12 @@ size_t IOT_TokenApi_Request(IotTokenApiAction action, IotTokenApiActionParams *p
 //          ]
 //      } ]
 //  }
-// 13. IOT_TOKEN_API_ACTION_MODIFY_AUTOMATION_STATUS:
+// 13. TCIOT_TOKEN_API_ACTION_MODIFY_AUTOMATION_STATUS:
 // req:
 //  "AutomationId": "a_cd61dd******1d6aeffea","Status": 1 //联动的开关 0：关闭 1：启用
 // rep:
 //  "RequestId":"req_1"
-// 14.IOT_TOKEN_API_ACTION_GET_PRODUCT_CATEGORY:
+// 14.TCIOT_TOKEN_API_ACTION_GET_PRODUCT_CATEGORY:
 // req:
 //  "PlatformKey": "XF"
 // rep:
@@ -341,4 +341,4 @@ size_t IOT_TokenApi_Request(IotTokenApiAction action, IotTokenApiActionParams *p
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_TOKEN_API_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_TOKEN_API_H_

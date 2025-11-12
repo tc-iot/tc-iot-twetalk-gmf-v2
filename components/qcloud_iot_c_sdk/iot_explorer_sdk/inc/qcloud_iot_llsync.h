@@ -26,8 +26,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_COMPONENT_QCLOUD_IOT_LLSYNC_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_COMPONENT_QCLOUD_IOT_LLSYNC_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_COMPONENT_QCLOUD_TCIOT_LLSYNC_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_COMPONENT_QCLOUD_TCIOT_LLSYNC_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,29 +38,29 @@ extern "C" {
 #include "qcloud_iot_data_template_config.h"
 
 // msg header define, bit 7-6 is msg type, bit 5 means request or reply, bit 4 - 0 is id
-#define BLE_QIOT_PARSE_MSG_HEAD_TYPE(_C)   (((_C)&0XFF) >> 6)
-#define BLE_QIOT_PARSE_MSG_HEAD_EFFECT(_C) ((((_C)&0XFF) & 0X20) ? BLE_QIOT_EFFECT_REPLY : BLE_QIOT_EFFECT_REQUEST)
-#define BLE_QIOT_PARSE_MSG_HEAD_ID(_C)     ((_C)&0X1F)
+#define BLE_QTCIOT_PARSE_MSG_HEAD_TYPE(_C)   (((_C)&0XFF) >> 6)
+#define BLE_QTCIOT_PARSE_MSG_HEAD_EFFECT(_C) ((((_C)&0XFF) & 0X20) ? BLE_QTCIOT_EFFECT_REPLY : BLE_QTCIOT_EFFECT_REQUEST)
+#define BLE_QTCIOT_PARSE_MSG_HEAD_ID(_C)     ((_C)&0X1F)
 
 // message type, reference data template
 typedef enum {
-    BLE_QIOT_MSG_TYPE_PROPERTY = 0,
-    BLE_QIOT_MSG_TYPE_EVENT,
-    BLE_QIOT_MSG_TYPE_ACTION,
-    BLE_QIOT_MSG_TYPE_BUTT,
+    BLE_QTCIOT_MSG_TYPE_PROPERTY = 0,
+    BLE_QTCIOT_MSG_TYPE_EVENT,
+    BLE_QTCIOT_MSG_TYPE_ACTION,
+    BLE_QTCIOT_MSG_TYPE_BUTT,
 } BLELLsyncMsgType;
 
 // data type in template, corresponding to type in json file
 typedef enum {
-    BLE_QIOT_DATA_TYPE_BOOL = 0,
-    BLE_QIOT_DATA_TYPE_INT,
-    BLE_QIOT_DATA_TYPE_STRING,
-    BLE_QIOT_DATA_TYPE_FLOAT,
-    BLE_QIOT_DATA_TYPE_ENUM,
-    BLE_QIOT_DATA_TYPE_TIME,
-    BLE_QIOT_DATA_TYPE_STRUCT,
-    BLE_QIOT_DATA_TYPE_ARRAY,
-    BLE_QIOT_DATA_TYPE_BUTT,
+    BLE_QTCIOT_DATA_TYPE_BOOL = 0,
+    BLE_QTCIOT_DATA_TYPE_INT,
+    BLE_QTCIOT_DATA_TYPE_STRING,
+    BLE_QTCIOT_DATA_TYPE_FLOAT,
+    BLE_QTCIOT_DATA_TYPE_ENUM,
+    BLE_QTCIOT_DATA_TYPE_TIME,
+    BLE_QTCIOT_DATA_TYPE_STRUCT,
+    BLE_QTCIOT_DATA_TYPE_ARRAY,
+    BLE_QTCIOT_DATA_TYPE_BUTT,
 } BLELLsyncDataType;
 
 typedef enum {
@@ -81,19 +81,19 @@ typedef struct {
 } BLELLsyncTlv;
 
 typedef enum {
-    IOT_LLSYNC_SELF_DATA,
-    IOT_LLSYNC_OTA_DATA,
-    IOT_LLSYNC_SUBDEV_DATA,
-    IOT_LLSYNC_SCENE_DATA,
-    IOT_LLSYNC_GROUP_DATA,
+    TCIOT_LLSYNC_SELF_DATA,
+    TCIOT_LLSYNC_OTA_DATA,
+    TCIOT_LLSYNC_SUBDEV_DATA,
+    TCIOT_LLSYNC_SCENE_DATA,
+    TCIOT_LLSYNC_GROUP_DATA,
 } LLTlvCtrlType;
 
 typedef enum {
-    BLE_QIOT_OTA_SUCCESS     = 0,  // ota success
-    BLE_QIOT_OTA_ERR_CRC     = 1,  // ota failed because crc error
-    BLE_QIOT_OTA_ERR_TIMEOUT = 2,  // ota failed because download timeout
-    BLE_QIOT_OTA_DISCONNECT  = 3,  // ota failed because ble disconnect
-    BLE_QIOT_OTA_ERR_FILE    = 4,  // ota failed because the file mismatch the device
+    BLE_QTCIOT_OTA_SUCCESS     = 0,  // ota success
+    BLE_QTCIOT_OTA_ERR_CRC     = 1,  // ota failed because crc error
+    BLE_QTCIOT_OTA_ERR_TIMEOUT = 2,  // ota failed because download timeout
+    BLE_QTCIOT_OTA_DISCONNECT  = 3,  // ota failed because ble disconnect
+    BLE_QTCIOT_OTA_ERR_FILE    = 4,  // ota failed because the file mismatch the device
 } LLsyncOtaErrType;
 
 enum {
@@ -114,22 +114,22 @@ typedef struct {
     uint8_t  client_token;
     uint8_t *llsync_data;
     int      llsync_data_len;
-} IOTBLELLsyncData;
+} TCIOTBLELLsyncData;
 
-#define DEFAULT_IOT_BLE_LLSYNC_DATA                                                                \
+#define DEFAULT_TCIOT_BLE_LLSYNC_DATA                                                                \
     {                                                                                              \
         .type = 0, .report_type = 0, .client_token = 0, .llsync_data = NULL, .llsync_data_len = 0, \
     }
 
 typedef struct {
-    int (*set_wifi_mode)(TCIoTWifiMode mode, void *usr_data);
+    int (*set_wifi_mode)(TCI_WifiMode mode, void *usr_data);
     int (*set_wifi_info)(const char *ssid, size_t ssid_len, const char *pwd, size_t pwd_len, void *usr_data);
     int (*connect_wifi)(size_t timeout_ms, void *usr_data);
     int (*set_wifi_token)(const char *token, size_t token_len, void *usr_data);
     int (*get_wifi_log)(void *usr_data);
-} IOTBLELLsyncWifiCallback;
+} TCIOTBLELLsyncWifiCallback;
 
-#if BLE_QIOT_SUPPORT_OTA
+#if BLE_QTCIOT_SUPPORT_OTA
 
 typedef struct {
     uint32_t (*get_download_addr)(void *usr_data);
@@ -143,12 +143,12 @@ typedef struct {
     void (*ota_start)(void *usr_data);
     void (*ota_stop)(void *usr_data, LLsyncOtaErrType result);
     int (*valid_file_cb)(void *usr_data, uint32_t file_size, const char *file_version);
-} IOTBLELLsyncOtaCallback;
+} TCIOTBLELLsyncOtaCallback;
 
 #define DEFAULT_BLE_LLSYNC_OTA_CALLBACK                                                                       \
     {                                                                                                         \
-        HAL_OTA_get_download_addr, HAL_OTA_read_flash, HAL_OTA_write_flash, HAL_OTA_create_ota_timer,         \
-            HAL_OTA_start_ota_timer, HAL_OTA_stop_ota_timer, HAL_OTA_delete_ota_timer, NULL, NULL, NULL, NULL \
+        TCI_HAL_OTA_get_download_addr, TCI_HAL_OTA_read_flash, TCI_HAL_OTA_write_flash, TCI_HAL_OTA_create_ota_timer,         \
+            TCI_HAL_OTA_start_ota_timer, TCI_HAL_OTA_stop_ota_timer, TCI_HAL_OTA_delete_ota_timer, NULL, NULL, NULL, NULL \
     }
 
 #endif
@@ -157,19 +157,19 @@ typedef struct {
     void (*connect_callback)(void *usr_data);
     void (*disconnect_callback)(void *usr_data);
     void (*secure_bind_callback)(void *usr_data);
-#if BLE_QIOT_SUPPORT_OTA
-    IOTBLELLsyncOtaCallback ota_callback;
+#if BLE_QTCIOT_SUPPORT_OTA
+    TCIOTBLELLsyncOtaCallback ota_callback;
 #endif
-} IOTBLELLsyncCallback;
+} TCIOTBLELLsyncCallback;
 
 typedef struct {
-    IOTBLELLsyncCallback callback;
+    TCIOTBLELLsyncCallback callback;
     DeviceInfo          *dev_info;
     uint32_t             start_adv;  // unit : s
     void                *usr_data;
-} IOTBLELLsyncInitParams;
+} TCIOTBLELLsyncInitParams;
 
-#if BLE_QIOT_SUPPORT_OTA
+#if BLE_QTCIOT_SUPPORT_OTA
 #define DEFAULT_LLSYNC_CALLBACK                           \
     {                                                     \
         NULL, NULL, NULL, DEFAULT_BLE_LLSYNC_OTA_CALLBACK \
@@ -193,7 +193,7 @@ typedef struct {
  * @param usr_data
  * @return 0 for success
  */
-int iot_llsync_init(IOTBLELLsyncInitParams init_params);
+int iot_llsync_init(TCIOTBLELLsyncInitParams init_params);
 
 /**
  * @brief check iot llsync init
@@ -240,7 +240,7 @@ int iot_llsync_creat_adv_data(uint8_t adv_data_raw[32]);
  * @param callback wifi callback function
  * @param usr_data
  */
-void iot_llsync_register_wifi_callback(IOTBLELLsyncWifiCallback callback, void *usr_data);
+void iot_llsync_register_wifi_callback(TCIOTBLELLsyncWifiCallback callback, void *usr_data);
 
 /**
  * @brief unregister wifi callback function
@@ -282,18 +282,18 @@ int iot_llsync_lltlv_to_tlv(uint8_t *lltlv_buf, uint16_t lltlv_len, uint8_t *tlv
 /**
  * @brief llsync uplink data handle
  *
- * @param[in,out] data @see IOTBLELLsyncData
+ * @param[in,out] data @see TCIOTBLELLsyncData
  * @return 0 for success
  */
-int iot_llsync_up_data_handle(IOTBLELLsyncData *data);
+int iot_llsync_up_data_handle(TCIOTBLELLsyncData *data);
 
 /**
  * @brief llsync down data handle
  *
- * @param[in,out] data @see IOTBLELLsyncData
+ * @param[in,out] data @see TCIOTBLELLsyncData
  * @return 0 for success
  */
-int iot_llsync_down_data_handle(IOTBLELLsyncData *data);
+int iot_llsync_down_data_handle(TCIOTBLELLsyncData *data);
 
 /**
  * @brief llsync get ota download buffer
@@ -310,4 +310,4 @@ int iot_llsync_set_core_data(uint8_t bind_state, uint32_t local_psk, uint8_t ide
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_COMPONENT_QCLOUD_IOT_LLSYNC_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_COMPONENT_QCLOUD_TCIOT_LLSYNC_H_

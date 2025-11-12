@@ -28,7 +28,7 @@
 
 #include "qcloud_iot_http_client.h"
 
-#include "network_interface.h"
+#include "qcloud_iot_network_interface.h"
 
 /**
  * @brief Http data.
@@ -80,10 +80,10 @@ static int _http_client_connect(IotHTTPClient *client, const char *host, const c
 {
     int rc = 0;
 
-    client->network.type = IOT_NETWORK_TYPE_TCP;
-#if !defined(AUTH_WITH_NO_TLS)
+    client->network.type = TCIOT_NETWORK_TYPE_TCP;
+#if !defined(ENABLE_AUTH_NO_TLS)
     if (ca_crt) {
-        client->network.type                          = IOT_NETWORK_TYPE_TLS;
+        client->network.type                          = TCIOT_NETWORK_TYPE_TLS;
         client->network.ssl_connect_params.ca_crt     = ca_crt;
         client->network.ssl_connect_params.ca_crt_len = strlen(ca_crt);
         client->network.ssl_connect_params.timeout_ms = HTTPS_READ_TIMEOUT_MS;
@@ -196,8 +196,8 @@ static int _http_client_send_request_line(IotHTTPClient *client, const IotHTTPRe
      *
      */
     const char *method_str[] = {
-        [IOT_HTTP_METHOD_GET] = "GET",       [IOT_HTTP_METHOD_POST] = "POST", [IOT_HTTP_METHOD_PUT] = "PUT",
-        [IOT_HTTP_METHOD_DELETE] = "DELETE", [IOT_HTTP_METHOD_HEAD] = "HEAD",
+        [TCIOT_HTTP_METHOD_GET] = "GET",       [TCIOT_HTTP_METHOD_POST] = "POST", [TCIOT_HTTP_METHOD_PUT] = "PUT",
+        [TCIOT_HTTP_METHOD_DELETE] = "DELETE", [TCIOT_HTTP_METHOD_HEAD] = "HEAD",
     };
 
     rc = _http_client_parse_url(params->url, &host, &path);
@@ -207,16 +207,16 @@ static int _http_client_send_request_line(IotHTTPClient *client, const IotHTTPRe
     }
 
     buf_len = path.data_len + host.data_len + 128;
-    buf     = HAL_Malloc(buf_len);
+    buf     = TCI_HAL_Malloc(buf_len);
     if (!buf) {
         Log_e("http malloc request line failed %d", rc);
         return QCLOUD_ERR_MALLOC;
     }
 
-    len = HAL_Snprintf(buf, buf_len, "%s %.*s HTTP/1.1\r\nHost:%.*s\r\n", method_str[params->method], path.data_len,
+    len = TCI_HAL_Snprintf(buf, buf_len, "%s %.*s HTTP/1.1\r\nHost:%.*s\r\n", method_str[params->method], path.data_len,
                        path.data, host.data_len, host.data);
     rc  = _http_client_send(client, buf, len);
-    HAL_Free(buf);
+    TCI_HAL_Free(buf);
     return rc;
 }
 
@@ -233,20 +233,20 @@ static int _http_client_send_request_content(IotHTTPClient *client, const IotHTT
     char *buf;
 
     buf_len = params->content_type ? 32 + strlen(params->content_type) : 32;
-    buf     = HAL_Malloc(buf_len);
+    buf     = TCI_HAL_Malloc(buf_len);
     if (!buf) {
         Log_e("http malloc request line failed %d", rc);
         return QCLOUD_ERR_MALLOC;
     }
 
-    len = HAL_Snprintf(buf, buf_len, "Content-Length:%d\r\n", params->content_length);
+    len = TCI_HAL_Snprintf(buf, buf_len, "Content-Length:%d\r\n", params->content_length);
     rc  = _http_client_send(client, buf, len);
     if (rc) {
         goto exit;
     }
 
     if (params->content_type) {
-        len = HAL_Snprintf(buf, buf_len, "Content-Type:%s\r\n", params->content_type);
+        len = TCI_HAL_Snprintf(buf, buf_len, "Content-Type:%s\r\n", params->content_type);
         rc  = _http_client_send(client, buf, len);
         if (rc) {
             goto exit;
@@ -258,10 +258,10 @@ static int _http_client_send_request_content(IotHTTPClient *client, const IotHTT
         goto exit;
     }
 
-    HAL_Free(buf);
+    TCI_HAL_Free(buf);
     return _http_client_send(client, (char *)params->content, params->content_length);
 exit:
-    HAL_Free(buf);
+    TCI_HAL_Free(buf);
     Log_e("send request content failed %d", rc);
     return rc;
 }
@@ -323,8 +323,8 @@ static int _http_client_chunked_recv(IotHTTPClient *client, uint32_t timeout_ms)
     int   rc = 0, read_size = 0;
     int   read_size_flag = 1;
 
-    QcloudIotTimer read_timer;
-    IOT_Timer_CountdownMs(&read_timer, timeout_ms);
+    TCI_Timer read_timer;
+    TCI_HAL_TimerCountdownMs(&read_timer, timeout_ms);
 
     do {
         while (1) {
@@ -334,7 +334,7 @@ static int _http_client_chunked_recv(IotHTTPClient *client, uint32_t timeout_ms)
                 break;
             }
 
-            if (IOT_Timer_Expired(&read_timer)) {
+            if (TCI_HAL_TimerExpired(&read_timer)) {
                 return 0;
             }
 
@@ -356,7 +356,7 @@ static int _http_client_chunked_recv(IotHTTPClient *client, uint32_t timeout_ms)
                 return response->recv_len;
             }
             memmove(find_from, crlf_pointer + 2, buf + response->recv_len - (uint8_t *)find_from);
-            read_size_flag = IOT_BOOL_FALSE;
+            read_size_flag = TCIOT_BOOL_FALSE;
             continue;
         }
 
@@ -364,8 +364,8 @@ static int _http_client_chunked_recv(IotHTTPClient *client, uint32_t timeout_ms)
         response->recv_len -= 2;
         memmove(crlf_pointer, crlf_pointer + 2, buf + response->recv_len - (uint8_t *)crlf_pointer);
         find_from += read_size;
-        read_size_flag = IOT_BOOL_TRUE;
-    } while (!IOT_Timer_Expired(&read_timer));
+        read_size_flag = TCIOT_BOOL_TRUE;
+    } while (!TCI_HAL_TimerExpired(&read_timer));
     return 0;
 }
 
@@ -425,7 +425,7 @@ static int _http_client_recv_content(IotHTTPClient *client, int offset, uint32_t
  */
 static int _http_client_recv_response(IotHTTPClient *client, uint32_t timeout_ms)
 {
-    QcloudIotTimer timer;
+    TCI_Timer timer;
     char          *content_length, *body_end;
     int            rc, len = 0;
     char          *buf     = (char *)client->response.content_buf;
@@ -433,12 +433,12 @@ static int _http_client_recv_response(IotHTTPClient *client, uint32_t timeout_ms
 
     IotHTTPResponseData *response = &client->response;
     memset(buf, 0, buf_len);
-    IOT_Timer_CountdownMs(&timer, timeout_ms);
+    TCI_HAL_TimerCountdownMs(&timer, timeout_ms);
 
     // 1. found body end
     while (NULL == (body_end = strstr(buf, "\r\n\r\n"))) {
         // timeout
-        if (IOT_Timer_Expired(&timer)) {
+        if (TCI_HAL_TimerExpired(&timer)) {
             return QCLOUD_ERR_HTTP_TIMEOUT;
         }
         // timeout 100ms for header less than buff len
@@ -496,7 +496,7 @@ static int _http_client_recv_response(IotHTTPClient *client, uint32_t timeout_ms
 recv_content:
     memmove(buf, body_end, len);
     response->recv_len = len;
-    return _http_client_recv_content(client, len, IOT_Timer_Remain(&timer));
+    return _http_client_recv_content(client, len, TCI_HAL_TimerRemain(&timer));
 }
 
 /**************************************************************************************
@@ -508,18 +508,18 @@ recv_content:
  *
  * @return pointer to http client
  */
-void *IOT_HTTP_Init(void)
+void *TCIOT_HTTP_Init(void)
 {
-    return HAL_Malloc(sizeof(IotHTTPClient));
+    return TCI_HAL_Malloc(sizeof(IotHTTPClient));
 }
 
 /**
  * @brief Free http client.
  *
  */
-void IOT_HTTP_Deinit(void *client)
+void TCIOT_HTTP_Deinit(void *client)
 {
-    HAL_Free(client);
+    TCI_HAL_Free(client);
 }
 
 /**
@@ -529,7 +529,7 @@ void IOT_HTTP_Deinit(void *client)
  * @param[in] params params needed to connect http server, @see IotHTTPConnectParams
  * @return 0 for success. others @see IotReturnCode
  */
-int IOT_HTTP_Connect(void *client, IotHTTPConnectParams *params)
+int TCIOT_HTTP_Connect(void *client, IotHTTPConnectParams *params)
 {
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
     IotHTTPClient *http_client = (IotHTTPClient *)client;
@@ -546,7 +546,7 @@ int IOT_HTTP_Connect(void *client, IotHTTPConnectParams *params)
     }
 
     // copy host
-    char *host_str = HAL_Malloc(host.data_len + 1);
+    char *host_str = TCI_HAL_Malloc(host.data_len + 1);
     if (!host_str) {
         return QCLOUD_ERR_MALLOC;
     }
@@ -555,7 +555,7 @@ int IOT_HTTP_Connect(void *client, IotHTTPConnectParams *params)
 
     // http connect
     rc = _http_client_connect(http_client, host_str, params->port, params->ca_crt);
-    HAL_Free(host_str);
+    TCI_HAL_Free(host_str);
     return rc;
 }
 
@@ -566,7 +566,7 @@ int IOT_HTTP_Connect(void *client, IotHTTPConnectParams *params)
  * @param[in] params params needed to send request to http server, @see IotHTTPRequestParams
  * @return 0 for success. others @see IotReturnCode
  */
-int IOT_HTTP_Request(void *client, IotHTTPRequestParams *params)
+int TCIOT_HTTP_Request(void *client, IotHTTPRequestParams *params)
 {
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
     return _http_client_send_request((IotHTTPClient *)client, params);
@@ -580,7 +580,7 @@ int IOT_HTTP_Request(void *client, IotHTTPRequestParams *params)
  * @param[out] data_len data len
  * @return 0 for success. others @see IotReturnCode
  */
-int IOT_HTTP_Send(void *client, uint8_t *data, int data_len)
+int TCIOT_HTTP_Send(void *client, uint8_t *data, int data_len)
 {
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
     return _http_client_send((IotHTTPClient *)client, (char *)data, data_len);
@@ -595,7 +595,7 @@ int IOT_HTTP_Send(void *client, uint8_t *data, int data_len)
  * @param timeout_ms timeout for recv
  * @return >= 0 for recv data len. others @see IotReturnCode
  */
-int IOT_HTTP_Recv(void *client, uint8_t *buf, int buf_len, uint32_t timeout_ms)
+int TCIOT_HTTP_Recv(void *client, uint8_t *buf, int buf_len, uint32_t timeout_ms)
 {
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
     IotHTTPClient *http_client            = (IotHTTPClient *)client;
@@ -609,13 +609,13 @@ int IOT_HTTP_Recv(void *client, uint8_t *buf, int buf_len, uint32_t timeout_ms)
  * @brief Check is recv finished.
  *
  * @param[in,out] client pointer to http client
- * @return IOT_BOOL_TRUE for finished.
+ * @return TCIOT_BOOL_TRUE for finished.
  */
-IotBool IOT_HTTP_IsRecvFinished(void *client)
+IotBool TCIOT_HTTP_IsRecvFinished(void *client)
 {
-    POINTER_SANITY_CHECK(client, IOT_BOOL_FALSE);
+    POINTER_SANITY_CHECK(client, TCIOT_BOOL_FALSE);
     IotHTTPClient *http_client = (IotHTTPClient *)client;
-    return http_client->response.need_recv_len == 0 ? IOT_BOOL_TRUE : IOT_BOOL_FALSE;
+    return http_client->response.need_recv_len == 0 ? TCIOT_BOOL_TRUE : TCIOT_BOOL_FALSE;
 }
 
 /**
@@ -623,7 +623,7 @@ IotBool IOT_HTTP_IsRecvFinished(void *client)
  *
  * @param[in,out] client pointer to http client
  */
-void IOT_HTTP_Disconnect(void *client)
+void TCIOT_HTTP_Disconnect(void *client)
 {
     POINTER_SANITY_CHECK_RTN(client);
     _http_client_disconnect((IotHTTPClient *)client);

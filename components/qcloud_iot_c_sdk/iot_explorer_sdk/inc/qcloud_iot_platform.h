@@ -27,8 +27,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_IOT_PLATFORM_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_IOT_PLATFORM_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_TCIOT_PLATFORM_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_TCIOT_PLATFORM_H_
 
 #if defined(__cplusplus)
 extern "C" {
@@ -45,21 +45,16 @@ extern "C" {
 #include "qcloud_iot_device.h"
 #include "qcloud_iot_error.h"
 #include "qcloud_iot_params_check.h"
-#include "qcloud_iot_platform.h"
-#include "qcloud_iot_timer.h"
 
 // config header file
 #include "qcloud_iot_config.h"
 #include "qcloud_iot_host.h"
 #include "qcloud_iot_variables.h"
 
-#include "tc_iot_hal.h"
-
-int HAL_SetDevInfo(DeviceInfo *device_info);
-int HAL_GetDevInfo(DeviceInfo *device_info);
+#include "tci_hal_adapter.h"
 
 #if defined(__cplusplus)
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_IOT_PLATFORM_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_TCIOT_PLATFORM_H_

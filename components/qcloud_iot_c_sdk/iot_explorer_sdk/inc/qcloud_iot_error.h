@@ -27,8 +27,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_IOT_ERROR_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_IOT_ERROR_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_TCIOT_ERROR_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_TCIOT_ERROR_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,25 +39,25 @@ extern "C" {
 #include "tc_iot_ret_code.h"
 
 /**
- * @brief IOT SDK bool type
+ * @brief TCIOT SDK bool type
  *
  */
 #define IotBool uint8_t
 
 /**
- * @brief IOT bool false
+ * @brief TCIOT bool false
  *
  */
-#define IOT_BOOL_FALSE 0x00
+#define TCIOT_BOOL_FALSE 0x00
 
 /**
- * @brief IOT bool true
+ * @brief TCIOT bool true
  *
  */
-#define IOT_BOOL_TRUE 0x01
+#define TCIOT_BOOL_TRUE 0x01
 
 /**
- * @brief IOT SDK return/error code.
+ * @brief TCIOT SDK return/error code.
  * Enumeration of return code in QCloud IoT C-SDK.
  * Values less than 0 are specific error codes
  * Value of 0 is successful return
@@ -83,6 +83,8 @@ typedef enum {
     QCLOUD_ERR_MQTT_QOS_NOT_SUPPORT      = -110, /**< MQTT QoS level not supported */
     QCLOUD_ERR_MQTT_UNSUB_FAIL           = -111, /**< MQTT unsubscribe failed */
     QCLOUD_ERR_MAX_TOPIC_LENGTH          = -112, /**< Topic length oversize */
+    QCLOUD_ERR_MQTT_YIELD_BUSY           = -113, /**< MQTT yield is busy, another thread is processing */
+
 
     QCLOUD_ERR_HTTP           = -201, /**< HTTP unknown error */
     QCLOUD_ERR_HTTP_AUTH      = -202, /**< HTTP auth failed */
@@ -113,6 +115,27 @@ typedef enum {
     QCLOUD_ERR_TWETALK_NOT_CONNECTED        = -909, /**< twetalk not connected */
     QCLOUD_ERR_TWETALK_UNKNOW_TYPE          = -910, /**< twetalk unknow type */
 
+    /* Video Kit error codes (-1000 ~ -1099) */
+    QCLOUD_ERR_VIDEO_KIT_NOT_INIT           = -1000, /**< Video kit not initialized */
+    QCLOUD_ERR_VIDEO_KIT_ALREADY_INIT       = -1001, /**< Video kit already initialized */
+    QCLOUD_ERR_VIDEO_KIT_INVALID_PARAM      = -1002, /**< Video kit invalid parameter */
+    QCLOUD_ERR_VIDEO_KIT_MALLOC_FAILED      = -1003, /**< Video kit memory allocation failed */
+    QCLOUD_ERR_VIDEO_KIT_MQTT_INIT_FAILED   = -1004, /**< Video kit MQTT signalling init failed */
+    QCLOUD_ERR_VIDEO_KIT_MQTT_SUB_FAILED    = -1005, /**< Video kit MQTT subscribe failed */
+    QCLOUD_ERR_VIDEO_KIT_NOT_IN_CALL        = -1006, /**< Video kit not in call state */
+    QCLOUD_ERR_VIDEO_KIT_CHANNEL_INVALID    = -1007, /**< Video kit channel ID invalid */
+    QCLOUD_ERR_VIDEO_KIT_CHANNEL_NOT_EXIST  = -1008, /**< Video kit channel not exist in current call */
+    QCLOUD_ERR_VIDEO_KIT_ENGINE_NULL        = -1009, /**< Video kit TRTC engine is NULL */
+    QCLOUD_ERR_VIDEO_KIT_ENGINE_CREATE_FAIL = -1010, /**< Video kit TRTC engine create failed */
+    QCLOUD_ERR_VIDEO_KIT_JOIN_ROOM_FAILED   = -1011, /**< Video kit join room failed */
+    QCLOUD_ERR_VIDEO_KIT_EXIT_ROOM_FAILED   = -1012, /**< Video kit exit room failed */
+    QCLOUD_ERR_VIDEO_KIT_SEND_FRAME_FAILED  = -1013, /**< Video kit send frame failed */
+    QCLOUD_ERR_VIDEO_KIT_BUSY_IN_CALL       = -1014, /**< Video kit busy in call, refuse new invite */
+    QCLOUD_ERR_VIDEO_KIT_USER_REFUSE        = -1015, /**< Video kit user refuse to join room */
+    QCLOUD_ERR_VIDEO_KIT_PARSE_MSG_FAILED   = -1016, /**< Video kit parse signalling message failed */
+    QCLOUD_ERR_VIDEO_KIT_INVALID_MSG        = -1017, /**< Video kit invalid signalling message */
+    QCLOUD_ERR_VIDEO_KIT_HANGUP_FAILED      = -1018, /**< Video kit hangup failed */
+
     QCLOUD_ERR_WS_CLOSE_NORMAL                     = -2000, /**< websocket close normal */
     QCLOUD_ERR_WS_CLOSE_GOING_AWAY                 = -2001, /**< websocket close going away */
     QCLOUD_ERR_WS_CLOSE_PROTOCOL_ERROR             = -2002, /**< websocket close protocol error */
@@ -132,4 +155,4 @@ typedef enum {
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_IOT_ERROR_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_COMMON_QCLOUD_TCIOT_ERROR_H_

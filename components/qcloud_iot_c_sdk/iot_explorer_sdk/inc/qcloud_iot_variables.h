@@ -26,8 +26,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_CONFIG_QCLOUD_IOT_VARIABLES_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_CONFIG_QCLOUD_IOT_VARIABLES_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_CONFIG_QCLOUD_TCIOT_VARIABLES_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_CONFIG_QCLOUD_TCIOT_VARIABLES_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,43 +40,43 @@ extern "C" {
  * @brief default MQTT timeout value when connect/pub/sub (unit: ms)
  *
  */
-#define QCLOUD_IOT_MQTT_COMMAND_TIMEOUT (5 * 1000)
+#define QCLOUD_TCIOT_MQTT_COMMAND_TIMEOUT (5 * 1000)
 
 /**
  * @brief default MQTT timeout value when wait server ack
  *
  */
-#define QCLOUD_IOT_MQTT_WAIT_ACK_TIMEOUT (5 * 1000)
+#define QCLOUD_TCIOT_MQTT_WAIT_ACK_TIMEOUT (5 * 1000)
 
 /**
  * @brief default MQTT keep alive interval (unit: s)
  *
  */
-#define QCLOUD_IOT_MQTT_KEEP_ALIVE_INTERNAL (240)
+#define QCLOUD_TCIOT_MQTT_KEEP_ALIVE_INTERNAL (240)
 
 /**
  * @brief default MQTT Tx buffer size, MAX: 16*1024
  *
  */
-#define QCLOUD_IOT_MQTT_TX_BUF_LEN (8192)
+#define QCLOUD_TCIOT_MQTT_TX_BUF_LEN (8192)
 
 /**
  * @brief default MQTT Rx buffer size, MAX: 16*1024
  *
  */
-#define QCLOUD_IOT_MQTT_RX_BUF_LEN (8192)
+#define QCLOUD_TCIOT_MQTT_RX_BUF_LEN (8192)
 
 /**
  * @brief Max number of topic subscribed
  *
  */
-#define QCLOUD_IOT_MQTT_MAX_MESSAGE_HANDLERS (50)
+#define QCLOUD_TCIOT_MQTT_MAX_MESSAGE_HANDLERS (50)
 
 /**
  * @brief default MQTT timeout value when yield
  *
  */
-#define QCLOUD_IOT_MQTT_YIELD_TIMEOUT (200)
+#define QCLOUD_TCIOT_MQTT_YIELD_TIMEOUT (200)
 
 /**
  * @brief MAX MQTT reconnect interval (unit: ms)
@@ -122,4 +122,4 @@ extern "C" {
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_CONFIG_QCLOUD_IOT_VARIABLES_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_CONFIG_QCLOUD_TCIOT_VARIABLES_H_

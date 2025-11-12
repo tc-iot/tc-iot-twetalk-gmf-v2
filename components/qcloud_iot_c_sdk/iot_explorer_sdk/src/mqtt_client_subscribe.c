@@ -47,7 +47,7 @@ typedef struct {
 static void _clear_sub_handle(SubTopicHandle *handler)
 {
     if (handler->topic_filter) {
-        HAL_Free(handler->topic_filter);
+        TCI_HAL_Free(handler->topic_filter);
         handler->topic_filter = NULL;
     }
 }
@@ -89,7 +89,7 @@ static int _construct_sub_info(void *val, void *usr_data, size_t size)
     strncpy(sub_info->topic, push_sub_info->topic_filter, topic_len);
     sub_info->topic[topic_len] = '\0';
 
-    IOT_Timer_CountdownMs(&sub_info->sub_start_time, push_sub_info->client->command_timeout_ms);
+    TCI_HAL_TimerCountdownMs(&sub_info->sub_start_time, push_sub_info->client->command_timeout_ms);
     *(push_sub_info->sub_info_val) = sub_info;
     return 0;
 }
@@ -107,13 +107,13 @@ static int _construct_sub_info(void *val, void *usr_data, size_t size)
  */
 static int _push_sub_info_to_list(PushSubInfo *push_sub_info)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     void *list = push_sub_info->client->list_sub_wait_ack;
     if (utils_list_push(list, sizeof(QcloudIotSubInfo), push_sub_info, _construct_sub_info)) {
         Log_e("list push failed! Check the list len!");
-        IOT_FUNC_EXIT_RC(QCLOUD_ERR_FAILURE);
+        TCIOT_FUNC_EXIT_RC(QCLOUD_ERR_FAILURE);
     }
-    IOT_FUNC_EXIT_RC(QCLOUD_RET_SUCCESS);
+    TCIOT_FUNC_EXIT_RC(QCLOUD_RET_SUCCESS);
 }
 
 /**
@@ -159,7 +159,7 @@ static UtilsListResult _sub_wait_list_process_check_timeout(void *list, void *va
     QcloudIotClient  *client   = (QcloudIotClient *)usr_data;
 
     // check the request if timeout or not
-    if (IOT_Timer_Remain(&sub_info->sub_start_time) > 0) {
+    if (TCI_HAL_TimerRemain(&sub_info->sub_start_time) > 0) {
         return LIST_TRAVERSE_CONTINUE;
     }
 
@@ -212,17 +212,17 @@ static void _pop_sub_info_from_list(QcloudIotClient *client, uint16_t packet_id,
  * @param[in,out] client pointer to mqtt_client
  * @param[in] topic_filter topic to remove
  * @param[in] is_unsub is unsubcribe
- * @return IOT_BOOL_TRUE topic exist
- * @return IOT_BOOL_FALSE topic no exist
+ * @return TCIOT_BOOL_TRUE topic exist
+ * @return TCIOT_BOOL_FALSE topic no exist
  */
 static IotBool _remove_sub_handle_from_array(QcloudIotClient *client, const char *topic_filter, int is_unsub)
 {
     int     i;
-    IotBool topic_exists = IOT_BOOL_FALSE;
+    IotBool topic_exists = TCIOT_BOOL_FALSE;
 
     // remove from message handler array
-    HAL_MutexLock(client->lock_generic);
-    for (i = 0; i < QCLOUD_IOT_MQTT_MAX_MESSAGE_HANDLERS; ++i) {
+    TCI_HAL_MutexLock(client->lock_generic);
+    for (i = 0; i < QCLOUD_TCIOT_MQTT_MAX_MESSAGE_HANDLERS; ++i) {
         if ((client->sub_handles[i].topic_filter && !strcmp(client->sub_handles[i].topic_filter, topic_filter)) ||
             strstr(topic_filter, "/#") || strstr(topic_filter, "/+")) {
             // notify this event to topic subscriber
@@ -235,10 +235,10 @@ static IotBool _remove_sub_handle_from_array(QcloudIotClient *client, const char
                 _clear_sub_handle_usr_data(&client->sub_handles[i]);
             }
             // we don't want to break here, if the same topic is registered*with 2 callbacks.Unlikely scenario
-            topic_exists = IOT_BOOL_TRUE;
+            topic_exists = TCIOT_BOOL_TRUE;
         }
     }
-    HAL_MutexUnlock(client->lock_generic);
+    TCI_HAL_MutexUnlock(client->lock_generic);
     return topic_exists;
 }
 
@@ -247,17 +247,17 @@ static IotBool _remove_sub_handle_from_array(QcloudIotClient *client, const char
  *
  * @param[in,out] client pointer to mqtt_client
  * @param[in] sub_handle sub_handle to be add to array
- * @return IOT_BOOL_TRUE topic exist
- * @return IOT_BOOL_FALSE topic no exist
+ * @return TCIOT_BOOL_TRUE topic exist
+ * @return TCIOT_BOOL_FALSE topic no exist
  */
 static int _add_sub_handle_to_array(QcloudIotClient *client, const SubTopicHandle *sub_handle)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     int i, i_free = -1;
 
-    HAL_MutexLock(client->lock_generic);
+    TCI_HAL_MutexLock(client->lock_generic);
 
-    for (i = 0; i < QCLOUD_IOT_MQTT_MAX_MESSAGE_HANDLERS; ++i) {
+    for (i = 0; i < QCLOUD_TCIOT_MQTT_MAX_MESSAGE_HANDLERS; ++i) {
         if (client->sub_handles[i].topic_filter) {
             if (!strcmp(client->sub_handles[i].topic_filter, sub_handle->topic_filter)) {
                 i_free = i;
@@ -274,12 +274,12 @@ static int _add_sub_handle_to_array(QcloudIotClient *client, const SubTopicHandl
 
     if (-1 == i_free) {
         Log_e("NO more @sub_handles space!");
-        HAL_MutexUnlock(client->lock_generic);
-        IOT_FUNC_EXIT_RC(QCLOUD_ERR_FAILURE);
+        TCI_HAL_MutexUnlock(client->lock_generic);
+        TCIOT_FUNC_EXIT_RC(QCLOUD_ERR_FAILURE);
     }
     client->sub_handles[i_free] = *sub_handle;
-    HAL_MutexUnlock(client->lock_generic);
-    IOT_FUNC_EXIT_RC(QCLOUD_RET_SUCCESS);
+    TCI_HAL_MutexUnlock(client->lock_generic);
+    TCIOT_FUNC_EXIT_RC(QCLOUD_RET_SUCCESS);
 }
 
 /**
@@ -291,12 +291,12 @@ static int _add_sub_handle_to_array(QcloudIotClient *client, const SubTopicHandl
  */
 static void _set_sub_handle_status_to_array(QcloudIotClient *client, const char *topic_filter, SubStatus status)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     int i;
 
-    HAL_MutexLock(client->lock_generic);
+    TCI_HAL_MutexLock(client->lock_generic);
 
-    for (i = 0; i < QCLOUD_IOT_MQTT_MAX_MESSAGE_HANDLERS; ++i) {
+    for (i = 0; i < QCLOUD_TCIOT_MQTT_MAX_MESSAGE_HANDLERS; ++i) {
         if (client->sub_handles[i].topic_filter) {
             if (!strcmp(client->sub_handles[i].topic_filter, topic_filter)) {
                 client->sub_handles[i].status = status;
@@ -304,8 +304,8 @@ static void _set_sub_handle_status_to_array(QcloudIotClient *client, const char 
             }
         }
     }
-    HAL_MutexUnlock(client->lock_generic);
-    IOT_FUNC_EXIT;
+    TCI_HAL_MutexUnlock(client->lock_generic);
+    TCIOT_FUNC_EXIT;
 }
 
 /**
@@ -318,7 +318,7 @@ static void _set_sub_handle_status_to_array(QcloudIotClient *client, const char 
  */
 int qcloud_iot_mqtt_subscribe(QcloudIotClient *client, const char *topic_filter, const SubscribeParams *params)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     int            rc, packet_len, qos = params->qos;
     uint16_t       packet_id;
     char          *topic_filter_stored;
@@ -326,9 +326,9 @@ int qcloud_iot_mqtt_subscribe(QcloudIotClient *client, const char *topic_filter,
     SubTopicHandle sub_handle;
 
     // topic filter should be valid in the whole sub life
-    topic_filter_stored = HAL_Malloc(strlen(topic_filter) + 1);
+    topic_filter_stored = TCI_HAL_Malloc(strlen(topic_filter) + 1);
     if (!topic_filter_stored) {
-        IOT_FUNC_EXIT_RC(QCLOUD_ERR_MALLOC);
+        TCIOT_FUNC_EXIT_RC(QCLOUD_ERR_MALLOC);
     }
     strncpy(topic_filter_stored, topic_filter, strlen(topic_filter) + 1);
 
@@ -349,11 +349,11 @@ int qcloud_iot_mqtt_subscribe(QcloudIotClient *client, const char *topic_filter,
     packet_id = get_next_packet_id(client);
     Log_d("subscribe topic_name=%s|packet_id=%d", topic_filter_stored, packet_id);
     // serialize packet
-    HAL_MutexLock(client->lock_write_buf);
+    TCI_HAL_MutexLock(client->lock_write_buf);
     packet_len =
         mqtt_subscribe_packet_serialize(client->write_buf, client->write_buf_size, packet_id, 1, &topic_filter, &qos);
     if (packet_len < 0) {
-        HAL_MutexUnlock(client->lock_write_buf);
+        TCI_HAL_MutexUnlock(client->lock_write_buf);
         rc = packet_len == MQTT_ERR_SHORT_BUFFER ? QCLOUD_ERR_BUF_TOO_SHORT : QCLOUD_ERR_FAILURE;
         goto exit;
     }
@@ -363,21 +363,21 @@ int qcloud_iot_mqtt_subscribe(QcloudIotClient *client, const char *topic_filter,
 
     rc = _push_sub_info_to_list(&push_sub_info);
     if (rc) {
-        HAL_MutexUnlock(client->lock_write_buf);
+        TCI_HAL_MutexUnlock(client->lock_write_buf);
         goto exit;
     }
 
     // send packet
     rc = send_mqtt_packet(client, packet_len);
-    HAL_MutexUnlock(client->lock_write_buf);
+    TCI_HAL_MutexUnlock(client->lock_write_buf);
     if (rc) {
         utils_list_remove(client->list_sub_wait_ack, sub_info);
         goto exit;
     }
-    IOT_FUNC_EXIT_RC(packet_id);
+    TCIOT_FUNC_EXIT_RC(packet_id);
 exit:
     _remove_sub_handle_from_array(client, topic_filter_stored, 0);
-    IOT_FUNC_EXIT_RC(rc);
+    TCIOT_FUNC_EXIT_RC(rc);
 }
 
 /**
@@ -388,7 +388,7 @@ exit:
  */
 int qcloud_iot_mqtt_handle_suback(QcloudIotClient *client)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     int           rc, count = 0;
     uint16_t      packet_id = 0;
     int           granted_qos;
@@ -397,7 +397,7 @@ int qcloud_iot_mqtt_handle_suback(QcloudIotClient *client)
 
     rc = mqtt_suback_packet_deserialize(client->read_buf, client->read_buf_size, 1, &count, &packet_id, &granted_qos);
     if (rc) {
-        IOT_FUNC_EXIT_RC(rc);
+        TCIOT_FUNC_EXIT_RC(rc);
     }
     msg.msg = (void *)(uintptr_t)packet_id;
 
@@ -407,7 +407,7 @@ int qcloud_iot_mqtt_handle_suback(QcloudIotClient *client)
     _pop_sub_info_from_list(client, packet_id, topic, &params);
     if (!topic[0]) {
         Log_w("can't get sub handle from list!");
-        IOT_FUNC_EXIT_RC(QCLOUD_RET_SUCCESS);  // in case of resubscribe when reconnect
+        TCIOT_FUNC_EXIT_RC(QCLOUD_RET_SUCCESS);  // in case of resubscribe when reconnect
     }
 
     // check return code in SUBACK packet: 0x00(QOS0, SUCCESS),0x01(QOS1, SUCCESS),0x02(QOS2,SUCCESS),0x80(Failure)
@@ -432,7 +432,7 @@ int qcloud_iot_mqtt_handle_suback(QcloudIotClient *client)
     if (params.on_sub_event_handler) {
         params.on_sub_event_handler(client, event_type, params.user_data);
     }
-    IOT_FUNC_EXIT_RC(rc);
+    TCIOT_FUNC_EXIT_RC(rc);
 }
 
 /**
@@ -444,7 +444,7 @@ int qcloud_iot_mqtt_handle_suback(QcloudIotClient *client)
  */
 int qcloud_iot_mqtt_unsubscribe(QcloudIotClient *client, const char *topic_filter)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     int      rc, packet_len;
     uint16_t packet_id;
 
@@ -455,7 +455,7 @@ int qcloud_iot_mqtt_unsubscribe(QcloudIotClient *client, const char *topic_filte
     // remove from sub handle
     if (!_remove_sub_handle_from_array(client, topic_filter, 1)) {
         Log_w("subscription does not exists: %s", topic_filter);
-        IOT_FUNC_EXIT_RC(QCLOUD_ERR_MQTT_UNSUB_FAIL);
+        TCIOT_FUNC_EXIT_RC(QCLOUD_ERR_MQTT_UNSUB_FAIL);
     }
 
     if (client->default_subscribe) {
@@ -465,11 +465,11 @@ int qcloud_iot_mqtt_unsubscribe(QcloudIotClient *client, const char *topic_filte
     packet_id = get_next_packet_id(client);
     Log_d("unsubscribe topic_name=%s|packet_id=%d", topic_filter, packet_id);
 
-    HAL_MutexLock(client->lock_write_buf);
+    TCI_HAL_MutexLock(client->lock_write_buf);
     packet_len =
         mqtt_unsubscribe_packet_serialize(client->write_buf, client->write_buf_size, packet_id, 1, &topic_filter);
     if (packet_len < 0) {
-        HAL_MutexUnlock(client->lock_write_buf);
+        TCI_HAL_MutexUnlock(client->lock_write_buf);
         rc = packet_len == MQTT_ERR_SHORT_BUFFER ? QCLOUD_ERR_BUF_TOO_SHORT : QCLOUD_ERR_FAILURE;
         goto exit;
     }
@@ -480,22 +480,22 @@ int qcloud_iot_mqtt_unsubscribe(QcloudIotClient *client, const char *topic_filte
     rc = _push_sub_info_to_list(&push_sub_info);
     if (rc) {
         Log_e("push unsubscribe info failed!");
-        HAL_MutexUnlock(client->lock_write_buf);
+        TCI_HAL_MutexUnlock(client->lock_write_buf);
         goto exit;
     }
 
     /* send the unsubscribe packet */
     rc = send_mqtt_packet(client, packet_len);
-    HAL_MutexUnlock(client->lock_write_buf);
+    TCI_HAL_MutexUnlock(client->lock_write_buf);
     if (rc) {
         utils_list_remove(client->list_sub_wait_ack, sub_info_val);
         goto exit;
     }
 
-    IOT_FUNC_EXIT_RC(packet_id);
+    TCIOT_FUNC_EXIT_RC(packet_id);
 exit:
     _clear_sub_handle(&sub_handle);
-    IOT_FUNC_EXIT_RC(rc);
+    TCIOT_FUNC_EXIT_RC(rc);
 }
 
 /**
@@ -506,14 +506,14 @@ exit:
  */
 int qcloud_iot_mqtt_handle_unsuback(QcloudIotClient *client)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     int          rc;
     uint16_t     packet_id = 0;
     MQTTEventMsg msg;
 
     rc = mqtt_unsuback_packet_deserialize(client->read_buf, client->read_buf_size, &packet_id);
     if (rc) {
-        IOT_FUNC_EXIT_RC(rc);
+        TCIOT_FUNC_EXIT_RC(rc);
     }
 
     _pop_sub_info_from_list(client, packet_id, NULL, NULL);
@@ -524,7 +524,7 @@ int qcloud_iot_mqtt_handle_unsuback(QcloudIotClient *client)
         client->event_handle.h_fp(client, client->event_handle.context, &msg);
     }
 
-    IOT_FUNC_EXIT_RC(QCLOUD_RET_SUCCESS);
+    TCIOT_FUNC_EXIT_RC(QCLOUD_RET_SUCCESS);
 }
 
 /**
@@ -534,9 +534,9 @@ int qcloud_iot_mqtt_handle_unsuback(QcloudIotClient *client)
  */
 void qcloud_iot_mqtt_check_sub_timeout(QcloudIotClient *client)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     utils_list_process(client->list_sub_wait_ack, LIST_HEAD, _sub_wait_list_process_check_timeout, client);
-    IOT_FUNC_EXIT;
+    TCIOT_FUNC_EXIT;
 }
 
 /**
@@ -547,12 +547,12 @@ void qcloud_iot_mqtt_check_sub_timeout(QcloudIotClient *client)
  */
 int qcloud_iot_mqtt_resubscribe(QcloudIotClient *client)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     int             rc, packet_len, qos, itr = 0;
     uint16_t        packet_id;
     SubTopicHandle *sub_handle;
 
-    for (itr = 0; itr < QCLOUD_IOT_MQTT_MAX_MESSAGE_HANDLERS; itr++) {
+    for (itr = 0; itr < QCLOUD_TCIOT_MQTT_MAX_MESSAGE_HANDLERS; itr++) {
         sub_handle = &client->sub_handles[itr];
         if (!sub_handle->topic_filter) {
             continue;
@@ -561,24 +561,24 @@ int qcloud_iot_mqtt_resubscribe(QcloudIotClient *client)
         packet_id = get_next_packet_id(client);
         Log_d("subscribe topic_name=%s|packet_id=%d", sub_handle->topic_filter, packet_id);
 
-        HAL_MutexLock(client->lock_write_buf);
+        TCI_HAL_MutexLock(client->lock_write_buf);
         qos        = sub_handle->params.qos;
         packet_len = mqtt_subscribe_packet_serialize(client->write_buf, client->write_buf_size, packet_id, 1,
                                                      (const char **)&sub_handle->topic_filter, &qos);
         if (packet_len < 0) {
-            HAL_MutexUnlock(client->lock_write_buf);
+            TCI_HAL_MutexUnlock(client->lock_write_buf);
             continue;
         }
 
         // send packet
         rc = send_mqtt_packet(client, packet_len);
-        HAL_MutexUnlock(client->lock_write_buf);
+        TCI_HAL_MutexUnlock(client->lock_write_buf);
         if (rc) {
-            IOT_FUNC_EXIT_RC(rc);
+            TCIOT_FUNC_EXIT_RC(rc);
         }
     }
 
-    IOT_FUNC_EXIT_RC(QCLOUD_RET_SUCCESS);
+    TCIOT_FUNC_EXIT_RC(QCLOUD_RET_SUCCESS);
 }
 
 /**
@@ -586,23 +586,23 @@ int qcloud_iot_mqtt_resubscribe(QcloudIotClient *client)
  *
  * @param[in,out] client pointer to mqtt client
  * @param[in] topic_filter topic filter
- * @return IOT_BOOL_TRUE for ready
- * @return IOT_BOOL_FALSE for not ready
+ * @return TCIOT_BOOL_TRUE for ready
+ * @return TCIOT_BOOL_FALSE for not ready
  */
 IotBool qcloud_iot_mqtt_is_sub_ready(QcloudIotClient *client, const char *topic_filter)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     int i = 0;
-    HAL_MutexLock(client->lock_generic);
-    for (i = 0; i < QCLOUD_IOT_MQTT_MAX_MESSAGE_HANDLERS; ++i) {
+    TCI_HAL_MutexLock(client->lock_generic);
+    for (i = 0; i < QCLOUD_TCIOT_MQTT_MAX_MESSAGE_HANDLERS; ++i) {
         if ((client->sub_handles[i].topic_filter && !strcmp(client->sub_handles[i].topic_filter, topic_filter)) ||
             strstr(topic_filter, "/#") || strstr(topic_filter, "/+")) {
-            HAL_MutexUnlock(client->lock_generic);
+            TCI_HAL_MutexUnlock(client->lock_generic);
             return client->sub_handles[i].status == SUB_ACK_RECEIVED;
         }
     }
-    HAL_MutexUnlock(client->lock_generic);
-    IOT_FUNC_EXIT_RC(IOT_BOOL_FALSE);
+    TCI_HAL_MutexUnlock(client->lock_generic);
+    TCIOT_FUNC_EXIT_RC(TCIOT_BOOL_FALSE);
 }
 
 /**
@@ -614,18 +614,18 @@ IotBool qcloud_iot_mqtt_is_sub_ready(QcloudIotClient *client, const char *topic_
  */
 void *qcloud_iot_mqtt_get_subscribe_usr_data(QcloudIotClient *client, const char *topic_filter)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     int i = 0;
-    HAL_MutexLock(client->lock_generic);
-    for (i = 0; i < QCLOUD_IOT_MQTT_MAX_MESSAGE_HANDLERS; ++i) {
+    TCI_HAL_MutexLock(client->lock_generic);
+    for (i = 0; i < QCLOUD_TCIOT_MQTT_MAX_MESSAGE_HANDLERS; ++i) {
         if ((client->sub_handles[i].topic_filter && !strcmp(client->sub_handles[i].topic_filter, topic_filter)) ||
             strstr(topic_filter, "/#") || strstr(topic_filter, "/+")) {
-            HAL_MutexUnlock(client->lock_generic);
+            TCI_HAL_MutexUnlock(client->lock_generic);
             return client->sub_handles[i].params.user_data;
         }
     }
-    HAL_MutexUnlock(client->lock_generic);
-    IOT_FUNC_EXIT_RC(NULL);
+    TCI_HAL_MutexUnlock(client->lock_generic);
+    TCIOT_FUNC_EXIT_RC(NULL);
 }
 
 /**
@@ -635,9 +635,9 @@ void *qcloud_iot_mqtt_get_subscribe_usr_data(QcloudIotClient *client, const char
  */
 void qcloud_iot_mqtt_sub_handle_array_clear(QcloudIotClient *client)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     int i;
-    for (i = 0; i < QCLOUD_IOT_MQTT_MAX_MESSAGE_HANDLERS; ++i) {
+    for (i = 0; i < QCLOUD_TCIOT_MQTT_MAX_MESSAGE_HANDLERS; ++i) {
         /* notify this event to topic subscriber */
         if (client->sub_handles[i].topic_filter && client->sub_handles[i].params.on_sub_event_handler) {
             client->sub_handles[i].params.on_sub_event_handler(client, MQTT_EVENT_CLIENT_DESTROY,
@@ -647,7 +647,7 @@ void qcloud_iot_mqtt_sub_handle_array_clear(QcloudIotClient *client)
         _clear_sub_handle_usr_data(&client->sub_handles[i]);
     }
 
-    IOT_FUNC_EXIT;
+    TCIOT_FUNC_EXIT;
 }
 
 /**
@@ -657,7 +657,7 @@ void qcloud_iot_mqtt_sub_handle_array_clear(QcloudIotClient *client)
  */
 void qcloud_iot_mqtt_suback_wait_list_clear(QcloudIotClient *client)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     utils_list_process(client->list_sub_wait_ack, LIST_HEAD, _sub_wait_list_process_clear, client);
-    IOT_FUNC_EXIT;
+    TCIOT_FUNC_EXIT;
 }

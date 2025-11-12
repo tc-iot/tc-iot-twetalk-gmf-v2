@@ -26,8 +26,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_COS_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_COS_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_COS_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_COS_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,7 +55,7 @@ typedef struct {
  * @param[in] params @see IotCosDownloadParams
  * @return pointer to cos download handle
  */
-void *IOT_COS_DownloadInit(IotCosDownloadParams *params);
+void *TCIOT_COS_DownloadInit(IotCosDownloadParams *params);
 
 /**
  * @brief Fetch data from cos.
@@ -66,25 +66,25 @@ void *IOT_COS_DownloadInit(IotCosDownloadParams *params);
  * @param timeout_ms timeout for fetching
  * @return >= 0 for recv data len. others @see IotReturnCode
  */
-int IOT_COS_DownloadFetch(void *handle, uint8_t *buf, uint32_t buf_len, uint32_t timeout_ms);
+int TCIOT_COS_DownloadFetch(void *handle, uint8_t *buf, uint32_t buf_len, uint32_t timeout_ms);
 
 /**
  * @brief Is download finished.
  *
  * @param[in,out] handle pointer to cos download handle, @see HTTPCosDownloadHandle
- * @return IOT_BOOL_TRUE for finished
+ * @return TCIOT_BOOL_TRUE for finished
  */
-IotBool IOT_COS_DownloadIsFinished(void *handle);
+IotBool TCIOT_COS_DownloadIsFinished(void *handle);
 
 /**
  * @brief Deinit cos download.
  *
  * @param[in,out] handle pointer to cos download handle, @see HTTPCosDownloadHandle
  */
-void IOT_COS_DownloadDeinit(void *handle);
+void TCIOT_COS_DownloadDeinit(void *handle);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_IOT_COS_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_COMMON_QCLOUD_TCIOT_COS_H_

@@ -27,7 +27,7 @@
  * </table>
  */
 
-#include "network_interface.h"
+#include "qcloud_iot_network_interface.h"
 
 /**
  * @brief TCP init, do nothing.
@@ -50,7 +50,7 @@ static int _network_tcp_connect(IotNetwork *network)
 {
     POINTER_SANITY_CHECK(network, QCLOUD_ERR_INVAL);
     uint16_t port_int = atoi(network->port);
-    network->fd = HAL_TCP_Connect(network->host, port_int);
+    network->fd = TCI_HAL_TCP_Connect(network->host, port_int);
 
     if (network->fd < 0) {
         Log_e("fail to connect with TCP server: %s:%s", STRING_PTR_PRINT_SANITY_CHECK(network->host),
@@ -82,7 +82,7 @@ static int _network_tcp_read(IotNetwork *network, unsigned char *data, size_t da
 {
     POINTER_SANITY_CHECK(network, QCLOUD_ERR_INVAL);
 
-    return HAL_TCP_Read(network->fd, data, (uint32_t)datalen, timeout_ms, read_len);
+    return TCI_HAL_TCP_Read(network->fd, data, (uint32_t)datalen, timeout_ms, read_len);
 }
 
 /**
@@ -98,7 +98,7 @@ static int _network_tcp_write(IotNetwork *network, unsigned char *data, size_t d
 {
     POINTER_SANITY_CHECK(network, QCLOUD_ERR_INVAL);
     size_t write_len = 0;
-    return HAL_TCP_Write(network->fd, data, datalen, timeout_ms, &write_len);
+    return TCI_HAL_TCP_Write(network->fd, data, datalen, timeout_ms, &write_len);
 }
 
 /**
@@ -114,7 +114,7 @@ static void _network_tcp_disconnect(IotNetwork *network)
         return;
     }
 
-    HAL_TCP_Disconnect(network->fd);
+    TCI_HAL_TCP_Disconnect(network->fd);
     network->fd = -1;
     return;
 }
@@ -130,7 +130,7 @@ static int _is_network_tcp_connected(IotNetwork *network)
     return network->fd > 0;
 }
 
-#ifndef AUTH_WITH_NO_TLS
+#ifndef ENABLE_AUTH_NO_TLS
 
 /**
  * @brief TLS init, do nothing.
@@ -225,7 +225,7 @@ int qcloud_iot_network_init(IotNetwork *network)
     POINTER_SANITY_CHECK(network, QCLOUD_ERR_INVAL);
 
     switch (network->type) {
-        case IOT_NETWORK_TYPE_TCP:
+        case TCIOT_NETWORK_TYPE_TCP:
             network->init         = _network_tcp_init;
             network->connect      = _network_tcp_connect;
             network->read         = _network_tcp_read;
@@ -235,8 +235,8 @@ int qcloud_iot_network_init(IotNetwork *network)
             network->fd           = -1;
             break;
 
-#ifndef AUTH_WITH_NO_TLS
-        case IOT_NETWORK_TYPE_TLS:
+#ifndef ENABLE_AUTH_NO_TLS
+        case TCIOT_NETWORK_TYPE_TLS:
             network->init         = _network_tls_init;
             network->connect      = _network_tls_connect;
             network->read         = _network_tls_read;

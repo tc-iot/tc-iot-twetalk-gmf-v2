@@ -57,7 +57,7 @@ typedef enum {
  *
  */
 typedef struct {
-    void *(*log_malloc)(uint32_t len);
+    void *(*log_malloc)(size_t len);
     void (*log_free)(void *val);
     void (*log_handle)(const char *message);
     void (*log_upload)(LogLevel log_level, const char *message);
@@ -75,17 +75,17 @@ typedef struct {
  *
  */
 #define DEFAULT_LOG_HANDLE_FUNCS \
-    {HAL_Malloc,                 \
-     HAL_Free,                   \
+    {TCI_HAL_Malloc,                 \
+     TCI_HAL_Free,                   \
      NULL,                       \
      NULL,                       \
-     HAL_Printf,                 \
-     HAL_GetLocalTime,           \
-     HAL_RecursiveMutexCreate,   \
-     HAL_RecursiveMutexLock,     \
-     HAL_RecursiveMutexUnLock,   \
-     HAL_RecursiveMutexDestroy,  \
-     HAL_Snprintf}
+     TCI_HAL_Printf,                 \
+     TCI_HAL_GetLocalTime,           \
+     TCI_HAL_RecursiveMutexCreate,   \
+     TCI_HAL_RecursiveMutexLock,     \
+     TCI_HAL_RecursiveMutexUnLock,   \
+     TCI_HAL_RecursiveMutexDestroy,  \
+     TCI_HAL_Snprintf}
 
 /**
  * @brief Init log with func, log level, max log size.

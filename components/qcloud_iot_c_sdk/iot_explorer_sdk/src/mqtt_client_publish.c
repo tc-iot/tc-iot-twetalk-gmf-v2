@@ -43,7 +43,7 @@ static int _construct_pub_info(void *val, void *usr_data, size_t size)
     repub_info->len                 = push_pub_info->packet_len;
     repub_info->packet_id           = push_pub_info->packet_id;
     memcpy(repub_info->buf, push_pub_info->client->write_buf, push_pub_info->packet_len);  // save the whole packet
-    IOT_Timer_CountdownMs(&repub_info->pub_start_time, push_pub_info->client->command_timeout_ms);
+    TCI_HAL_TimerCountdownMs(&repub_info->pub_start_time, push_pub_info->client->command_timeout_ms);
     *(push_pub_info->val) = repub_info;
     return 0;
 }
@@ -56,15 +56,15 @@ static int _construct_pub_info(void *val, void *usr_data, size_t size)
  */
 static int _push_pub_info_to_list(PushPubInfo *push_pub_info)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     void *list = push_pub_info->client->list_pub_wait_ack;
     // push republish info to list
     if (utils_list_push(list, sizeof(QcloudIotPubInfo) + push_pub_info->packet_len, push_pub_info,
                         _construct_pub_info)) {
         Log_e("list push failed! Check the list len!");
-        IOT_FUNC_EXIT_RC(QCLOUD_ERR_FAILURE);
+        TCIOT_FUNC_EXIT_RC(QCLOUD_ERR_FAILURE);
     }
-    IOT_FUNC_EXIT_RC(QCLOUD_RET_SUCCESS);
+    TCIOT_FUNC_EXIT_RC(QCLOUD_RET_SUCCESS);
 }
 
 /**
@@ -78,15 +78,15 @@ static int _push_pub_info_to_list(PushPubInfo *push_pub_info)
  */
 static UtilsListResult _pub_wait_list_process_check_timeout(void *list, void *val, void *usr_data)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
 
     MQTTEventMsg      msg;
     QcloudIotPubInfo *repub_info = (QcloudIotPubInfo *)val;
     QcloudIotClient  *client     = (QcloudIotClient *)usr_data;
 
     // check the request if timeout or not
-    if (IOT_Timer_Remain(&repub_info->pub_start_time) > 0) {
-        IOT_FUNC_EXIT_RC(LIST_TRAVERSE_CONTINUE);
+    if (TCI_HAL_TimerRemain(&repub_info->pub_start_time) > 0) {
+        TCIOT_FUNC_EXIT_RC(LIST_TRAVERSE_CONTINUE);
     }
 
     // notify timeout event
@@ -96,7 +96,7 @@ static UtilsListResult _pub_wait_list_process_check_timeout(void *list, void *va
         client->event_handle.h_fp(client, client->event_handle.context, &msg);
     }
     utils_list_remove(list, val);
-    IOT_FUNC_EXIT_RC(LIST_TRAVERSE_CONTINUE);
+    TCIOT_FUNC_EXIT_RC(LIST_TRAVERSE_CONTINUE);
 }
 
 /**
@@ -110,14 +110,14 @@ static UtilsListResult _pub_wait_list_process_check_timeout(void *list, void *va
  */
 static UtilsListResult _pub_wait_list_process_remove_info(void *list, void *val, void *usr_data)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
 
     QcloudIotPubInfo *repub_info = (QcloudIotPubInfo *)val;
     if (repub_info->packet_id == *((uint16_t *)usr_data)) {
         utils_list_remove(list, val);
-        IOT_FUNC_EXIT_RC(LIST_TRAVERSE_BREAK);
+        TCIOT_FUNC_EXIT_RC(LIST_TRAVERSE_BREAK);
     }
-    IOT_FUNC_EXIT_RC(LIST_TRAVERSE_CONTINUE);
+    TCIOT_FUNC_EXIT_RC(LIST_TRAVERSE_CONTINUE);
 }
 
 /**
@@ -178,12 +178,12 @@ static void _deliver_message(QcloudIotClient *client, MQTTMessage *message)
 
     MQTTEventMsg msg;
 
-    HAL_MutexLock(client->lock_generic);
-    for (i = 0; i < QCLOUD_IOT_MQTT_MAX_MESSAGE_HANDLERS; ++i) {
+    TCI_HAL_MutexLock(client->lock_generic);
+    for (i = 0; i < QCLOUD_TCIOT_MQTT_MAX_MESSAGE_HANDLERS; ++i) {
         if (client->sub_handles[i].topic_filter &&
             _is_topic_matched((char *)client->sub_handles[i].topic_filter, message->topic_name, message->topic_len)) {
             if (client->sub_handles[i].params.on_message_handler) {
-                HAL_MutexUnlock(client->lock_generic);
+                TCI_HAL_MutexUnlock(client->lock_generic);
                 // if found, then handle it, then return
                 client->sub_handles[i].params.on_message_handler(client, message,
                                                                  client->sub_handles[i].params.user_data);
@@ -191,7 +191,7 @@ static void _deliver_message(QcloudIotClient *client, MQTTMessage *message)
             }
         }
     }
-    HAL_MutexUnlock(client->lock_generic);
+    TCI_HAL_MutexUnlock(client->lock_generic);
 
     /* Message handler not found for topic */
     /* May be we do not care  change FAILURE  use SUCCESS*/
@@ -251,7 +251,7 @@ static void _add_packet_id_to_repeat_buf(QcloudIotClient *client, uint16_t packe
  */
 int qcloud_iot_mqtt_publish(QcloudIotClient *client, const char *topic_name, const PublishParams *params)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     int              rc, packet_len;
     MQTTPublishFlags flags;
     void            *val       = NULL;
@@ -260,7 +260,7 @@ int qcloud_iot_mqtt_publish(QcloudIotClient *client, const char *topic_name, con
     if (params->qos > QOS0) {
         packet_id = get_next_packet_id(client);
     }
-
+    // ! 默认不打印 防止泄密
     Log_d("publish qos=%d|packet_id=%d|topic_name=%s|payload=%.*s", params->qos, packet_id, topic_name,
           params->payload_len, STRING_PTR_PRINT_SANITY_CHECK((char *)params->payload));
 
@@ -269,13 +269,13 @@ int qcloud_iot_mqtt_publish(QcloudIotClient *client, const char *topic_name, con
     flags.retain = params->retain;
 
     // serialize packet
-    HAL_MutexLock(client->lock_write_buf);
+    TCI_HAL_MutexLock(client->lock_write_buf);
     packet_len = mqtt_publish_packet_serialize(client->write_buf, client->write_buf_size, &flags, packet_id, topic_name,
                                                params->payload, params->payload_len);
     if (packet_len < 0) {
-        HAL_MutexUnlock(client->lock_write_buf);
+        TCI_HAL_MutexUnlock(client->lock_write_buf);
         rc = packet_len == MQTT_ERR_SHORT_BUFFER ? QCLOUD_ERR_BUF_TOO_SHORT : QCLOUD_ERR_FAILURE;
-        IOT_FUNC_EXIT_RC(rc);
+        TCIOT_FUNC_EXIT_RC(rc);
     }
 
     if (params->qos > QOS0) {
@@ -284,21 +284,21 @@ int qcloud_iot_mqtt_publish(QcloudIotClient *client, const char *topic_name, con
         rc = _push_pub_info_to_list(&push_pub_info);
         if (rc) {
             Log_e("push publish info failed!");
-            HAL_MutexUnlock(client->lock_write_buf);
-            IOT_FUNC_EXIT_RC(rc);
+            TCI_HAL_MutexUnlock(client->lock_write_buf);
+            TCIOT_FUNC_EXIT_RC(rc);
         }
     }
 
     // send the publish packet
     rc = send_mqtt_packet(client, packet_len);
-    HAL_MutexUnlock(client->lock_write_buf);
+    TCI_HAL_MutexUnlock(client->lock_write_buf);
     if (rc) {
         if (params->qos > QOS0) {
             utils_list_remove(client->list_pub_wait_ack, val);
         }
-        IOT_FUNC_EXIT_RC(rc);
+        TCIOT_FUNC_EXIT_RC(rc);
     }
-    IOT_FUNC_EXIT_RC(packet_id);
+    TCIOT_FUNC_EXIT_RC(packet_id);
 }
 
 /**
@@ -310,7 +310,7 @@ int qcloud_iot_mqtt_publish(QcloudIotClient *client, const char *topic_name, con
  */
 int qcloud_iot_mqtt_handle_publish(QcloudIotClient *client)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     int              rc, packet_len = 0;
     MQTTPublishFlags flags;
     MQTTMessage      msg;
@@ -318,7 +318,7 @@ int qcloud_iot_mqtt_handle_publish(QcloudIotClient *client)
     rc = mqtt_publish_packet_deserialize(client->read_buf, client->read_buf_size, &flags, &msg.packet_id,
                                          &msg.topic_name, &msg.topic_len, &msg.payload, &msg.payload_len);
     if (rc) {
-        IOT_FUNC_EXIT_RC(rc);
+        TCIOT_FUNC_EXIT_RC(rc);
     }
 
     msg.qos = flags.qos;
@@ -326,7 +326,7 @@ int qcloud_iot_mqtt_handle_publish(QcloudIotClient *client)
     if (QOS0 == msg.qos) {
         // No further processing required for QOS0
         _deliver_message(client, &msg);
-        IOT_FUNC_EXIT_RC(QCLOUD_RET_SUCCESS);
+        TCIOT_FUNC_EXIT_RC(QCLOUD_RET_SUCCESS);
     }
 
     // only Qos 1 is support
@@ -344,15 +344,15 @@ int qcloud_iot_mqtt_handle_publish(QcloudIotClient *client)
 #endif
 
     // reply with puback
-    HAL_MutexLock(client->lock_write_buf);
+    TCI_HAL_MutexLock(client->lock_write_buf);
     packet_len = mqtt_puback_packet_serialize(client->write_buf, client->write_buf_size, msg.packet_id);
     if (packet_len > 0) {
         rc = send_mqtt_packet(client, packet_len);
     } else {
         rc = packet_len == MQTT_ERR_SHORT_BUFFER ? QCLOUD_ERR_BUF_TOO_SHORT : QCLOUD_ERR_FAILURE;
     }
-    HAL_MutexUnlock(client->lock_write_buf);
-    IOT_FUNC_EXIT_RC(rc);
+    TCI_HAL_MutexUnlock(client->lock_write_buf);
+    TCIOT_FUNC_EXIT_RC(rc);
 }
 
 /**
@@ -363,7 +363,7 @@ int qcloud_iot_mqtt_handle_publish(QcloudIotClient *client)
  */
 int qcloud_iot_mqtt_handle_puback(QcloudIotClient *client)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
 
     int          rc;
     uint16_t     packet_id;
@@ -371,7 +371,7 @@ int qcloud_iot_mqtt_handle_puback(QcloudIotClient *client)
 
     rc = mqtt_puback_packet_deserialize(client->read_buf, client->read_buf_size, &packet_id);
     if (rc) {
-        IOT_FUNC_EXIT_RC(rc);
+        TCIOT_FUNC_EXIT_RC(rc);
     }
 
     _remove_pub_info_from_list(client, packet_id);
@@ -383,7 +383,7 @@ int qcloud_iot_mqtt_handle_puback(QcloudIotClient *client)
         client->event_handle.h_fp(client, client->event_handle.context, &msg);
     }
 
-    IOT_FUNC_EXIT_RC(QCLOUD_RET_SUCCESS);
+    TCIOT_FUNC_EXIT_RC(QCLOUD_RET_SUCCESS);
 }
 
 /**
@@ -393,7 +393,7 @@ int qcloud_iot_mqtt_handle_puback(QcloudIotClient *client)
  */
 void qcloud_iot_mqtt_check_pub_timeout(QcloudIotClient *client)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     utils_list_process(client->list_pub_wait_ack, LIST_HEAD, _pub_wait_list_process_check_timeout, client);
-    IOT_FUNC_EXIT;
+    TCIOT_FUNC_EXIT;
 }

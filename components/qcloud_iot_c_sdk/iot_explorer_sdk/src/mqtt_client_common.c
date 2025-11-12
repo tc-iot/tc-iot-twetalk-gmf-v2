@@ -37,15 +37,15 @@
  */
 uint16_t get_next_packet_id(QcloudIotClient *client)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
 
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
 
-    HAL_MutexLock(client->lock_generic);
+    TCI_HAL_MutexLock(client->lock_generic);
     client->next_packet_id = (uint16_t)((MAX_PACKET_ID == client->next_packet_id) ? 1 : (client->next_packet_id + 1));
-    HAL_MutexUnlock(client->lock_generic);
+    TCI_HAL_MutexUnlock(client->lock_generic);
 
-    IOT_FUNC_EXIT_RC(client->next_packet_id);
+    TCIOT_FUNC_EXIT_RC(client->next_packet_id);
 }
 
 /**
@@ -56,7 +56,7 @@ uint16_t get_next_packet_id(QcloudIotClient *client)
 void get_next_conn_id(char *conn_id)
 {
     int i;
-    srand(IOT_Timer_CurrentSec());
+    srand(TCI_HAL_GetTimeSecond());
     for (i = 0; i < MAX_CONN_ID_LEN - 1; i++) {
         int flag = rand() % 3;
         switch (flag) {
@@ -83,9 +83,9 @@ void get_next_conn_id(char *conn_id)
  */
 void set_client_conn_state(QcloudIotClient *client, uint8_t connected)
 {
-    HAL_MutexLock(client->lock_generic);
+    TCI_HAL_MutexLock(client->lock_generic);
     client->is_connected = connected;
-    HAL_MutexUnlock(client->lock_generic);
+    TCI_HAL_MutexUnlock(client->lock_generic);
 }
 
 /**
@@ -96,12 +96,12 @@ void set_client_conn_state(QcloudIotClient *client, uint8_t connected)
  */
 uint8_t get_client_conn_state(QcloudIotClient *client)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
     uint8_t is_connected = 0;
-    HAL_MutexLock(client->lock_generic);
+    TCI_HAL_MutexLock(client->lock_generic);
     is_connected = client->is_connected;
-    HAL_MutexUnlock(client->lock_generic);
-    IOT_FUNC_EXIT_RC(is_connected);
+    TCI_HAL_MutexUnlock(client->lock_generic);
+    TCIOT_FUNC_EXIT_RC(is_connected);
 }
 
 /**
@@ -113,15 +113,15 @@ uint8_t get_client_conn_state(QcloudIotClient *client)
  */
 int send_mqtt_packet(QcloudIotClient *client, size_t length)
 {
-    IOT_FUNC_ENTRY;
+    TCIOT_FUNC_ENTRY;
 
     int rc = QCLOUD_RET_SUCCESS;
 
     if (length >= client->write_buf_size) {
-        IOT_FUNC_EXIT_RC(QCLOUD_ERR_BUF_TOO_SHORT);
+        TCIOT_FUNC_EXIT_RC(QCLOUD_ERR_BUF_TOO_SHORT);
     }
 
     rc = client->network_stack.write(&(client->network_stack), client->write_buf, length, client->command_timeout_ms);
     rc = QCLOUD_ERR_TCP_WRITE_TIMEOUT == rc ? QCLOUD_ERR_MQTT_REQUEST_TIMEOUT : rc;
-    IOT_FUNC_EXIT_RC(rc);
+    TCIOT_FUNC_EXIT_RC(rc);
 }

@@ -29,24 +29,24 @@
 
 #include "utils_sha1.h"
 
-#ifndef IOT_SHA1_GET_UINT32_BE
+#ifndef TCIOT_SHA1_GET_UINT32_BE
 /**
  * @brief Get 32-bit integer manipulation macros (big endian)
  *
  */
-#define IOT_SHA1_GET_UINT32_BE(n, b, i)                                                                     \
+#define TCIOT_SHA1_GET_UINT32_BE(n, b, i)                                                                     \
     {                                                                                                       \
         (n) = ((uint32_t)(b)[(i)] << 24) | ((uint32_t)(b)[(i) + 1] << 16) | ((uint32_t)(b)[(i) + 2] << 8) | \
               ((uint32_t)(b)[(i) + 3]);                                                                     \
     }
 #endif
 
-#ifndef IOT_SHA1_PUT_UINT32_BE
+#ifndef TCIOT_SHA1_PUT_UINT32_BE
 /**
  * @brief Put 32-bit integer manipulation macros (big endian)
  *
  */
-#define IOT_SHA1_PUT_UINT32_BE(n, b, i)            \
+#define TCIOT_SHA1_PUT_UINT32_BE(n, b, i)            \
     {                                              \
         (b)[(i)]     = (unsigned char)((n) >> 24); \
         (b)[(i) + 1] = (unsigned char)((n) >> 16); \
@@ -128,22 +128,22 @@ void utils_sha1_process(IotSha1Context *ctx, const unsigned char data[64])
 {
     uint32_t temp, W[16], A, B, C, D, E;
 
-    IOT_SHA1_GET_UINT32_BE(W[0], data, 0);
-    IOT_SHA1_GET_UINT32_BE(W[1], data, 4);
-    IOT_SHA1_GET_UINT32_BE(W[2], data, 8);
-    IOT_SHA1_GET_UINT32_BE(W[3], data, 12);
-    IOT_SHA1_GET_UINT32_BE(W[4], data, 16);
-    IOT_SHA1_GET_UINT32_BE(W[5], data, 20);
-    IOT_SHA1_GET_UINT32_BE(W[6], data, 24);
-    IOT_SHA1_GET_UINT32_BE(W[7], data, 28);
-    IOT_SHA1_GET_UINT32_BE(W[8], data, 32);
-    IOT_SHA1_GET_UINT32_BE(W[9], data, 36);
-    IOT_SHA1_GET_UINT32_BE(W[10], data, 40);
-    IOT_SHA1_GET_UINT32_BE(W[11], data, 44);
-    IOT_SHA1_GET_UINT32_BE(W[12], data, 48);
-    IOT_SHA1_GET_UINT32_BE(W[13], data, 52);
-    IOT_SHA1_GET_UINT32_BE(W[14], data, 56);
-    IOT_SHA1_GET_UINT32_BE(W[15], data, 60);
+    TCIOT_SHA1_GET_UINT32_BE(W[0], data, 0);
+    TCIOT_SHA1_GET_UINT32_BE(W[1], data, 4);
+    TCIOT_SHA1_GET_UINT32_BE(W[2], data, 8);
+    TCIOT_SHA1_GET_UINT32_BE(W[3], data, 12);
+    TCIOT_SHA1_GET_UINT32_BE(W[4], data, 16);
+    TCIOT_SHA1_GET_UINT32_BE(W[5], data, 20);
+    TCIOT_SHA1_GET_UINT32_BE(W[6], data, 24);
+    TCIOT_SHA1_GET_UINT32_BE(W[7], data, 28);
+    TCIOT_SHA1_GET_UINT32_BE(W[8], data, 32);
+    TCIOT_SHA1_GET_UINT32_BE(W[9], data, 36);
+    TCIOT_SHA1_GET_UINT32_BE(W[10], data, 40);
+    TCIOT_SHA1_GET_UINT32_BE(W[11], data, 44);
+    TCIOT_SHA1_GET_UINT32_BE(W[12], data, 48);
+    TCIOT_SHA1_GET_UINT32_BE(W[13], data, 52);
+    TCIOT_SHA1_GET_UINT32_BE(W[14], data, 56);
+    TCIOT_SHA1_GET_UINT32_BE(W[15], data, 60);
 
 #define S(x, n) ((x << n) | ((x & 0xFFFFFFFF) >> (32 - n)))
 
@@ -341,8 +341,8 @@ void utils_sha1_finish(IotSha1Context *ctx, unsigned char output[20])
     high = (ctx->total[0] >> 29) | (ctx->total[1] << 3);
     low  = (ctx->total[0] << 3);
 
-    IOT_SHA1_PUT_UINT32_BE(high, msglen, 0);
-    IOT_SHA1_PUT_UINT32_BE(low, msglen, 4);
+    TCIOT_SHA1_PUT_UINT32_BE(high, msglen, 0);
+    TCIOT_SHA1_PUT_UINT32_BE(low, msglen, 4);
 
     last = ctx->total[0] & 0x3F;
     padn = (last < 56) ? (56 - last) : (120 - last);
@@ -350,11 +350,11 @@ void utils_sha1_finish(IotSha1Context *ctx, unsigned char output[20])
     utils_sha1_update(ctx, iot_sha1_padding, padn);
     utils_sha1_update(ctx, msglen, 8);
 
-    IOT_SHA1_PUT_UINT32_BE(ctx->state[0], output, 0);
-    IOT_SHA1_PUT_UINT32_BE(ctx->state[1], output, 4);
-    IOT_SHA1_PUT_UINT32_BE(ctx->state[2], output, 8);
-    IOT_SHA1_PUT_UINT32_BE(ctx->state[3], output, 12);
-    IOT_SHA1_PUT_UINT32_BE(ctx->state[4], output, 16);
+    TCIOT_SHA1_PUT_UINT32_BE(ctx->state[0], output, 0);
+    TCIOT_SHA1_PUT_UINT32_BE(ctx->state[1], output, 4);
+    TCIOT_SHA1_PUT_UINT32_BE(ctx->state[2], output, 8);
+    TCIOT_SHA1_PUT_UINT32_BE(ctx->state[3], output, 12);
+    TCIOT_SHA1_PUT_UINT32_BE(ctx->state[4], output, 16);
 }
 
 /**

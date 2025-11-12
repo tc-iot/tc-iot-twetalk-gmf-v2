@@ -95,7 +95,7 @@ error:
 int data_template_action_reply_publish(void *client, char *buf, int buf_len, IotDataTemplateActionReply reply)
 {
     int len =
-        HAL_Snprintf(buf, buf_len, "{\"method\":\"action_reply\",\"clientToken\":\"%.*s\",\"code\":%d,\"response\":%s}",
+        TCI_HAL_Snprintf(buf, buf_len, "{\"method\":\"action_reply\",\"clientToken\":\"%.*s\",\"code\":%d,\"response\":%s}",
                      reply.client_token.value_len, reply.client_token.value, reply.code, reply.response);
     return data_template_publish(client, DATA_TEMPLATE_TYPE_ACTION, QOS0, buf, len);
 }

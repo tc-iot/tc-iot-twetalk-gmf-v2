@@ -27,8 +27,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_CONFIG_QCLOUD_IOT_HOST_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_CONFIG_QCLOUD_IOT_HOST_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_CONFIG_QCLOUD_TCIOT_HOST_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_CONFIG_QCLOUD_TCIOT_HOST_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,14 +38,14 @@ extern "C" {
  * @brief IoT C-SDK APPID.
  *
  */
-#define QCLOUD_IOT_DEVICE_SDK_APPID     "21010406"
-#define QCLOUD_IOT_DEVICE_SDK_APPID_LEN (sizeof(QCLOUD_IOT_DEVICE_SDK_APPID) - 1)
+#define QCLOUD_TCIOT_DEVICE_SDK_APPID     "21010406"
+#define QCLOUD_TCIOT_DEVICE_SDK_APPID_LEN (sizeof(QCLOUD_TCIOT_DEVICE_SDK_APPID) - 1)
 
 /**
  * @brief MQTT server domain.
  *
  */
-#define QCLOUD_IOT_MQTT_DIRECT_DOMAIN "iotcloud.tencentdevices.com"
+#define QCLOUD_TCIOT_MQTT_DIRECT_DOMAIN "iotcloud.tencentdevices.com"
 #define MQTT_SERVER_PORT_TLS          "8883"
 #define MQTT_SERVER_PORT_NO_TLS       "1883"
 
@@ -84,4 +84,4 @@ extern "C" {
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_CONFIG_QCLOUD_IOT_HOST_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_CONFIG_QCLOUD_TCIOT_HOST_H_

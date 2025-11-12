@@ -39,7 +39,7 @@ extern "C" {
 #include "qcloud_iot_platform.h"
 
 typedef struct {
-    void *(*ringbuffer_malloc)(uint32_t len);
+    void *(*ringbuffer_malloc)(size_t len);
     void (*ringbuffer_free)(void *val);
     void *(*ringbuffer_lock_init)(void);
     int (*ringbuffer_lock)(void *lock, int try_flag);
@@ -51,17 +51,17 @@ typedef struct {
  * @brief Default ring buffer functions with lock support
  */
 #define DEFAULT_RINGBUFFER_FUNCS \
-    {HAL_Malloc,                 \
-     HAL_Free,                   \
-     HAL_RecursiveMutexCreate,   \
-     HAL_RecursiveMutexLock,     \
-     HAL_RecursiveMutexUnLock,   \
-     HAL_RecursiveMutexDestroy}
+    {TCI_HAL_Malloc,                 \
+     TCI_HAL_Free,                   \
+     TCI_HAL_RecursiveMutexCreate,   \
+     TCI_HAL_RecursiveMutexLock,     \
+     TCI_HAL_RecursiveMutexUnLock,   \
+     TCI_HAL_RecursiveMutexDestroy}
 
 /**
  * @brief Default ring buffer functions without lock support
  */
-#define DEFAULT_UNLOCK_RINGBUFFER_FUNCS {HAL_Malloc, HAL_Free, NULL, NULL, NULL, NULL}
+#define DEFAULT_UNLOCK_RINGBUFFER_FUNCS {TCI_HAL_Malloc, TCI_HAL_Free, NULL, NULL, NULL, NULL}
 
 /**
  * @brief Create a ring buffer

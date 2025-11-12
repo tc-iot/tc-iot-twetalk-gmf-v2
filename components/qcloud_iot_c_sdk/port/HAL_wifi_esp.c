@@ -167,7 +167,7 @@ int HAL_Wifi_Init(void)
     return 0;
 }
 
-int HAL_Wifi_ModeSet(TCIoTWifiMode mode)
+int HAL_Wifi_ModeSet(TCI_WifiMode mode)
 {
     return 0;
 }

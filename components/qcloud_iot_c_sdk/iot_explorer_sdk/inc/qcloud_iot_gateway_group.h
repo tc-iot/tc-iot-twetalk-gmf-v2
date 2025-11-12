@@ -26,8 +26,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_IOT_GATEWAY_GROUP_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_IOT_GATEWAY_GROUP_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_TCIOT_GATEWAY_GROUP_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_TCIOT_GATEWAY_GROUP_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,14 +57,14 @@ typedef struct {
  * @param[in] usr_data usr data used in callback
  * @return 0 for success, or err code (<0) @see IotReturnCode
  */
-int IOT_GatewayGroup_Init(void *client, IoTGatewayGroupCallback callback, void *usr_data);
+int TCIOT_GatewayGroup_Init(void *client, IoTGatewayGroupCallback callback, void *usr_data);
 
 /**
  * @brief Gateway group deinit, unregister handler from server list.
  *
  * @param[in,out] client pointer to mqtt client
  */
-void IOT_GatewayGroup_Deinit(void *client);
+void TCIOT_GatewayGroup_Deinit(void *client);
 
 /**
  * @brief reload gateway group devices from cloud.
@@ -74,10 +74,10 @@ void IOT_GatewayGroup_Deinit(void *client);
  * @param[in] buf_len buffer len
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int IOT_GatewayGroup_Reload(void *client, char *buf, int buf_len);
+int TCIOT_GatewayGroup_Reload(void *client, char *buf, int buf_len);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_IOT_GATEWAY_GROUP_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_TCIOT_GATEWAY_GROUP_H_

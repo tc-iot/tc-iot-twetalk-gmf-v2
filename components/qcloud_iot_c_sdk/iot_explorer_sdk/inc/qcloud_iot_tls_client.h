@@ -26,15 +26,17 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_PLATFORM_IOT_BASE_PORT_QCLOUD_IOT_TLS_CLIENT_H_
-#define IOT_HUB_DEVICE_C_SDK_PLATFORM_IOT_BASE_PORT_QCLOUD_IOT_TLS_CLIENT_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_PLATFORM_TCIOT_BASE_PORT_QCLOUD_TCIOT_TLS_CLIENT_H_
+#define IOT_HUB_DEVICE_C_SDK_PLATFORM_TCIOT_BASE_PORT_QCLOUD_TCIOT_TLS_CLIENT_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include <stdint.h>
-#include "tc_iot_hal.h"
+#include <stddef.h>
+
+#include "tci_hal_adapter.h"
 
 /**
  * @brief Tls setup and handshake
@@ -44,7 +46,7 @@ extern "C" {
  * @param[in] port server port
  * @return tls handle, 0 for fail
  */
-uintptr_t qcloud_iot_tls_client_connect(const TLSConnectParams *connect_params, const char *host, const char *port);
+uintptr_t qcloud_iot_tls_client_connect(const TCI_TLSConnectParams *connect_params, const char *host, const char *port);
 
 /**
  * @brief Disconnect and free
@@ -81,4 +83,4 @@ int qcloud_iot_tls_client_read(uintptr_t handle, unsigned char *msg, size_t tota
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_PLATFORM_IOT_BASE_PORT_QCLOUD_IOT_TLS_CLIENT_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_PLATFORM_TCIOT_BASE_PORT_QCLOUD_TCIOT_TLS_CLIENT_H_

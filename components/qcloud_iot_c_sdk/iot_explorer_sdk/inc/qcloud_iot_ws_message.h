@@ -26,8 +26,8 @@
  * </table>
  */
 
-#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_IOT_WS_MESSAGE_H_
-#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_IOT_WS_MESSAGE_H_
+#ifndef IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_TCIOT_WS_MESSAGE_H_
+#define IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_TCIOT_WS_MESSAGE_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,8 +38,8 @@ extern "C" {
 #include "qcloud_iot_common.h"
 
 typedef enum {
-    IOT_WS_MESSAGE_PUBLISH_TYPE_ACTIVE_PUSH,
-    IOT_WS_MESSAGE_PUBLISH_TYPE_REFRESH_TOKEN,
+    TCIOT_WS_MESSAGE_PUBLISH_TYPE_ACTIVE_PUSH,
+    TCIOT_WS_MESSAGE_PUBLISH_TYPE_REFRESH_TOKEN,
 } IotWsMessagePublishType;
 
 /**
@@ -61,14 +61,14 @@ typedef struct {
  * @param[in] usr_data usr data for callback
  * @return @see IotReturnCode
  */
-int IOT_WsMessage_Init(void *client, IotWsMessageCallback callback, void *usr_data);
+int TCIOT_WsMessage_Init(void *client, IotWsMessageCallback callback, void *usr_data);
 
 /**
  * @brief Unregister web socket message.
  *
  * @param[in,out] client pointer to mqtt client
  */
-void IOT_WsMessage_Deinit(void *client);
+void TCIOT_WsMessage_Deinit(void *client);
 
 /**
  * @brief Active ws message or refresh token.
@@ -78,10 +78,10 @@ void IOT_WsMessage_Deinit(void *client);
  * @param[in] access_token access token
  * @return @see IotReturnCode
  */
-int IOT_WsMessage_Publish(void *client, IotWsMessagePublishType type, const char *access_token);
+int TCIOT_WsMessage_Publish(void *client, IotWsMessagePublishType type, const char *access_token);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_IOT_WS_MESSAGE_H_
+#endif  // IOT_HUB_DEVICE_C_SDK_INCLUDE_SERVICES_EXPLORER_QCLOUD_TCIOT_WS_MESSAGE_H_

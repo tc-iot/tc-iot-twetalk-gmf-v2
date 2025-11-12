@@ -52,18 +52,18 @@ static void _service_callback(void *client, const MQTTMessage *message, void *us
 {
     // {"method":"app_bind_token_reply","clientToken":"tech0-91582","code":0,"status":"success"}
     WifiBindContext *ctx = (WifiBindContext *)usr_data;
-    ctx->token_received  = IOT_BOOL_TRUE;
+    ctx->token_received  = TCIOT_BOOL_TRUE;
     utils_json_get_int("code", strlen("code"), message->payload_str, message->payload_len, &ctx->bind_result);
 }
 
 static int _wifi_bind_service_init(void *client)
 {
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
-    WifiBindContext *ctx = (WifiBindContext *)HAL_Malloc(sizeof(WifiBindContext));
+    WifiBindContext *ctx = (WifiBindContext *)TCI_HAL_Malloc(sizeof(WifiBindContext));
     if (!ctx) {
         return QCLOUD_ERR_MALLOC;
     }
-    ctx->token_received = IOT_BOOL_FALSE;
+    ctx->token_received = TCIOT_BOOL_FALSE;
     ctx->bind_result    = -1;
 
     // 1. check service topic sub
@@ -78,12 +78,12 @@ static int _wifi_bind_service_init(void *client)
         .method_num     = sizeof(sg_service_method_str) / sizeof(sg_service_method_str[0]),
         .message_handle = _service_callback,
         .usr_data       = ctx,
-        .user_data_free = HAL_Free,
+        .user_data_free = TCI_HAL_Free,
     };
     // 2. register misc service service
     rc = service_mqtt_service_register(client, &params);
     if (rc) {
-        HAL_Free(ctx);
+        TCI_HAL_Free(ctx);
     }
     return rc;
 }
@@ -101,22 +101,22 @@ static int _wifi_bind_report(void *client, IotWifiBindType type, const char *tok
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
 
     const char *type_str[] = {
-        [IOT_WIFI_BIND_TYPE_SOFT_AP]       = "SoftAP",
-        [IOT_WIFI_BIND_TYPE_SMART_CONFIG]  = "SmartConfig",
-        [IOT_WIFI_BIND_TYPE_AIR_KISS]      = "AirKiss",
-        [IOT_WIFI_BIND_TYPE_LLSYNC_BLE]    = "BLE LLSync",
-        [IOT_WIFI_BIND_TYPE_SIMPLE_CONFIG] = "SimpleConfig",
-        [IOT_WIFI_BIND_TYPE_CUSTOM_BLE]    = "BLE Custom",
+        [TCIOT_WIFI_BIND_TYPE_SOFT_AP]       = "SoftAP",
+        [TCIOT_WIFI_BIND_TYPE_SMART_CONFIG]  = "SmartConfig",
+        [TCIOT_WIFI_BIND_TYPE_AIR_KISS]      = "AirKiss",
+        [TCIOT_WIFI_BIND_TYPE_LLSYNC_BLE]    = "BLE LLSync",
+        [TCIOT_WIFI_BIND_TYPE_SIMPLE_CONFIG] = "SimpleConfig",
+        [TCIOT_WIFI_BIND_TYPE_CUSTOM_BLE]    = "BLE Custom",
     };
 
     char payload[512] = {0};
 
-    int len = HAL_Snprintf(
+    int len = TCI_HAL_Snprintf(
         payload, sizeof(payload),
         "{\"method\":\"app_bind_token\",\"clientToken\":\"app-bind-%" SCNu64
         "\",\"params\":{\"token\":\"%s\",\"pairTime\":{\"type\":\"%s\",\"start\":%ld,\"getSSID\":%ld,\"wifiConnected\":"
         "%ld,\"getToken\":%ld,\"mqttStart\":%ld,\"mqttConnected\":%ld,\"tokenPublish\":%ld}}}",
-        IOT_Timer_CurrentSec(), token, type_str[type], bind_time->start_time, bind_time->get_ssid_time,
+        TCI_HAL_GetTimeSecond(), token, type_str[type], bind_time->start_time, bind_time->get_ssid_time,
         bind_time->wifi_connected_time, bind_time->get_token_time, mqtt_time->mqtt_start_time,
         mqtt_time->mqtt_connected_time, mqtt_time->token_publish_time);
     return service_mqtt_publish(client, QOS0, payload, len);
@@ -129,11 +129,11 @@ static int _wifi_bind_wait_for_reply(void *client, uint64_t timeout_ms)
         return QCLOUD_ERR_FAILURE;
     }
 
-    QcloudIotTimer timer = 0;
-    IOT_Timer_CountdownMs(&timer, timeout_ms);
+    TCI_Timer timer;
+    TCI_HAL_TimerCountdownMs(&timer, timeout_ms);
     Log_d("wait app_bind_token_reply....");
-    while (!ctx->token_received && !IOT_Timer_Expired(&timer)) {
-        IOT_MQTT_Yield(client, 200);
+    while (!ctx->token_received && !TCI_HAL_TimerExpired(&timer)) {
+        TCIOT_MQTT_Yield(client, 200);
     }
 
     if (!ctx->token_received) {
@@ -157,7 +157,7 @@ static int _wifi_bind_wait_for_reply(void *client, uint64_t timeout_ms)
  * @param[in] event_callback
  * @return @see IotReturnCode
  */
-int IOT_WifiBind_Sync(IotWifiBindType type, const char *token, const IotWifiBindTime *bind_time, uint64_t timeout_ms,
+int TCIOT_WifiBind_Sync(IotWifiBindType type, const char *token, const IotWifiBindTime *bind_time, uint64_t timeout_ms,
                       void (*event_callback)(IotWifiBindEvent event))
 {
     POINTER_SANITY_CHECK(token, QCLOUD_ERR_INVAL);
@@ -170,37 +170,37 @@ int IOT_WifiBind_Sync(IotWifiBindType type, const char *token, const IotWifiBind
     DeviceInfo device_info;
     init_params.device_info = &device_info;
 
-    int rc = HAL_GetDevInfo(&device_info);
+    int rc = TCI_HAL_GetDevInfo((uint8_t *)&device_info, sizeof(DeviceInfo));
     if (rc) {
         return rc;
     }
-    mqtt_time.mqtt_start_time = HAL_Timer_CurrentMs();
-    event_callback(IOT_WIFI_BIND_EVENT_MQTT_CONNECT_BEGIN);
+    mqtt_time.mqtt_start_time = TCI_HAL_GetTimeMs();
+    event_callback(TCIOT_WIFI_BIND_EVENT_MQTT_CONNECT_BEGIN);
 
-    void *mqtt_client = IOT_MQTT_Construct(&init_params);
+    void *mqtt_client = TCIOT_MQTT_Construct(&init_params);
     if (!mqtt_client) {
-        event_callback(IOT_WIFI_BIND_EVENT_MQTT_CONNECT_FAIL);
+        event_callback(TCIOT_WIFI_BIND_EVENT_MQTT_CONNECT_FAIL);
         return QCLOUD_ERR_MALLOC;
     }
-    mqtt_time.mqtt_connected_time = HAL_Timer_CurrentMs();
+    mqtt_time.mqtt_connected_time = TCI_HAL_GetTimeMs();
 
     rc = _wifi_bind_service_init(mqtt_client);
     if (rc) {
         goto exit;
     }
 
-    mqtt_time.token_publish_time = HAL_Timer_CurrentMs();
-    event_callback(IOT_WIFI_BIND_EVENT_MQTT_REPORT_TOKEN_BEGIN);
+    mqtt_time.token_publish_time = TCI_HAL_GetTimeMs();
+    event_callback(TCIOT_WIFI_BIND_EVENT_MQTT_REPORT_TOKEN_BEGIN);
     rc = _wifi_bind_report(mqtt_client, type, token, bind_time, &mqtt_time);
     if (rc < 0) {
         goto exit;
     }
 
     rc = _wifi_bind_wait_for_reply(mqtt_client, timeout_ms);
-    rc ? event_callback(IOT_WIFI_BIND_EVENT_MQTT_REPORT_TOKEN_FAIL)
-       : event_callback(IOT_WIFI_BIND_EVENT_MQTT_REPORT_TOKEN_SUCCESS);
+    rc ? event_callback(TCIOT_WIFI_BIND_EVENT_MQTT_REPORT_TOKEN_FAIL)
+       : event_callback(TCIOT_WIFI_BIND_EVENT_MQTT_REPORT_TOKEN_SUCCESS);
 exit:
     _wifi_bind_service_deinit(mqtt_client);
-    IOT_MQTT_Destroy(&mqtt_client);
+    TCIOT_MQTT_Destroy(&mqtt_client);
     return rc;
 }
