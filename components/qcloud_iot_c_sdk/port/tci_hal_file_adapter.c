@@ -143,7 +143,7 @@ int TCI_HAL_FileFlush(void *fp)
 // 设备信息存储接口实现
 // =============================================================================
 
-#define DEVICE_INFO_FILE_PATH "./device_info"
+static uint8_t sg_device_info[256] = {0}; // 假设设备信息最大长度为256字节
 
 /**
  * @brief 三元组持久化存储接口
@@ -154,30 +154,8 @@ int TCI_HAL_FileFlush(void *fp)
  */
 int TCI_HAL_SetDevInfo(uint8_t *device_info, int len)
 {
-    if (device_info == NULL || len <= 0) {
-        return -1; // 参数错误
-    }
-
-    // 以写入模式打开文件
-    void *fp = TCI_HAL_FileOpen(DEVICE_INFO_FILE_PATH, "wb");
-    if (fp == NULL) {
-        return -1; // 文件打开失败
-    }
-
-    // 写入设备信息
-    size_t written = TCI_HAL_FileWrite(device_info, 1, len, fp);
-    
-    // 刷新缓冲区
-    TCI_HAL_FileFlush(fp);
-    
-    // 关闭文件
-    TCI_HAL_FileClose(fp);
-
-    // 检查是否完全写入
-    if (written != (size_t)len) {
-        return -1; // 写入失败
-    }
-
+    memset(sg_device_info, 0, sizeof(sg_device_info));
+    memcpy(sg_device_info, device_info, len);
     return 0;
 }
 
@@ -190,27 +168,7 @@ int TCI_HAL_SetDevInfo(uint8_t *device_info, int len)
  */
 int TCI_HAL_GetDevInfo(uint8_t *device_info, int len)
 {
-    if (device_info == NULL || len <= 0) {
-        return -1; // 参数错误
-    }
-
-    // 以读取模式打开文件
-    void *fp = TCI_HAL_FileOpen(DEVICE_INFO_FILE_PATH, "rb");
-    if (fp == NULL) {
-        return -1; // 文件打开失败（可能文件不存在）
-    }
-
-    // 读取设备信息
-    size_t read_len = TCI_HAL_FileRead(device_info, 1, len, fp);
-    
-    // 关闭文件
-    TCI_HAL_FileClose(fp);
-
-    // 检查是否读取到数据
-    if (read_len == 0) {
-        return -1; // 读取失败
-    }
-
+    memcpy(device_info, sg_device_info, len);
     return 0;
 }
 

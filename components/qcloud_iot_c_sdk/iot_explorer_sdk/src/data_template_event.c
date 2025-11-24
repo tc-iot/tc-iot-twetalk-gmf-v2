@@ -30,13 +30,13 @@
 
 typedef struct {
     UtilsJsonValue client_token;
-    int            code;
+    int code;
 } EventParams;
 
-static UtilsListResult _event_callback(void *list, void *val, void *usr_data)
+static UtilsListResult _event_callback(void* list, void* val, void* usr_data)
 {
-    DataTemplateContext *context      = (DataTemplateContext *)val;
-    EventParams         *event_params = (EventParams *)usr_data;
+    DataTemplateContext* context = (DataTemplateContext*)val;
+    EventParams* event_params    = (EventParams*)usr_data;
     context->event_callback.method_event_reply_callback(event_params->client_token, event_params->code,
                                                         context->usr_data);
     return LIST_TRAVERSE_CONTINUE;
@@ -49,7 +49,7 @@ static UtilsListResult _event_callback(void *list, void *val, void *usr_data)
  * @param[in] message message from topic
  * @param[in,out] usr_data pointer to @see DataTemplateContext
  */
-void data_template_event_message_handler(void *client, const MQTTMessage *message, void *usr_data)
+void data_template_event_message_handler(void* client, const MQTTMessage* message, void* usr_data)
 {
     int rc;
 
@@ -88,17 +88,17 @@ error:
  * @param[in] data @see IotDataTemplateEventData
  * @return packet id (>=0) when success, or err code (<0) @see IotReturnCode
  */
-int data_template_event_reply_publish(void *client, char *buf, int buf_len, IotDataTemplateEventData data)
+int data_template_event_reply_publish(void* client, char* buf, int buf_len, IotDataTemplateEventData data)
 {
-    const char *event_type[] = {
+    const char* event_type[] = {
         [TCIOT_DATA_TEMPLATE_EVENT_TYPE_INFO]  = "info",
         [TCIOT_DATA_TEMPLATE_EVENT_TYPE_ALERT] = "alert",
         [TCIOT_DATA_TEMPLATE_EVENT_TYPE_FAULT] = "fault",
     };
 
-    int len = TCI_HAL_Snprintf(buf, buf_len,
-                           "{\"method\":\"event_post\",\"clientToken\":\"event-%" SCNu64
-                           "\",\"eventId\":\"%s\",\"type\":\"%s\",\"params\":%s}",
-                           TCI_HAL_GetTimeSecond(), data.event_id, event_type[data.type], data.params);
+    int len = TCI_HAL_Snprintf(
+        buf, buf_len,
+        "{\"method\":\"event_post\",\"clientToken\":\"event-%d\",\"eventId\":\"%s\",\"type\":\"%s\",\"params\":%s}",
+        TCI_HAL_Random(), data.event_id, event_type[data.type], data.params);
     return data_template_publish(client, DATA_TEMPLATE_TYPE_EVENT, QOS0, buf, len);
 }

@@ -50,6 +50,7 @@ extern "C" {
 #define ENABLE_WIFI_CONFIG
 /* #undef ENABLE_WIFI_SOFT_AP */
 #define ENABLE_WIFI_BLE_LLSYNC
+#define WIFI_CONFIG_BLE_LLSYNC_USED
 
 #ifdef __cplusplus
 }

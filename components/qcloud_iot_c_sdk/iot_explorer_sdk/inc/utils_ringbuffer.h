@@ -147,6 +147,14 @@ uint32_t utils_ringbuffer_get(void *rb, uint8_t *buffer, uint32_t len);
  */
 int utils_ringbuffer_idle_rate(void *rb);
 
+/**
+ * @brief Clear the ring buffer
+ *
+ * @param[in] ringbuffer Pointer to the ring buffer
+ * @return int 0 on success, -1 on error
+ */
+int utils_ringbuffer_clear(void *ringbuffer);
+
 #ifdef __cplusplus
 }
 #endif

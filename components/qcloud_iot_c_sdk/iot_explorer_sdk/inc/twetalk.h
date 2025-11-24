@@ -30,36 +30,43 @@ extern "C" {
 #include "utils_json.h"
 #include "qcloud_iot_config.h"
 
+#define TWETALK_VERSION "1.1.1"
+
 typedef enum {
     /** AI对话相关事件 */
     TWETALK_EVENT_BOT_START_SPEAKING = 0, /**< 机器人开始说话 */
-    TWETALK_EVENT_BOT_STOP_SPEAKING,      /**< 机器人停止说话 */
-    TWETALK_EVENT_BOT_TRANSCRIPTION,      /**< 机器人字幕 */
-    TWETALK_EVENT_USR_TRANSCRIPTION,      /**< 用户字幕 */
+    TWETALK_EVENT_BOT_STOP_SPEAKING  = 1, /**< 机器人停止说话 */
+    TWETALK_EVENT_BOT_TRANSCRIPTION  = 2, /**< 机器人字幕 */
+    TWETALK_EVENT_USR_TRANSCRIPTION  = 3, /**< 用户字幕 */
 
     /** 设备呼叫小程序事件 */
-    TWETALK_EVENT_RECV_USR_ANSWER, /**< 设备呼叫小程序，小程序接听 */
-    TWETALK_EVENT_RECV_USR_REJECT, /**< 设备呼叫小程序，小程序拒绝 */
-    TWETALK_EVENT_RECV_USR_HANGUP, /**< 设备呼叫小程序，小程序主动挂断 */
-    TWETALK_EVENT_RECV_USR_ERROR,  /**< 设备呼叫小程序，发生错误❌ */
+    TWETALK_EVENT_RECV_USR_ANSWER = 10, /**< 设备呼叫小程序，小程序接听 */
+    TWETALK_EVENT_RECV_USR_REJECT = 11, /**< 设备呼叫小程序，小程序拒绝 */
+    TWETALK_EVENT_RECV_USR_HANGUP = 12, /**< 设备呼叫小程序，小程序主动挂断 */
+    TWETALK_EVENT_RECV_USR_ERROR  = 13, /**< 设备呼叫小程序，发生错误❌ */
+
+    /** 微信通话共同事件 */
+    TWETALK_EVENT_RECV_START_CALL    = 20, /**< 服务端执行呼叫对端的动作 */
+    TWETALK_EVENT_RECV_ENTER_CALLING = 21, /**< 服务端指示当前通话已建立，进入通话中状态 */
+    TWETALK_EVENT_RECV_CALL_TIMEOUT  = 22, /**< 服务端呼叫超时 */
+    TWETALK_EVENT_RECV_CALL_BUSY     = 23, /**< 服务端发起呼叫，但是对端正忙 */
 
     /** 小程序呼叫设备事件 */
-    TWETALK_EVENT_RECV_USR_CALLING, /**< 收到小程序呼叫 */
-    TWETALK_EVENT_RECV_USR_CANCEL,  /**< 当设备没接听此时小程序取消呼叫则会收到此消息 */
-    TWETALK_EVENT_DEVICE_ANSWER,    /**< 小程序呼叫设备，设备接听 */
-    TWETALK_EVENT_DEVICE_REJECT,    /**< 小程序呼叫设备，设备拒绝 */
-    TWETALK_EVENT_DEVICE_HANGUP,    /**< 小程序呼叫设备，设备主动挂断 */
-
-    TWETALK_EVENT_RECV_DISCONNECT, /**< 收到断开连接 */
-    TWETALK_EVENT_RECV_ERROR,      /**< 接收错误 */
-    TWETALK_EVENT_RECV_CLOSE,      /**< WebSocket连接关闭 */
+    TWETALK_EVENT_RECV_USR_CALLING = 30, /**< 收到小程序呼叫 */
+    TWETALK_EVENT_RECV_USR_CANCEL  = 31, /**< 当设备没接听此时小程序取消呼叫则会收到此消息 */
+    TWETALK_EVENT_DEVICE_ANSWER    = 32, /**< 小程序呼叫设备，设备接听 */
+    TWETALK_EVENT_DEVICE_REJECT    = 33, /**< 小程序呼叫设备，设备拒绝 */
+    TWETALK_EVENT_DEVICE_HANGUP    = 34, /**< 小程序呼叫设备，设备主动挂断 */
+    TWETALK_EVENT_RECV_DISCONNECT  = 35, /**< 收到断开连接 */
+    TWETALK_EVENT_RECV_ERROR       = 36, /**< 接收错误 */
+    TWETALK_EVENT_RECV_CLOSE       = 37, /**< WebSocket连接关闭 */
 
     /** TRTC相关事件，ws不关心 */
-    TWETALK_EVENT_TRTC_REMOTE_USR_ENTER_ROOM, /**< trtc远端用户进入房间 */
-    TWETALK_EVENT_TRTC_REMOTE_USR_EXIT_ROOM,  /**< trtc远端用户退出房间 */
+    TWETALK_EVENT_TRTC_REMOTE_USR_ENTER_ROOM = 50, /**< trtc远端用户进入房间 */
+    TWETALK_EVENT_TRTC_REMOTE_USR_EXIT_ROOM  = 51, /**< trtc远端用户退出房间 */
 
     /** 请求图片事件 */
-    TWETALK_EVENT_REQUEST_IMAGE,
+    TWETALK_EVENT_REQUEST_IMAGE = 60, /**< 请求图片 */
 
     /** 最大值 */
     TWETALK_EVENT_MAX,
@@ -110,8 +117,40 @@ typedef union {
     struct {
         UtilsJsonValue called;
         UtilsJsonValue openid;
+    } DeviceReject;
+
+    struct {
+        UtilsJsonValue called;
+        UtilsJsonValue openid;
+    } DeviceHangup;
+    
+    struct {
+        UtilsJsonValue called;
+        UtilsJsonValue openid;
         int            code;
     } UserError;
+
+    struct 
+    {
+        UtilsJsonValue called;
+        UtilsJsonValue openid;
+    }ServerCallStart;
+
+    struct{
+        UtilsJsonValue called;
+        UtilsJsonValue openid;
+    }ServerCalling;
+
+    struct {
+        UtilsJsonValue called;
+        UtilsJsonValue openid;
+    }ServerCallTimeout;
+
+    struct {
+        UtilsJsonValue called;
+        UtilsJsonValue openid;
+    }ServerCallBusy;
+
 
     struct {
         UtilsJsonValue usr_id;

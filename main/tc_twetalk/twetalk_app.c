@@ -437,15 +437,10 @@ static void twetalk_thread_entry(void* param)
     utils_log_init(func, LOG_LEVEL_DEBUG, 2048);
     Log_i("twetalk thread entry");
 #if 1  // 测试用，正式使用请注释掉
-    // static DeviceInfo device_info = {
-    //     .device_name   = "zhanxuan001",
-    //     .device_secret = "oTvCRKR9L5JhWU1gwaZVdA==",
-    //     .product_id    = "LTIHOHJW7F",
-    // };
     static DeviceInfo device_info = {
         .product_id    = "LTIHOHJW7F",
         .device_name   = "xiaoxing_04",
-        .device_secret = "hA1ra/Ne7OAczZKm1xgMTw==",
+        .device_secret = "请从控制台获取",
     };
     // memset(&device_info, 0, sizeof(device_info));
     strncpy(device_info.device_version, _get_firmware_version(), sizeof(device_info.device_version) - 1);
@@ -556,7 +551,7 @@ static void twetalk_thread_entry(void* param)
 
     TWeCallOpenids openids[1];  // 如果有更多联系人则扩大数组，最多支持10个联系人
     memset(openids, 0, sizeof(openids));
-    strcpy(openids[0].name, CONFIG_TWETALK_CALLING_NAME);       //
+    strcpy(openids[0].name, CONFIG_TWETALK_CALLING_NAME);                             //
     strcpy(openids[0].open_id, CONFIG_TWETALK_CALLING_OPENID);  //
     TWeTalk_WS_CallSyncOpenids(sg_twetalk_handle, openids, 1);
 
@@ -624,6 +619,11 @@ static void twetalk_thread_entry(void* param)
                 // 长时间无对话后台会切掉websocket，所以如果断线需要重新连接
                 if (TWeTalk_WS_IsConnected(sg_twetalk_handle) != 1) {
                     TWeTalk_WS_Reconnect(sg_twetalk_handle, 0);
+                    TWeCallOpenids openids[1];  // 如果有更多联系人则扩大数组，最多支持10个联系人
+                    memset(openids, 0, sizeof(openids));
+                    strcpy(openids[0].name, CONFIG_TWETALK_CALLING_NAME);                             //
+                    strcpy(openids[0].open_id, CONFIG_TWETALK_CALLING_OPENID);  //
+                    TWeTalk_WS_CallSyncOpenids(sg_twetalk_handle, openids, 1);
                 }
             } break;
 

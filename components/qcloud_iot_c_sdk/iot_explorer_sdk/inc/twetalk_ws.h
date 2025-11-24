@@ -31,11 +31,18 @@ extern "C" {
 // ------------------------------------------------------------------------------------------
 
 typedef struct {
+    char* host;
+    int   port;
+} TWeTalkWsServerInfo;
+
+typedef struct {
     TWeTalkAudioType      audio_type;               /**< 音频类型，支持Opus和PCM */
     TWeTalkLanguageType   language_type;            /**< 语言类型，目前只支持中文和英文 */
     int                   frame_interval;           /**< 帧间隔，目前固定60ms */
     int                   push_recv_frame_interval; /**< 推送接收的音频数据间隔，目前固定60ms */
     void*                 mqtt_client;              /**< mqtt handle */
+    TWeTalkWsServerInfo   ws_server;                /**< websocket server info */
+    TWeTalkWsServerInfo   ws_wxa_server;            /**< 微信通话websocket server info */
     twetalk_recv_audio_cb recv_audio_cb;            /**< 接收音频回调，不要阻塞 */
     twetalk_recv_event_cb recv_event_cb;            /**< 接收事件回调，不要阻塞 */
     void*                 context;                  /**< 透传给recv_audio_cb和recv_event_cb的参数 */
@@ -48,10 +55,38 @@ typedef struct {
 
 #ifdef ENABLE_AUTH_NO_TLS
 #define DEFAULT_TWETALK_WS_INIT_PARAMS \
-    {TWETALK_AUDIO_TYPE_OPUS, TWETALK_LANGUAGE_TYPE_ZH, 60, 60, NULL, NULL, NULL, NULL, 90 * 180, 1, 0, NULL, NULL}
+    {TWETALK_AUDIO_TYPE_OPUS,          \
+     TWETALK_LANGUAGE_TYPE_ZH,         \
+     60,                               \
+     60,                               \
+     NULL,                             \
+     {NULL, 0},                        \
+     {NULL, 0},                        \
+     NULL,                             \
+     NULL,                             \
+     NULL,                             \
+     90 * 180,                         \
+     1,                                \
+     0,                                \
+     NULL,                             \
+     NULL}
 #else
 #define DEFAULT_TWETALK_WS_INIT_PARAMS \
-    {TWETALK_AUDIO_TYPE_OPUS, TWETALK_LANGUAGE_TYPE_ZH, 60, 60, NULL, NULL, NULL, NULL, 90 * 180, 1, 1, NULL, NULL}
+    {TWETALK_AUDIO_TYPE_OPUS,          \
+     TWETALK_LANGUAGE_TYPE_ZH,         \
+     60,                               \
+     60,                               \
+     NULL,                             \
+     {NULL, 0},                        \
+     {NULL, 0},                        \
+     NULL,                             \
+     NULL,                             \
+     NULL,                             \
+     90 * 180,                         \
+     1,                                \
+     1,                                \
+     NULL,                             \
+     NULL}
 #endif
 
 /**
@@ -130,7 +165,7 @@ int TWeTalk_WS_Disconnect(void* handle);
 
 /**
  * @brief 重新连接ws，当需要重启对话时调用此函数
- *
+ * @note 不要在回调函数中调用此函数，此函数会阻塞
  * @param handle twetalk init时返回的句柄
  * @param type 语言类型 当前支持中英文
  * @return 0 for success, negative for error
@@ -139,7 +174,7 @@ int TWeTalk_WS_Reconnect(void* handle, TWeTalkLanguageType type);
 
 /**
  * @brief 重新连接ws，当需要直接通话时调用此函数
- *
+ * @note 不要在回调函数中调用此函数，此函数会阻塞
  * @param handle twetalk init时返回的句柄
  * @param params 呼叫参数
  * @return 0 for success, negative for error

@@ -26,15 +26,15 @@
  * </table>
  */
 
-#include "service_mqtt.h"
 #include "qcloud_iot_wifi_bind.h"
+#include "service_mqtt.h"
 
 typedef struct {
     IotBool token_received;
-    int     bind_result;
+    int bind_result;
 } WifiBindContext;
 
-static const char *sg_service_method_str[] = {
+static const char* sg_service_method_str[] = {
     [0] = "app_bind_token_reply",
 };
 
@@ -48,18 +48,18 @@ typedef struct {
     uint64_t token_publish_time;
 } WifiBindMqttTime;
 
-static void _service_callback(void *client, const MQTTMessage *message, void *usr_data)
+static void _service_callback(void* client, const MQTTMessage* message, void* usr_data)
 {
     // {"method":"app_bind_token_reply","clientToken":"tech0-91582","code":0,"status":"success"}
-    WifiBindContext *ctx = (WifiBindContext *)usr_data;
+    WifiBindContext* ctx = (WifiBindContext*)usr_data;
     ctx->token_received  = TCIOT_BOOL_TRUE;
     utils_json_get_int("code", strlen("code"), message->payload_str, message->payload_len, &ctx->bind_result);
 }
 
-static int _wifi_bind_service_init(void *client)
+static int _wifi_bind_service_init(void* client)
 {
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
-    WifiBindContext *ctx = (WifiBindContext *)TCI_HAL_Malloc(sizeof(WifiBindContext));
+    WifiBindContext* ctx = (WifiBindContext*)TCI_HAL_Malloc(sizeof(WifiBindContext));
     if (!ctx) {
         return QCLOUD_ERR_MALLOC;
     }
@@ -88,19 +88,19 @@ static int _wifi_bind_service_init(void *client)
     return rc;
 }
 
-static void _wifi_bind_service_deinit(void *client)
+static void _wifi_bind_service_deinit(void* client)
 {
     POINTER_SANITY_CHECK_RTN(client);
     service_mqtt_service_unregister(client, SERVICE_TYPE_WIFI_BIND);
     service_mqtt_deinit(client);
 }
 
-static int _wifi_bind_report(void *client, IotWifiBindType type, const char *token, const IotWifiBindTime *bind_time,
-                             WifiBindMqttTime *mqtt_time)
+static int _wifi_bind_report(void* client, IotWifiBindType type, const char* token, const IotWifiBindTime* bind_time,
+                             WifiBindMqttTime* mqtt_time)
 {
     POINTER_SANITY_CHECK(client, QCLOUD_ERR_INVAL);
 
-    const char *type_str[] = {
+    const char* type_str[] = {
         [TCIOT_WIFI_BIND_TYPE_SOFT_AP]       = "SoftAP",
         [TCIOT_WIFI_BIND_TYPE_SMART_CONFIG]  = "SmartConfig",
         [TCIOT_WIFI_BIND_TYPE_AIR_KISS]      = "AirKiss",
@@ -111,20 +111,20 @@ static int _wifi_bind_report(void *client, IotWifiBindType type, const char *tok
 
     char payload[512] = {0};
 
-    int len = TCI_HAL_Snprintf(
-        payload, sizeof(payload),
-        "{\"method\":\"app_bind_token\",\"clientToken\":\"app-bind-%" SCNu64
-        "\",\"params\":{\"token\":\"%s\",\"pairTime\":{\"type\":\"%s\",\"start\":%ld,\"getSSID\":%ld,\"wifiConnected\":"
-        "%ld,\"getToken\":%ld,\"mqttStart\":%ld,\"mqttConnected\":%ld,\"tokenPublish\":%ld}}}",
-        TCI_HAL_GetTimeSecond(), token, type_str[type], bind_time->start_time, bind_time->get_ssid_time,
-        bind_time->wifi_connected_time, bind_time->get_token_time, mqtt_time->mqtt_start_time,
-        mqtt_time->mqtt_connected_time, mqtt_time->token_publish_time);
+    int len =
+        TCI_HAL_Snprintf(payload, sizeof(payload),
+                         "{\"method\":\"app_bind_token\",\"clientToken\":\"app-bind-%d\",\"params\":{\"token\":\"%s\","
+                         "\"pairTime\":{\"type\":\"%s\",\"start\":%llu,\"getSSID\":%llu,\"wifiConnected\":"
+                         "%llu,\"getToken\":%llu,\"mqttStart\":%llu,\"mqttConnected\":%llu,\"tokenPublish\":%llu}}}",
+                         TCI_HAL_Random(), token, type_str[type], bind_time->start_time, bind_time->get_ssid_time,
+                         bind_time->wifi_connected_time, bind_time->get_token_time, mqtt_time->mqtt_start_time,
+                         mqtt_time->mqtt_connected_time, mqtt_time->token_publish_time);
     return service_mqtt_publish(client, QOS0, payload, len);
 }
 
-static int _wifi_bind_wait_for_reply(void *client, uint64_t timeout_ms)
+static int _wifi_bind_wait_for_reply(void* client, uint64_t timeout_ms)
 {
-    WifiBindContext *ctx = service_mqtt_service_get_usr_data(client, SERVICE_TYPE_WIFI_BIND);
+    WifiBindContext* ctx = service_mqtt_service_get_usr_data(client, SERVICE_TYPE_WIFI_BIND);
     if (!ctx) {
         return QCLOUD_ERR_FAILURE;
     }
@@ -157,8 +157,8 @@ static int _wifi_bind_wait_for_reply(void *client, uint64_t timeout_ms)
  * @param[in] event_callback
  * @return @see IotReturnCode
  */
-int TCIOT_WifiBind_Sync(IotWifiBindType type, const char *token, const IotWifiBindTime *bind_time, uint64_t timeout_ms,
-                      void (*event_callback)(IotWifiBindEvent event))
+int TCIOT_WifiBind_Sync(IotWifiBindType type, const char* token, const IotWifiBindTime* bind_time, uint64_t timeout_ms,
+                        void (*event_callback)(IotWifiBindEvent event))
 {
     POINTER_SANITY_CHECK(token, QCLOUD_ERR_INVAL);
     POINTER_SANITY_CHECK(event_callback, QCLOUD_ERR_INVAL);
@@ -170,14 +170,14 @@ int TCIOT_WifiBind_Sync(IotWifiBindType type, const char *token, const IotWifiBi
     DeviceInfo device_info;
     init_params.device_info = &device_info;
 
-    int rc = TCI_HAL_GetDevInfo((uint8_t *)&device_info, sizeof(DeviceInfo));
+    int rc = TCI_HAL_GetDevInfo((uint8_t*)&device_info, sizeof(DeviceInfo));
     if (rc) {
         return rc;
     }
     mqtt_time.mqtt_start_time = TCI_HAL_GetTimeMs();
     event_callback(TCIOT_WIFI_BIND_EVENT_MQTT_CONNECT_BEGIN);
 
-    void *mqtt_client = TCIOT_MQTT_Construct(&init_params);
+    void* mqtt_client = TCIOT_MQTT_Construct(&init_params);
     if (!mqtt_client) {
         event_callback(TCIOT_WIFI_BIND_EVENT_MQTT_CONNECT_FAIL);
         return QCLOUD_ERR_MALLOC;

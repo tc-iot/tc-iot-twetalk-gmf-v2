@@ -255,7 +255,7 @@ int data_template_property_publish(void *client, PropertyUpMethodType publish_ty
         case PROPERTY_UP_METHOD_TYPE_GET_STATUS:
         case PROPERTY_UP_METHOD_TYPE_GET_MODE_DEFINE:
         case PROPERTY_UP_METHOD_TYPE_CLEAR_CONTROL:
-            len += TCI_HAL_Snprintf(buf + len, buf_len - len, "\"clientToken\":\"clear-control-%" SCNu64 "\"", TCI_HAL_GetTimeSecond());
+            len += TCI_HAL_Snprintf(buf + len, buf_len - len, "\"clientToken\":\"clear-control-%d\"", TCI_HAL_Random());
             break;
         case PROPERTY_UP_METHOD_TYPE_CONTROL_REPLY:
             len += TCI_HAL_Snprintf(buf + len, buf_len - len, "\"clientToken\":\"%.*s\",\"code\":%d",

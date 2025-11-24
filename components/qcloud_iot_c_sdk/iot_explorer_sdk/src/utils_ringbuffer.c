@@ -412,3 +412,17 @@ int utils_ringbuffer_idle_rate(void *ringbuffer)
     _ringbuffer_unlock(rb);
     return idle_rate;
 }
+
+int utils_ringbuffer_clear(void *ringbuffer)
+{
+    RingBuffer *rb = (RingBuffer *)ringbuffer;
+    if (rb == NULL) {
+        return -1;  // Invalid ring buffer
+    }
+    _ringbuffer_lock(rb, 0);
+    rb->used_count = 0;
+    rb->read_index = 0;
+    rb->write_index = 0;
+    _ringbuffer_unlock(rb);
+    return 0;
+}

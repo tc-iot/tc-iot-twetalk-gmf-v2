@@ -118,3 +118,117 @@ int HAL_OTA_SwitchToNewFirmware(void)
     esp_restart();
     return 0;
 }
+
+// OTA定时器结构体，用于存储定时器句柄和回调函数
+typedef struct {
+    TimerHandle_t timer_handle;
+    void (*callback)(void *);
+} OTATimerContext;
+
+// FreeRTOS定时器回调函数包装器
+static void ota_timer_callback_wrapper(TimerHandle_t xTimer)
+{
+    OTATimerContext *ctx = (OTATimerContext *)pvTimerGetTimerID(xTimer);
+    if (ctx && ctx->callback) {
+        ctx->callback((void *)xTimer);
+    }
+}
+
+void *HAL_OTA_create_ota_timer(void *usr_data, void(ota_timer_callback)(void *timer))
+{
+    if (ota_timer_callback == NULL) {
+        Log_e("ota_timer_callback is NULL");
+        return NULL;
+    }
+
+    // 分配定时器上下文
+    OTATimerContext *ctx = (OTATimerContext *)malloc(sizeof(OTATimerContext));
+    if (ctx == NULL) {
+        Log_e("malloc OTATimerContext failed");
+        return NULL;
+    }
+
+    ctx->callback = ota_timer_callback;
+
+    // 创建FreeRTOS软件定时器（单次触发）
+    ctx->timer_handle = xTimerCreate("OTA_Timer",           // 定时器名称
+                                      pdMS_TO_TICKS(1000),  // 初始周期（1秒，后续会修改）
+                                      pdFALSE,              // 单次触发
+                                      (void *)ctx,          // 定时器ID（传递上下文）
+                                      ota_timer_callback_wrapper);  // 回调函数
+
+    if (ctx->timer_handle == NULL) {
+        Log_e("xTimerCreate failed");
+        free(ctx);
+        return NULL;
+    }
+
+    Log_d("OTA timer created: %p", ctx);
+    return (void *)ctx;
+}
+
+int HAL_OTA_start_ota_timer(void *usr_data, void *timer, uint32_t timeout_ms)
+{
+    if (timer == NULL) {
+        Log_e("timer is NULL");
+        return -1;
+    }
+
+    OTATimerContext *ctx = (OTATimerContext *)timer;
+
+    // 修改定时器周期
+    if (xTimerChangePeriod(ctx->timer_handle, pdMS_TO_TICKS(timeout_ms), 0) != pdPASS) {
+        Log_e("xTimerChangePeriod failed");
+        return -1;
+    }
+
+    // 启动定时器
+    if (xTimerStart(ctx->timer_handle, 0) != pdPASS) {
+        Log_e("xTimerStart failed");
+        return -1;
+    }
+
+    Log_d("OTA timer started: %p, timeout: %u ms", timer, timeout_ms);
+    return 0;
+}
+
+int HAL_OTA_stop_ota_timer(void *usr_data, void *timer)
+{
+    if (timer == NULL) {
+        Log_e("timer is NULL");
+        return -1;
+    }
+
+    OTATimerContext *ctx = (OTATimerContext *)timer;
+
+    // 停止定时器
+    if (xTimerStop(ctx->timer_handle, 0) != pdPASS) {
+        Log_e("xTimerStop failed");
+        return -1;
+    }
+
+    Log_d("OTA timer stopped: %p", timer);
+    return 0;
+}
+
+int HAL_OTA_delete_ota_timer(void *usr_data, void *timer)
+{
+    if (timer == NULL) {
+        Log_e("timer is NULL");
+        return -1;
+    }
+
+    OTATimerContext *ctx = (OTATimerContext *)timer;
+
+    // 删除定时器
+    if (xTimerDelete(ctx->timer_handle, 0) != pdPASS) {
+        Log_e("xTimerDelete failed");
+        return -1;
+    }
+
+    // 释放上下文内存
+    free(ctx);
+
+    Log_d("OTA timer deleted: %p", timer);
+    return 0;
+}

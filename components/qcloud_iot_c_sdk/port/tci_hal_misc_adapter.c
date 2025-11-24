@@ -175,66 +175,47 @@ int TCI_HAL_TimerRemain(TCI_Timer *timer)
 
 int TCI_HAL_SoftAP_Start(const char *ssid, const char *password, uint8_t ch)
 {
-    // 按需实现的接口，提供空实现
-    (void)ssid;
-    (void)password;
-    (void)ch;
-    return -1; // 不支持
+    return HAL_SoftAP_Start(ssid, password, ch);
 }
 
 int TCI_HAL_SoftAP_Stop(void)
 {
-    // 按需实现的接口，提供空实现
-    return -1; // 不支持
+    return HAL_SoftAP_Stop();
 }
 
 int TCI_HAL_Wifi_Init(void)
 {
-    // 按需实现的接口，提供空实现
-    return -1; // 不支持
+    return HAL_Wifi_Init();
 }
 
 int TCI_HAL_Wifi_ModeSet(TCI_WifiMode mode)
 {
-    // 按需实现的接口，提供空实现
-    (void)mode;
-    return -1; // 不支持
+    return HAL_Wifi_ModeSet((TCIoTWifiMode)mode);
 }
 
 int TCI_HAL_Wifi_StaInfoSet(const char *ssid, uint8_t ssid_len, const char *passwd, uint8_t passwd_len)
 {
-    // 按需实现的接口，提供空实现
-    (void)ssid;
-    (void)ssid_len;
-    (void)passwd;
-    (void)passwd_len;
-    return -1; // 不支持
+    return HAL_Wifi_StaInfoSet(ssid, ssid_len, passwd, passwd_len);
 }
 
 int TCI_HAL_Wifi_StaConnect(uint32_t timeout_ms)
 {
-    // 按需实现的接口，提供空实现
-    (void)timeout_ms;
-    return -1; // 不支持
+    return HAL_Wifi_StaConnect(timeout_ms);
 }
 
 int TCI_HAL_Wifi_LogGet(void)
 {
-    // 按需实现的接口，提供空实现
-    return -1; // 不支持
+    return HAL_Wifi_LogGet();
 }
 
 uint32_t TCI_HAL_Wifi_Ipv4Get(void)
 {
-    // 按需实现的接口，提供空实现
-    return 0; // 无效IP地址
+    return HAL_Wifi_Ipv4Get();
 }
 
 size_t TCI_HAL_Wifi_MacGet(uint8_t *mac)
 {
-    // 按需实现的接口，提供空实现
-    (void)mac;
-    return 0; // 无MAC地址
+    return HAL_Wifi_MacGet(mac);
 }
 
 int TCI_HAL_Module_Init(void)
@@ -297,60 +278,35 @@ int TCI_HAL_Module_ConnectNetwork(void)
 
 uint32_t TCI_HAL_OTA_get_download_addr(void *usr_data)
 {
-    // 按需实现的接口，提供空实现
-    (void)usr_data;
-    return 0; // 无效地址
+    return HAL_OTA_get_download_addr(usr_data);
 }
 
 int TCI_HAL_OTA_read_flash(void *usr_data, uint32_t read_addr, uint8_t *read_data, uint32_t read_len)
 {
-    // 按需实现的接口，提供空实现
-    (void)usr_data;
-    (void)read_addr;
-    (void)read_data;
-    (void)read_len;
-    return -1; // 不支持
+    return HAL_OTA_read_flash(usr_data, read_addr, read_data, read_len);
 }
 
 int TCI_HAL_OTA_write_flash(void *usr_data, uint32_t write_addr, uint8_t *write_data, uint32_t write_len)
 {
-    // 按需实现的接口，提供空实现
-    (void)usr_data;
-    (void)write_addr;
-    (void)write_data;
-    (void)write_len;
-    return -1; // 不支持
+    return HAL_OTA_write_flash(usr_data, write_addr, write_data, write_len);
 }
 
 void *TCI_HAL_OTA_create_ota_timer(void *usr_data, void(ota_timer_callback)(void *timer))
 {
-    // 按需实现的接口，提供空实现
-    (void)usr_data;
-    (void)ota_timer_callback;
-    return NULL; // 不支持
+    return HAL_OTA_create_ota_timer(usr_data, ota_timer_callback);
 }
 
 int TCI_HAL_OTA_start_ota_timer(void *usr_data, void *timer, uint32_t timeout_ms)
 {
-    // 按需实现的接口，提供空实现
-    (void)usr_data;
-    (void)timer;
-    (void)timeout_ms;
-    return -1; // 不支持
+    return HAL_OTA_start_ota_timer(usr_data, timer, timeout_ms);
 }
 
 int TCI_HAL_OTA_stop_ota_timer(void *usr_data, void *timer)
 {
-    // 按需实现的接口，提供空实现
-    (void)usr_data;
-    (void)timer;
-    return -1; // 不支持
+    return HAL_OTA_stop_ota_timer(usr_data, timer);
 }
 
 int TCI_HAL_OTA_delete_ota_timer(void *usr_data, void *timer)
 {
-    // 按需实现的接口，提供空实现
-    (void)usr_data;
-    (void)timer;
-    return -1; // 不支持
+    return HAL_OTA_delete_ota_timer(usr_data, timer);
 }
