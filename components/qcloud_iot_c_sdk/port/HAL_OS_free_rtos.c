@@ -618,6 +618,6 @@ int HAL_MailQueueRecv(void *mail_q, void *buf, size_t *size, uint32_t timeout_ms
     if (!mail_q) {
         return -1;
     }
-    return pdTRUE != xQueueReceive(mail_q, buf, MS_TO_TICKS(timeout_ms));
+    return xQueueReceive(mail_q, buf, MS_TO_TICKS(timeout_ms)) == pdTRUE ? 0 : QCLOUD_ERR_FAILURE;
 }
 

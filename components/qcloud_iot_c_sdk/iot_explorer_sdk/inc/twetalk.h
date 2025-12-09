@@ -30,14 +30,17 @@ extern "C" {
 #include "utils_json.h"
 #include "qcloud_iot_config.h"
 
-#define TWETALK_VERSION "1.1.1"
+#define TWETALK_VERSION "1.1.2"
 
 typedef enum {
     /** AI对话相关事件 */
     TWETALK_EVENT_BOT_START_SPEAKING = 0, /**< 机器人开始说话 */
     TWETALK_EVENT_BOT_STOP_SPEAKING  = 1, /**< 机器人停止说话 */
-    TWETALK_EVENT_BOT_TRANSCRIPTION  = 2, /**< 机器人字幕 */
-    TWETALK_EVENT_USR_TRANSCRIPTION  = 3, /**< 用户字幕 */
+    TWETALK_EVENT_USR_START_SPEAKING = 2, /**< 用户开始说话 */
+    TWETALK_EVENT_USR_STOP_SPEAKING  = 3, /**< 用户停止说话 */
+    TWETALK_EVENT_BOT_TRANSCRIPTION  = 4, /**< 机器人字幕 */
+    TWETALK_EVENT_USR_TRANSCRIPTION  = 5, /**< 用户字幕 */
+    TWETALK_EVENT_METRICS_REPORT     = 6, /**< AI服务调用各模块耗时统计 */
 
     /** 设备呼叫小程序事件 */
     TWETALK_EVENT_RECV_USR_ANSWER = 10, /**< 设备呼叫小程序，小程序接听 */
@@ -64,6 +67,7 @@ typedef enum {
     /** TRTC相关事件，ws不关心 */
     TWETALK_EVENT_TRTC_REMOTE_USR_ENTER_ROOM = 50, /**< trtc远端用户进入房间 */
     TWETALK_EVENT_TRTC_REMOTE_USR_EXIT_ROOM  = 51, /**< trtc远端用户退出房间 */
+    TWETALK_EVENT_TRTC_NOONE_READER_IN_ROOM  = 52, /**< trtc房间没有reader,意味着此时只有你一个在房间里 */
 
     /** 请求图片事件 */
     TWETALK_EVENT_REQUEST_IMAGE = 60, /**< 请求图片 */
@@ -78,20 +82,20 @@ typedef enum {
  */
 typedef union {
     struct {
-        UtilsJsonValue transcription;
+        char transcription[512];
     } BotTranscription;
 
     struct {
-        UtilsJsonValue transcription;
+        char transcription[512];
     } UsrTranscription;
 
     struct {
-        UtilsJsonValue room_id;
-        UtilsJsonValue caller_id;
+        char room_id[256];
+        char caller_id[128];
     } RecvCalling;
 
     struct {
-        UtilsJsonValue room_id;
+        char room_id[256];
     } RecvCancel;
 
     struct {
@@ -99,70 +103,73 @@ typedef union {
     } RecvError;
 
     struct {
-        UtilsJsonValue called;
-        UtilsJsonValue openid;
+        char called[128];
+        char openid[128];
     } UserAnswer;
 
     struct {
-        UtilsJsonValue stream;
-        UtilsJsonValue called;
-        UtilsJsonValue openid;
+        char stream[256];
+        char called[128];
+        char openid[128];
     } UserHangup;
 
     struct {
-        UtilsJsonValue called;
-        UtilsJsonValue openid;
+        char called[128];
+        char openid[128];
     } UserReject;
 
     struct {
-        UtilsJsonValue called;
-        UtilsJsonValue openid;
+        char called[128];
+        char openid[128];
     } DeviceReject;
 
     struct {
-        UtilsJsonValue called;
-        UtilsJsonValue openid;
+        char called[128];
+        char openid[128];
     } DeviceHangup;
-    
+
+
     struct {
-        UtilsJsonValue called;
-        UtilsJsonValue openid;
-        int            code;
+        char called[128];
+        char openid[128];
+        int  code;
     } UserError;
 
-    struct 
-    {
-        UtilsJsonValue called;
-        UtilsJsonValue openid;
-    }ServerCallStart;
-
-    struct{
-        UtilsJsonValue called;
-        UtilsJsonValue openid;
-    }ServerCalling;
+    struct {
+        char called[128];
+        char openid[128];
+    } ServerCallStart;
 
     struct {
-        UtilsJsonValue called;
-        UtilsJsonValue openid;
-    }ServerCallTimeout;
+        char called[128];
+        char openid[128];
+    } ServerCalling;
 
     struct {
-        UtilsJsonValue called;
-        UtilsJsonValue openid;
-    }ServerCallBusy;
-
+        char called[128];
+        char openid[128];
+    } ServerCallTimeout;
 
     struct {
-        UtilsJsonValue usr_id;
+        char called[128];
+        char openid[128];
+    } ServerCallBusy;
+
+    struct {
+        char usr_id[128];
     } TrtcRemoteUsrEnterRoom;
 
     struct {
-        UtilsJsonValue usr_id;
+        char usr_id[128];
     } TrtcRemoteUsrExitRoom;
 
     struct {
-        UtilsJsonValue transcription;
+        char transcription[512];
     } RequestImage;
+
+    struct {
+        char metrics[512];
+    } Metrics;
 
 } TWeTalkEventMsg;
 

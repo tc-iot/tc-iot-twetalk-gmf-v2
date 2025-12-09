@@ -85,7 +85,6 @@ typedef enum {
     QCLOUD_ERR_MAX_TOPIC_LENGTH          = -112, /**< Topic length oversize */
     QCLOUD_ERR_MQTT_YIELD_BUSY           = -113, /**< MQTT yield is busy, another thread is processing */
 
-
     QCLOUD_ERR_HTTP           = -201, /**< HTTP unknown error */
     QCLOUD_ERR_HTTP_AUTH      = -202, /**< HTTP auth failed */
     QCLOUD_ERR_HTTP_NOT_FOUND = -203, /**< HTTP 404 */
@@ -103,17 +102,20 @@ typedef enum {
     QCLOUD_ERR_TLV_NO_EXIST        = -804, /**< TLV send fail*/
     QCLOUD_ERR_WIFI_CONFIG_TIMEOUT = -805, /**< wifi config timeout */
 
-    QCLOUD_ERR_TWETALK_ALREADY_INIT         = -900, /**< twetalk already init */
-    QCLOUD_ERR_TWETALK_CONNECT_FAIL         = -901, /**< twetalk connect fail */
-    QCLOUD_ERR_TWETALK_CREATE_THREAD_FAIL   = -902, /**< twetalk create thread fail */
-    QCLOUD_ERR_TWETALK_CTREATE_RINGBUF_FAIL = -903, /**< twetalk create ringbuf fail */
-    QCLOUD_ERR_TWETALK_ALREADY_EXIT         = -904, /**< twetalk already exit */
-    QCLOUD_ERR_TWETALK_NOT_INIT             = -905, /**< twetalk not init */
-    QCLOUD_ERR_TWETALK_SEND_FAIL            = -906, /**< twetalk send fail */
-    QCLOUD_ERR_TWETALK_MALLOC_FAIL          = -907, /**< twetalk malloc fail */
-    QCLOUD_ERR_TWETALK_CREATE_SEM_FAIL      = -908, /**< twetalk create sem fail */
-    QCLOUD_ERR_TWETALK_NOT_CONNECTED        = -909, /**< twetalk not connected */
-    QCLOUD_ERR_TWETALK_UNKNOW_TYPE          = -910, /**< twetalk unknow type */
+    QCLOUD_ERR_TWETALK_ALREADY_INIT           = -900, /**< twetalk already init */
+    QCLOUD_ERR_TWETALK_CONNECT_FAIL           = -901, /**< twetalk connect fail */
+    QCLOUD_ERR_TWETALK_CREATE_THREAD_FAIL     = -902, /**< twetalk create thread fail */
+    QCLOUD_ERR_TWETALK_CTREATE_RINGBUF_FAIL   = -903, /**< twetalk create ringbuf fail */
+    QCLOUD_ERR_TWETALK_ALREADY_EXIT           = -904, /**< twetalk already exit */
+    QCLOUD_ERR_TWETALK_NOT_INIT               = -905, /**< twetalk not init */
+    QCLOUD_ERR_TWETALK_SEND_FAIL              = -906, /**< twetalk send fail */
+    QCLOUD_ERR_TWETALK_MALLOC_FAIL            = -907, /**< twetalk malloc fail */
+    QCLOUD_ERR_TWETALK_CREATE_SEM_FAIL        = -908, /**< twetalk create sem fail */
+    QCLOUD_ERR_TWETALK_NOT_CONNECTED          = -909, /**< twetalk not connected */
+    QCLOUD_ERR_TWETALK_INVALID_PARAM          = -910, /**< twetalk invalid param */
+    QCLOUD_ERR_TWETALK_UNKNOW_TYPE            = -911, /**< twetalk unknow type */
+    QCLOUD_ERR_TWETALK_CREATE_MAIL_QUEUE_FAIL = -912, /**< twetalk create mail queue fail */
+    QCLOUD_ERR_TWETALK_TIMEOUT                = -913, /**< twetalk get event timeout */
 
     /* Video Kit error codes (-1000 ~ -1099) */
     QCLOUD_ERR_VIDEO_KIT_NOT_INIT           = -1000, /**< Video kit not initialized */

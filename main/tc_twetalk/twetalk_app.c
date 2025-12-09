@@ -46,7 +46,7 @@ static int sg_ota_download_finished = 0;
 static void* sg_twetalk_handle      = NULL;
 static int sg_main_exit             = 0;
 static int sg_is_net_connected      = 0;
-static void* sg_mail_queue          = NULL;
+static volatile int sg_check_connect_flag = 0;  // 检查连接标志
 
 static esp_gmf_oal_thread_t twetalk_thread;
 static esp_gmf_oal_thread_t read_thread;
@@ -97,12 +97,8 @@ static void recorder_event_callback_fn(void* event, void* ctx)
         case ESP_GMF_AFE_EVT_WAKEUP_START:
             ESP_LOGI(TAG, "wakeup start");
             sg_wakeup_start = 1;
-            // 通过mailqueue发送检查连接事件
-            if (sg_mail_queue) {
-                TWeTalkAppMsg app_msg;
-                app_msg.type = TWETALK_APP_EVENT_CHECK_CONNECT;
-                TCI_HAL_MailQueueSend(sg_mail_queue, &app_msg, sizeof(app_msg), 0);
-            }
+            // 设置检查连接标志
+            sg_check_connect_flag = 1;
             audio_prompt_play(tone_uri[LOCALPLAY_DONG]);
             break;
         case ESP_GMF_AFE_EVT_WAKEUP_END:
@@ -242,7 +238,7 @@ int _on_download_finish(const char* version, size_t total_len)
 
 const char* _get_firmware_version(void)
 {
-    return "esp32s3_v1.1.0";
+    return "esp32s3_v1.1.2";
 }
 
 static int get_twetalk_language(void)
@@ -320,99 +316,7 @@ static int _twetalk_recv_audio_cb(uint8_t* recv_data, int recv_len, void* contex
     return 0;
 }
 
-/**
- * @brief twetalk事件接收回调
- * @note 该回调在TWeTalk线程中执行，不要做耗时操作
- * @param[in] type 事件类型
- * @param[in] msg 事件消息
- * @param[in] context 用户上下文
- * @return 0成功，非0失败
- */
-static int _twetalk_recv_event_cb(TWeTalkEventType type, TWeTalkEventMsg* msg, void* context)
-{
-    TWeTalk_CallEventTypePrint(type);
-    switch (type) {
-        /**< 机器人开始讲话 */
-        case TWETALK_EVENT_BOT_START_SPEAKING:
-            Log_i("bot start speaking");
-            break;
 
-        /**< 机器人停止讲话 */
-        case TWETALK_EVENT_BOT_STOP_SPEAKING:
-            Log_i("bot stop speaking");
-            break;
-
-        /**< 机器人讲话字幕，可做UI显示，UTF-8编码 */
-        case TWETALK_EVENT_BOT_TRANSCRIPTION: {
-            Log_i("bot: %.*s", msg->BotTranscription.transcription.value_len,
-                  msg->BotTranscription.transcription.value);
-        } break;
-
-        /**< 用户讲话字幕，可做UI显示，UTF-8编码 */
-        case TWETALK_EVENT_USR_TRANSCRIPTION: {
-            Log_i("usr: %.*s", msg->UsrTranscription.transcription.value_len,
-                  msg->UsrTranscription.transcription.value);
-        } break;
-
-        /**< 收到小程序呼叫，可做UI显示，可以接听/挂断/不理会 */
-        /**< caller id 主叫者id 即小程序的openId */
-        case TWETALK_EVENT_RECV_USR_CALLING: {
-            Log_i("calling roomid: %.*s caller id : %.*s", msg->RecvCalling.room_id.value_len,
-                  msg->RecvCalling.room_id.value, msg->RecvCalling.caller_id.value_len,
-                  msg->RecvCalling.caller_id.value);
-            // 通过mailqueue发送事件到主线程处理
-            TWeTalkAppMsg app_msg;
-            app_msg.type      = TWETALK_APP_EVENT_WS_RECV_USR_CALLING;
-            app_msg.event_msg = *msg;
-            TCI_HAL_MailQueueSend(sg_mail_queue, &app_msg, sizeof(app_msg), 0);
-        } break;
-        /**< 收到小程序取消呼叫 */
-        case TWETALK_EVENT_RECV_USR_CANCEL: {
-            Log_i("usr cancel. roomid: %.*s", msg->RecvCancel.room_id.value_len, msg->RecvCancel.room_id.value);
-            // 通过mailqueue发送事件到主线程处理
-            TWeTalkAppMsg app_msg;
-            app_msg.type      = TWETALK_APP_EVENT_WS_RECV_USR_CANCEL;
-            app_msg.event_msg = *msg;
-            TCI_HAL_MailQueueSend(sg_mail_queue, &app_msg, sizeof(app_msg), 0);
-        } break;
-        /**< 设备呼叫小程序，小程序接听 */
-        case TWETALK_EVENT_RECV_USR_ANSWER: {
-            Log_i("user answer called: %.*s openid: %.*s", msg->UserAnswer.called.value_len,
-                  msg->UserAnswer.called.value, msg->UserAnswer.openid.value_len, msg->UserAnswer.openid.value);
-        } break;
-
-        /**< 小程序挂断 */
-        case TWETALK_EVENT_RECV_USR_HANGUP: {
-            Log_i("user hangup(%.*s) called: %.*s openid: %.*s", msg->UserHangup.stream.value_len,
-                  msg->UserHangup.stream.value, msg->UserHangup.called.value_len, msg->UserHangup.called.value,
-                  msg->UserHangup.openid.value_len, msg->UserHangup.openid.value);
-            // 通过mailqueue发送事件到主线程处理
-            TWeTalkAppMsg app_msg;
-            app_msg.type      = TWETALK_APP_EVENT_WS_RECV_USR_HANGUP;
-            app_msg.event_msg = *msg;
-            TCI_HAL_MailQueueSend(sg_mail_queue, &app_msg, sizeof(app_msg), 0);
-        } break;
-
-        /**< 设备呼叫小程序，发生错误❌ */
-        case TWETALK_EVENT_RECV_USR_ERROR: {
-            Log_w("code : %d", msg->UserError.code);
-        } break;
-
-        /**< 接收错误 */  // TODO : 错误处理
-        case TWETALK_EVENT_RECV_ERROR: {
-            Log_e("recv error: %d", msg->RecvError.code);
-            // 通过mailqueue发送事件到主线程处理
-            TWeTalkAppMsg app_msg;
-            app_msg.type                     = TWETALK_APP_EVENT_WS_DISCONECT;
-            app_msg.event_msg.RecvError.code = msg->RecvError.code;
-            TCI_HAL_MailQueueSend(sg_mail_queue, &app_msg, sizeof(app_msg), 0);
-        } break;
-        default:
-            Log_w("unknown event type: %d", type);
-            break;
-    }
-    return 0;
-}
 
 static int _ota_task_init(void* client)
 {
@@ -439,8 +343,8 @@ static void twetalk_thread_entry(void* param)
 #if 1  // 测试用，正式使用请注释掉
     static DeviceInfo device_info = {
         .product_id    = "LTIHOHJW7F",
-        .device_name   = "xiaoxing_04",
-        .device_secret = "请从控制台获取",
+        .device_name   = "xph_test_002",
+        .device_secret = "请从腾讯云控制台获取",
     };
     // memset(&device_info, 0, sizeof(device_info));
     strncpy(device_info.device_version, _get_firmware_version(), sizeof(device_info.device_version) - 1);
@@ -516,16 +420,15 @@ static void twetalk_thread_entry(void* param)
     TWeTalkWsInitParams twetalk_params      = DEFAULT_TWETALK_WS_INIT_PARAMS;
     twetalk_params.mqtt_client              = client;
     twetalk_params.recv_audio_cb            = _twetalk_recv_audio_cb;
-    twetalk_params.recv_event_cb            = _twetalk_recv_event_cb;
+    twetalk_params.recv_event_cb            = NULL;  // 不使用回调，改用 TWeTalk_WS_GetEvent 获取事件
     twetalk_params.context                  = NULL;
     twetalk_params.audio_type               = TWETALK_AUDIO_TYPE_OPUS;
     twetalk_params.push_recv_frame_interval = 40;
 
     twetalk_params.language_type = get_twetalk_language();  // 获取语言
-
     // twetalk 测试小程序信息，自有小程序请替换为自己的小程序信息
-    twetalk_params.wxa_appid   = "wx7d65d685b7b00dae";
-    twetalk_params.wxa_modelid = "0yQruCUX6y6MC7isot282g";
+    twetalk_params.wxa_appid   = "wx9e8fbc98ceac2628";
+    twetalk_params.wxa_modelid = "DYEbVE9kfjAONqnWsOhXgw";
 
     sg_twetalk_handle = TWeTalk_WS_Init(&twetalk_params);
     if (sg_twetalk_handle == NULL) {
@@ -555,79 +458,126 @@ static void twetalk_thread_entry(void* param)
     strcpy(openids[0].open_id, CONFIG_TWETALK_CALLING_OPENID);  //
     TWeTalk_WS_CallSyncOpenids(sg_twetalk_handle, openids, 1);
 
-    // 初始化mail queue（需要在按键初始化之前，因为按键回调可能会发送消息）
-    sg_mail_queue = TCI_HAL_MailQueueInit(NULL, sizeof(TWeTalkAppMsg), 10);
-    if (!sg_mail_queue) {
-        Log_e("create mail queue failed");
-        TWeTalk_WS_Exit(sg_twetalk_handle);
-        usr_data_template_deinit(client);
-        TCIOT_MQTT_Destroy(&client);
-        goto ret;
-    }
-
-    TWeTalkAppMsg app_msg;
-    size_t recv_len = 0;
+    TWeTalkEventType event_type;
+    TWeTalkEventMsg  event_msg;
     do {
-        rc = TCI_HAL_MailQueueRecv(sg_mail_queue, &app_msg, &recv_len, 200);
-        if (rc) {
-            if (sg_main_exit == 1) {
-                break;
-            }
-            continue;
-        }
-        Log_d("recv msg type: %d", app_msg.type);
-        switch (app_msg.type) {
-            case TWETALK_APP_EVENT_WS_DISCONECT: {
-                TWeTalk_WS_Disconnect(sg_twetalk_handle);
-            } break;
-
-            case TWETALK_APP_EVENT_WS_RECV_USR_CALLING: {
-                Log_i("calling roomid: %.*s caller id : %.*s", app_msg.event_msg.RecvCalling.room_id.value_len,
-                      app_msg.event_msg.RecvCalling.room_id.value, app_msg.event_msg.RecvCalling.caller_id.value_len,
-                      app_msg.event_msg.RecvCalling.caller_id.value);
-                // TODO 自定义是否接听
-                if (TWeTalk_WS_IsConnected(sg_twetalk_handle)) {
-                    TWeTalk_WS_CallResponse(sg_twetalk_handle, TWETALK_EVENT_DEVICE_ANSWER,
-                                            &app_msg.event_msg.RecvCalling.room_id);  // 接听
-                    // TWeTalk_WS_CallResponse(sg_twetalk_handle, TWETALK_EVENT_DEVICE_REJECTS,
-                    //                         &app_msg.event_msg.RecvCalling.room_id);  // 拒接
-                } else {
-                    // TODO ws断开 直接走特定ws连接打电话
-                    TWeTalkCallParams call_params;
-                    memset(&call_params, 0, sizeof(call_params));
-                    call_params.response = TWETALK_EVENT_DEVICE_ANSWER;
-                    strncpy(call_params.room_id, app_msg.event_msg.RecvCalling.room_id.value,
-                            app_msg.event_msg.RecvCalling.room_id.value_len);
-                    strncpy(call_params.caller_id, app_msg.event_msg.RecvCalling.caller_id.value,
-                            app_msg.event_msg.RecvCalling.caller_id.value_len);
-                    TWeTalk_WS_ReconnectWithCall(sg_twetalk_handle, &call_params);
-                }
-            } break;
-
-            case TWETALK_APP_EVENT_WS_RECV_USR_CANCEL: {
-                Log_i("handle user cancel event in main thread");
-                // TODO: 添加取消呼叫的处理逻辑
-            } break;
-
-            case TWETALK_APP_EVENT_WS_RECV_USR_HANGUP: {
-                Log_i("handle user hangup event in main thread");
-                // TODO: 添加挂断的处理逻辑
-            } break;
-
-            case TWETALK_APP_EVENT_CHECK_CONNECT: {
+        // 使用 TWeTalk_WS_GetEvent 获取事件
+        rc = TWeTalk_WS_GetEvent(sg_twetalk_handle, &event_type, &event_msg, 200);
+        if (rc == QCLOUD_ERR_TWETALK_TIMEOUT) {
+            // 超时时检查是否需要检查连接
+            if (sg_check_connect_flag) {
+                sg_check_connect_flag = 0;  // 清除标志
                 Log_d("check twetalk connect");
                 // 长时间无对话后台会切掉websocket，所以如果断线需要重新连接
                 if (TWeTalk_WS_IsConnected(sg_twetalk_handle) != 1) {
                     TWeTalk_WS_Reconnect(sg_twetalk_handle, 0);
                     TWeCallOpenids openids[1];  // 如果有更多联系人则扩大数组，最多支持10个联系人
                     memset(openids, 0, sizeof(openids));
-                    strcpy(openids[0].name, CONFIG_TWETALK_CALLING_NAME);                             //
-                    strcpy(openids[0].open_id, CONFIG_TWETALK_CALLING_OPENID);  //
+                    strcpy(openids[0].name, CONFIG_TWETALK_CALLING_NAME);
+                    strcpy(openids[0].open_id, CONFIG_TWETALK_CALLING_OPENID);
                     TWeTalk_WS_CallSyncOpenids(sg_twetalk_handle, openids, 1);
+                }
+            }
+            if (sg_main_exit == 1) {
+                break;
+            }
+            continue;
+        } else if (rc != 0) {
+            Log_e("TWeTalk_WS_GetEvent error: %d", rc);
+            continue;
+        }
+
+        TWeTalk_CallEventTypePrint(event_type);
+        switch (event_type) {
+            /**< 机器人开始讲话 */
+            case TWETALK_EVENT_BOT_START_SPEAKING:
+                Log_i("bot start speaking");
+                break;
+
+            /**< 机器人停止讲话 */
+            case TWETALK_EVENT_BOT_STOP_SPEAKING:
+                Log_i("bot stop speaking");
+                break;
+
+            /**< 用户开始讲话 */
+            case TWETALK_EVENT_USR_START_SPEAKING:
+                Log_i("usr start speaking");
+                break;
+
+            /**< 用户停止讲话 */
+            case TWETALK_EVENT_USR_STOP_SPEAKING:
+                Log_i("usr stop speaking");
+                break;
+
+            /**< 机器人讲话字幕，可做UI显示，UTF-8编码 */
+            case TWETALK_EVENT_BOT_TRANSCRIPTION: {
+                Log_i("bot: %s", event_msg.BotTranscription.transcription);
+            } break;
+
+            /**< 用户讲话字幕，可做UI显示，UTF-8编码 */
+            case TWETALK_EVENT_USR_TRANSCRIPTION: {
+                Log_i("usr: %s", event_msg.UsrTranscription.transcription);
+            } break;
+
+            /**< 收到小程序呼叫，可做UI显示，可以接听/挂断/不理会 */
+            case TWETALK_EVENT_RECV_USR_CALLING: {
+                Log_i("calling roomid: %s caller id : %s", event_msg.RecvCalling.room_id,
+                      event_msg.RecvCalling.caller_id);
+                // TODO 自定义是否接听
+                if (TWeTalk_WS_IsConnected(sg_twetalk_handle)) {
+                    UtilsJsonValue room_id_val = {.value = event_msg.RecvCalling.room_id,
+                                                  .value_len = strlen(event_msg.RecvCalling.room_id)};
+                    TWeTalk_WS_CallResponse(sg_twetalk_handle, TWETALK_EVENT_DEVICE_ANSWER,
+                                            &room_id_val);  // 接听
+                    // TWeTalk_WS_CallResponse(sg_twetalk_handle, TWETALK_EVENT_DEVICE_REJECT,
+                    //                         &room_id_val);  // 拒接
+                } else {
+                    // TODO ws断开 直接走特定ws连接打电话
+                    TWeTalkCallParams call_params;
+                    memset(&call_params, 0, sizeof(call_params));
+                    call_params.response = TWETALK_EVENT_DEVICE_ANSWER;  // 设备可以接听也可以拒绝
+                    strncpy(call_params.room_id, event_msg.RecvCalling.room_id, sizeof(call_params.room_id) - 1);
+                    strncpy(call_params.caller_id, event_msg.RecvCalling.caller_id, sizeof(call_params.caller_id) - 1);
+                    TWeTalk_WS_ReconnectWithCall(sg_twetalk_handle, &call_params);
                 }
             } break;
 
+            /**< 收到小程序取消呼叫 */
+            case TWETALK_EVENT_RECV_USR_CANCEL: {
+                Log_i("usr cancel. roomid: %s", event_msg.RecvCancel.room_id);
+                // TODO: 添加取消呼叫的处理逻辑
+            } break;
+
+            /**< 设备呼叫小程序，小程序接听 */
+            case TWETALK_EVENT_RECV_USR_ANSWER: {
+                Log_i("user answer called: %s openid: %s", event_msg.UserAnswer.called, event_msg.UserAnswer.openid);
+            } break;
+
+            /**< 小程序挂断 */
+            case TWETALK_EVENT_RECV_USR_HANGUP: {
+                Log_i("user hangup(%s) called: %s openid: %s", event_msg.UserHangup.stream, event_msg.UserHangup.called,
+                      event_msg.UserHangup.openid);
+                // TODO: 添加挂断的处理逻辑
+            } break;
+
+            /**< 设备呼叫小程序，发生错误 */
+            case TWETALK_EVENT_RECV_USR_ERROR: {
+                Log_w("user error code : %d", event_msg.UserError.code);
+            } break;
+
+            /**< 接收错误 */
+            case TWETALK_EVENT_RECV_ERROR: {
+                // 接收错误应该断掉ws连接 然后根据情况重连
+                Log_e("recv error: %d", event_msg.RecvError.code);
+                TWeTalk_WS_Disconnect(sg_twetalk_handle);
+            } break;
+
+            case TWETALK_EVENT_METRICS_REPORT: {
+                // just ignore
+            } break;
+
             default:
+                Log_w("unknown event type: %d", event_type);
                 break;
         }
     } while (!sg_main_exit);
@@ -636,11 +586,6 @@ static void twetalk_thread_entry(void* param)
     iot_ota_deinit();
     rc |= TCIOT_MQTT_Destroy(&client);
 
-    // 清理mailqueue
-    if (sg_mail_queue) {
-        TCI_HAL_MailQueueDeinit(sg_mail_queue);
-        sg_mail_queue = NULL;
-    }
 ret:
     Log_w("twetalk thread exit with error: %d", rc);
     button_key_deinit();
@@ -697,12 +642,8 @@ static void btn_event_process(struct ebtn_btn* btn, ebtn_evt_t evt)
     } else if (evt == EBTN_EVT_ONPRESS) {
         sg_key_pressed = 1;
         if (sg_key_record_mode) {
-            // 通过mailqueue发送检查连接事件
-            if (sg_mail_queue) {
-                TWeTalkAppMsg app_msg;
-                app_msg.type = TWETALK_APP_EVENT_CHECK_CONNECT;
-                TCI_HAL_MailQueueSend(sg_mail_queue, &app_msg, sizeof(app_msg), 0);
-            }
+            // 设置检查连接标志
+            sg_check_connect_flag = 1;
         }
     } else if (evt == EBTN_EVT_ONRELEASE) {
         sg_key_pressed = 0;

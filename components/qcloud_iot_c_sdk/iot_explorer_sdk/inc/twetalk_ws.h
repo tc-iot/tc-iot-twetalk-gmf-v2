@@ -47,6 +47,7 @@ typedef struct {
     twetalk_recv_event_cb recv_event_cb;            /**< 接收事件回调，不要阻塞 */
     void*                 context;                  /**< 透传给recv_audio_cb和recv_event_cb的参数 */
     int         ringbuffer_size; /**< 接收环形缓冲区大小，单位字节，传0表示不需要缓冲，直接传递给recv_audio_cb */
+    IotBool     use_vl;          /**< 是否多模态接入，需要在控制台购买多模态对应的license才能使用 */
     IotBool     auto_reconnect;  /**< 是否自动重连 TODO ：待实现 */
     IotBool     is_encrypt;      /**< 是否加密传输 TODO : 待实现 */
     const char* wxa_appid;       /**< 微信通话的微信小程序appid，NULL表示不使用微信通话 */
@@ -66,6 +67,7 @@ typedef struct {
      NULL,                             \
      NULL,                             \
      90 * 180,                         \
+     0,                                \
      1,                                \
      0,                                \
      NULL,                             \
@@ -83,6 +85,7 @@ typedef struct {
      NULL,                             \
      NULL,                             \
      90 * 180,                         \
+     0,                                \
      1,                                \
      1,                                \
      NULL,                             \
@@ -195,6 +198,17 @@ int TWeTalk_WS_IsConnected(void* handle);
  * @param type
  */
 void TWeTalk_CallEventTypePrint(TWeTalkEventType type);
+
+/**
+ * @brief 从mail queue中获取事件（当初始化时未设置recv_event_cb回调时使用）
+ *
+ * @param handle twetalk init时返回的句柄
+ * @param type 输出参数，事件类型
+ * @param msg 输出参数，事件消息
+ * @param timeout_ms 超时时间，单位毫秒，0表示不等待，0xFFFFFFFF表示永久等待
+ * @return 0 for success, negative for error, QCLOUD_ERR_TWETALK_TIMEOUT表示超时
+ */
+int TWeTalk_WS_GetEvent(void* handle, TWeTalkEventType* type, TWeTalkEventMsg* msg, uint32_t timeout_ms);
 
 // --------------------------------------- twetalk over websocket end ------------------------------
 

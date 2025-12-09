@@ -10,7 +10,7 @@ dependencies:
   espressif/esp_audio_simple_player:
     version: '^0.9.4'
   espressif/gmf_loader:
-    version: "^0.7"
+    version: "0.7.0"
   espressif/esp_hosted:
     version: "~1.1"
     rules:

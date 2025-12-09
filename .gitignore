@@ -5,5 +5,4 @@ managed_components
 .DS_Store
 CLAUDE.md 
 .claude 
-sdkconfig
 components/qcloud_iot_c_sdk/iot-hub-device-c-sdk

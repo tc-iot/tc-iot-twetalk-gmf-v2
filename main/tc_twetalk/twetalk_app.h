@@ -64,24 +64,6 @@ typedef enum
 } LocalPlayE;
 extern const char* tone_uri[];
 
-typedef enum
-{
-    TWETALK_APP_EVENT_WS_DISCONECT,
-    TWETALK_APP_EVENT_WS_RECONECT,
-    TWETALK_APP_EVENT_WS_RECV_ERROR,
-    TWETALK_APP_EVENT_WS_REQUEST_IMAGE,
-    TWETALK_APP_EVENT_WS_RECV_USR_CALLING,
-    TWETALK_APP_EVENT_WS_RECV_USR_CANCEL,
-    TWETALK_APP_EVENT_WS_RECV_USR_HANGUP,
-    TWETALK_APP_EVENT_CHECK_CONNECT,
-    TWETALK_APP_EVENT_MAX,
-} TWeTalkAppEventType;
-
-typedef struct {
-    TWeTalkAppEventType type;
-    TWeTalkEventMsg event_msg;
-} TWeTalkAppMsg;
-
 /**
  * @brief 启动twetalk
  *
