@@ -30,7 +30,7 @@ extern "C" {
 #include "utils_json.h"
 #include "qcloud_iot_config.h"
 
-#define TWETALK_VERSION "1.1.2"
+#define TWETALK_VERSION "1.1.3"
 
 typedef enum {
     /** AI对话相关事件 */
@@ -41,6 +41,7 @@ typedef enum {
     TWETALK_EVENT_BOT_TRANSCRIPTION  = 4, /**< 机器人字幕 */
     TWETALK_EVENT_USR_TRANSCRIPTION  = 5, /**< 用户字幕 */
     TWETALK_EVENT_METRICS_REPORT     = 6, /**< AI服务调用各模块耗时统计 */
+    TWETALK_EVENT_IDLE_DETECTION     = 7, /**< 空闲检测, 目前是3次不回复就断开连接 */
 
     /** 设备呼叫小程序事件 */
     TWETALK_EVENT_RECV_USR_ANSWER = 10, /**< 设备呼叫小程序，小程序接听 */
@@ -128,7 +129,6 @@ typedef union {
         char openid[128];
     } DeviceHangup;
 
-
     struct {
         char called[128];
         char openid[128];
@@ -198,6 +198,7 @@ typedef int (*twetalk_recv_event_cb)(TWeTalkEventType type, TWeTalkEventMsg* msg
 typedef enum {
     TWETALK_AUDIO_TYPE_PCM,
     TWETALK_AUDIO_TYPE_OPUS,
+    TWETALK_AUDIO_TYPE_AAC, /**< websocket暂不支持AAC,只在trtc接入时使用 */
     TWETALK_AUDIO_TYPE_MAX,
 } TWeTalkAudioType;
 

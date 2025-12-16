@@ -210,6 +210,16 @@ void TWeTalk_CallEventTypePrint(TWeTalkEventType type);
  */
 int TWeTalk_WS_GetEvent(void* handle, TWeTalkEventType* type, TWeTalkEventMsg* msg, uint32_t timeout_ms);
 
+/**
+ * @brief 发送文本到LLM
+ *
+ * @param handle twetalk init时返回的句柄
+ * @param msg 文本消息
+ * @param msg_len 文本消息长度
+ * @return 0 for success, negative for error
+ */
+int TWeTalk_WS_SendTextToLLM(void* handle, const char* msg, size_t msg_len);
+
 // --------------------------------------- twetalk over websocket end ------------------------------
 
 #ifdef __cplusplus
