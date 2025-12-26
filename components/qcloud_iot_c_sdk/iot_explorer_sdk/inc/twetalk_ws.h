@@ -38,8 +38,8 @@ typedef struct {
 typedef struct {
     TWeTalkAudioType      audio_type;               /**< 音频类型，支持Opus和PCM */
     TWeTalkLanguageType   language_type;            /**< 语言类型，目前只支持中文和英文 */
-    int                   frame_interval;           /**< 帧间隔，目前固定60ms */
-    int                   push_recv_frame_interval; /**< 推送接收的音频数据间隔，目前固定60ms */
+    int                   frame_interval;           /**< 帧间隔，可配置为20 40 60ms等 */
+    int                   push_recv_frame_interval; /**< 推送接收的音频数据间隔，可配置为20 40 60ms等，如果播放有卡顿可以适当该小 */
     void*                 mqtt_client;              /**< mqtt handle */
     TWeTalkWsServerInfo   ws_server;                /**< websocket server info */
     TWeTalkWsServerInfo   ws_wxa_server;            /**< 微信通话websocket server info */
@@ -52,6 +52,7 @@ typedef struct {
     IotBool     is_encrypt;      /**< 是否加密传输 TODO : 待实现 */
     const char* wxa_appid;       /**< 微信通话的微信小程序appid，NULL表示不使用微信通话 */
     const char* wxa_modelid;     /**< 微信通话的微信小程序modelid， NULL表示不使用微信通话 */
+    char        bot_id[16 + 1];  /**< 需要连接的botid，自行从服务端获取，不传则使用默认botid */
 } TWeTalkWsInitParams;
 
 #ifdef ENABLE_AUTH_NO_TLS
@@ -71,7 +72,8 @@ typedef struct {
      1,                                \
      0,                                \
      NULL,                             \
-     NULL}
+     NULL,                             \
+     ""}
 #else
 #define DEFAULT_TWETALK_WS_INIT_PARAMS \
     {TWETALK_AUDIO_TYPE_OPUS,          \
@@ -89,7 +91,8 @@ typedef struct {
      1,                                \
      1,                                \
      NULL,                             \
-     NULL}
+     NULL,                             \
+     ""}
 #endif
 
 /**

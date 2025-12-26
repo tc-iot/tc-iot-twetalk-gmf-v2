@@ -30,7 +30,7 @@ extern "C" {
 #include "utils_json.h"
 #include "qcloud_iot_config.h"
 
-#define TWETALK_VERSION "1.1.3"
+#define TWETALK_VERSION "1.1.4"
 
 typedef enum {
     /** AI对话相关事件 */
@@ -84,10 +84,14 @@ typedef enum {
 typedef union {
     struct {
         char transcription[512];
+        char* long_transcription;  // 动态分配的长文本缓冲区
+        int   is_dynamic;          // 标记是否使用了动态分配
     } BotTranscription;
 
     struct {
         char transcription[512];
+        char* long_transcription;  // 动态分配的长文本缓冲区
+        int   is_dynamic;          // 标记是否使用了动态分配
     } UsrTranscription;
 
     struct {
@@ -130,9 +134,17 @@ typedef union {
     } DeviceHangup;
 
     struct {
-        char called[128];
-        char openid[128];
-        int  code;
+        char called[128]; /**< 被呼叫方的标识符，通常为设备ID或用户ID */
+        char openid[128]; /**< 微信用户的唯一标识符，在同一个小程序下唯一 */
+        int  code;        /**< 错误码，具体含义如下：
+                            *   100:  - 微信client初始化失败，内部错误
+                            *   101:  - 呼叫参数缺失
+                            *   102:  - 设备没有注册
+                            *   103:  - 设备票据失效
+                            *   104:  - 设备与oppid不匹配
+                            *   105:  - 房间号非法
+                            *   106:  - 微信占线或其他错误
+                            */
     } UserError;
 
     struct {
@@ -174,11 +186,19 @@ typedef union {
 } TWeTalkEventMsg;
 
 /**
- * @brief 设备通讯录，当对话过程中说“给小明打电话”时，会从通讯录中查找对应的设备
- *        所以在通话☎️前需要更新次通讯录
- *
+ * @brief TWeTalk事件邮件项
+ *        用于在事件队列中传递事件信息
  */
 typedef struct {
+    TWeTalkEventType type;
+    TWeTalkEventMsg  msg;
+} TWeTalkEventMailItem;
+
+/**
+ * @brief 设备通讯录，当对话过程中说"给小明打电话"时，会从通讯录中查找对应的设备
+ *        所以在通话☎️前需要更新次通讯录
+ *
+ */typedef struct {
     char name[32];    /**< 用户昵称，如：妈妈、小明 */
     char open_id[64]; /**< 用户open_id，同一个用户在同一个小程序下的openid是唯一的 */
 } TWeCallOpenids;
