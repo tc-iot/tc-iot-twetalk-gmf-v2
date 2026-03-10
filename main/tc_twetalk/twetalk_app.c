@@ -38,14 +38,13 @@
 #define DEVICEINFO_NVS_NAMESPACE "device_info"
 #define TWETALK_LANGUAGE_NVS_KEY "language"
 
-static int sg_vad_start             = 0;
-static int sg_wakeup_start          = 0;
-static int sg_key_pressed           = 0;
-static int sg_key_record_mode       = 0;
-static int sg_ota_download_finished = 0;
-static void* sg_twetalk_handle      = NULL;
-static int sg_main_exit             = 0;
-static int sg_is_net_connected      = 0;
+static int sg_vad_start                   = 0;
+static int sg_wakeup_start                = 0;
+static int sg_key_pressed                 = 0;
+static int sg_ota_download_finished       = 0;
+static void* sg_twetalk_handle            = NULL;
+static int sg_main_exit                   = 0;
+static int sg_is_net_connected            = 0;
 static volatile int sg_check_connect_flag = 0;  // 检查连接标志
 
 static esp_gmf_oal_thread_t twetalk_thread;
@@ -64,7 +63,6 @@ const char* tone_uri[] = {
     "file://sdcard/System/connecting.aac",     "file://sdcard/System/connected.aac",
     "file://sdcard/System/hello.aac",          "file://sdcard/System/dong.aac",
     "file://sdcard/System/pair_network.aac",   "file://sdcard/System/clear_connect.aac",
-    "file://sdcard/System/enter_key_mode.wav", "file://sdcard/System/exit_key_mode.wav",
 };
 
 static void audio_data_read_task(void* pv)
@@ -80,16 +78,22 @@ static void audio_data_read_task(void* pv)
             continue;
         }
         // ESP_LOGI("send","%d",ret);
-        if (sg_key_record_mode == 0 && sg_wakeup_start) {  // 唤醒对话模式 && sg_vad_start
-            TWeTalk_WS_SendAudio(sg_twetalk_handle, data, ret);
-        } else if (sg_key_record_mode == 1 && sg_key_pressed) {  // 按键对话模式
+#if CONFIG_VOICE_WAKEUP_MODE
+        if (sg_wakeup_start) {
             TWeTalk_WS_SendAudio(sg_twetalk_handle, data, ret);
         }
+#elif CONFIG_CONTINUOUS_CONVERSATION_MODE
+        TWeTalk_WS_SendAudio(sg_twetalk_handle, data, ret);
+#elif CONFIG_KEY_PRESS_DIALOG_MODE
+        if (sg_key_pressed) {
+            TWeTalk_WS_SendAudio(sg_twetalk_handle, data, ret);
+        }
+#endif
     }
     esp_gmf_oal_thread_delete(read_thread);
 }
 
-#ifndef CONFIG_KEY_PRESS_DIALOG_MODE
+#if CONFIG_VOICE_WAKEUP_MODE
 static void recorder_event_callback_fn(void* event, void* ctx)
 {
     esp_gmf_afe_evt_t* afe_evt = (esp_gmf_afe_evt_t*)event;
@@ -117,25 +121,22 @@ static void recorder_event_callback_fn(void* event, void* ctx)
             break;
         default: {
             // TODO: vcmd detected
-            // esp_gmf_afe_vcmd_info_t *info = event->event_data;
-            // ESP_LOGW(TAG, "Command %d, phrase_id %d, prob %f, str: %s", sevent->type, info->phrase_id, info->prob,
-            // info->str);
         }
     }
 }
-#endif /* CONFIG_KEY_PRESS_DIALOG_MODE */
+#endif /* CONFIG_VOICE_WAKEUP_MODE */
 
 static void audio_pipe_open(void)
 {
     audio_manager_init();
     // audio_mixer_open();
 
-#if CONFIG_KEY_PRESS_DIALOG_MODE
-    audio_recorder_open(NULL, NULL);
-#else
+#if CONFIG_VOICE_WAKEUP_MODE
     audio_prompt_open();
     audio_recorder_open(recorder_event_callback_fn, NULL);
-#endif /* CONFIG_KEY_PRESS_DIALOG_MODE */
+#else
+    audio_recorder_open(NULL, NULL);
+#endif /* CONFIG_VOICE_WAKEUP_MODE */
     audio_playback_open();
     audio_playback_run();
 }
@@ -308,15 +309,10 @@ static int set_twetalk_language(int language)
  */
 static int _twetalk_recv_audio_cb(uint8_t* recv_data, int recv_len, void* context)
 {
-    if (sg_key_record_mode && sg_key_pressed) {
-        return 0;  // key mode ignore
-    }
     // ESP_LOGI("recv","%d", recv_len);
     audio_playback_feed_data(recv_data, recv_len);
     return 0;
 }
-
-
 
 static int _ota_task_init(void* client)
 {
@@ -425,6 +421,12 @@ static void twetalk_thread_entry(void* param)
     twetalk_params.audio_type               = TWETALK_AUDIO_TYPE_OPUS;
     twetalk_params.push_recv_frame_interval = 40;
 
+#if CONFIG_KEY_PRESS_DIALOG_MODE
+    twetalk_params.user_turn_mode = TWETALK_USER_TURN_MODE_PTT;
+#else
+    twetalk_params.user_turn_mode = TWETALK_USER_TURN_MODE_CONTINUOUS;
+#endif
+
     twetalk_params.language_type = get_twetalk_language();  // 获取语言
     // twetalk 测试小程序信息，自有小程序请替换为自己的小程序信息
     twetalk_params.wxa_appid   = "wx9e8fbc98ceac2628";
@@ -448,18 +450,20 @@ static void twetalk_thread_entry(void* param)
         goto ret;
     }
 
-    // TODO 根据实际情况来更新物模型
-    usr_report_battery(client, 100);
-    usr_report_volume(client, 80);
-
     TWeCallOpenids openids[1];  // 如果有更多联系人则扩大数组，最多支持10个联系人
     memset(openids, 0, sizeof(openids));
-    strcpy(openids[0].name, CONFIG_TWETALK_CALLING_NAME);                             //
+    strcpy(openids[0].name, CONFIG_TWETALK_CALLING_NAME);       //
     strcpy(openids[0].open_id, CONFIG_TWETALK_CALLING_OPENID);  //
     TWeTalk_WS_CallSyncOpenids(sg_twetalk_handle, openids, 1);
 
+#if CONFIG_CONTINUOUS_CONVERSATION_MODE
+    // 连续对话模式：WS 连接后立即开始发送音频
+    sg_wakeup_start = 1;
+    ESP_LOGI(TAG, "continuous conversation mode: auto start");
+#endif
+
     TWeTalkEventType event_type;
-    TWeTalkEventMsg  event_msg;
+    TWeTalkEventMsg event_msg;
     do {
         // 使用 TWeTalk_WS_GetEvent 获取事件
         rc = TWeTalk_WS_GetEvent(sg_twetalk_handle, &event_type, &event_msg, 200);
@@ -545,7 +549,7 @@ static void twetalk_thread_entry(void* param)
                       event_msg.RecvCalling.caller_id);
                 // TODO 自定义是否接听
                 if (TWeTalk_WS_IsConnected(sg_twetalk_handle)) {
-                    UtilsJsonValue room_id_val = {.value = event_msg.RecvCalling.room_id,
+                    UtilsJsonValue room_id_val = {.value     = event_msg.RecvCalling.room_id,
                                                   .value_len = strlen(event_msg.RecvCalling.room_id)};
                     TWeTalk_WS_CallResponse(sg_twetalk_handle, TWETALK_EVENT_DEVICE_ANSWER,
                                             &room_id_val);  // 接听
@@ -609,6 +613,14 @@ static void twetalk_thread_entry(void* param)
                 // TODO: 实现音乐播放逻辑
             } break;
 
+#if CONFIG_KEY_PRESS_DIALOG_MODE
+            /**< PTT 强制停止 */
+            case TWETALK_EVENT_PTT_FORCE_STOP:
+                Log_w("PTT force stop");
+                sg_key_pressed = 0;
+                break;
+#endif
+
             default:
                 Log_w("unknown event type: %d", event_type);
                 break;
@@ -637,17 +649,8 @@ static void btn_event_process(struct ebtn_btn* btn, ebtn_evt_t evt)
     int cnt = ebtn_click_get_count(btn);
     if (evt == EBTN_EVT_ONCLICK) {
         ESP_LOGI(TAG, "EBTN_EVT_ONCLICK cnt %d", cnt);
-        if (cnt == 2) {
-            if (sg_key_record_mode == 0) {
-                sg_key_record_mode = 1;
-                ESP_LOGW(TAG, "enter key record mode");
-                audio_prompt_play(tone_uri[LOCALPLAY_ENTER_KEY_MODE]);
-            } else {
-                audio_set_volume(0);  // defalt
-                ESP_LOGW(TAG, "exit key record mode");
-                sg_key_record_mode = 0;
-                audio_prompt_play(tone_uri[LOCALPLAY_EXIT_KEY_MODE]);
-            }
+        if (cnt == 1) {
+            sg_check_connect_flag = 1;
         }
         if (cnt == 3) {
             int language = get_twetalk_language();
@@ -663,8 +666,9 @@ static void btn_event_process(struct ebtn_btn* btn, ebtn_evt_t evt)
     } else if (evt == EBTN_EVT_KEEPALIVE) {
         cnt = ebtn_keepalive_get_count(btn);
         ESP_LOGI(TAG, "EBTN_EVT_KEEPALIVE cnt %d", cnt);
+#if !CONFIG_KEY_PRESS_DIALOG_MODE
         // 长按5s清除wifi信息
-        if (cnt == 10 && sg_key_record_mode == 0) {
+        if (cnt == 10) {
             ESP_LOGW(TAG, "clear wifi info");
             extern void erase_wifi_info(void);
             erase_wifi_info();
@@ -672,14 +676,18 @@ static void btn_event_process(struct ebtn_btn* btn, ebtn_evt_t evt)
             TCI_HAL_SleepMs(6000);
             esp_restart();
         }
+#endif
     } else if (evt == EBTN_EVT_ONPRESS) {
+#if CONFIG_KEY_PRESS_DIALOG_MODE
         sg_key_pressed = 1;
-        if (sg_key_record_mode) {
-            // 设置检查连接标志
-            sg_check_connect_flag = 1;
-        }
+        sg_check_connect_flag = 1;
+        TWeTalk_WS_PttControl(sg_twetalk_handle, TWETALK_PTT_ACTION_START);
+#endif
     } else if (evt == EBTN_EVT_ONRELEASE) {
+#if CONFIG_KEY_PRESS_DIALOG_MODE
         sg_key_pressed = 0;
+        TWeTalk_WS_PttControl(sg_twetalk_handle, TWETALK_PTT_ACTION_END);
+#endif
     }
 }
 

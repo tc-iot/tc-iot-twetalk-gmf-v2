@@ -35,9 +35,9 @@
 #include "twetalk.h"
 #include "twetalk_ws.h"
 #include "utils_log.h"
-#ifndef CONFIG_KEY_PRESS_DIALOG_MODE
+#if CONFIG_VOICE_WAKEUP_MODE
 #include "esp_gmf_afe.h"
-#endif /* CONFIG_KEY_PRESS_DIALOG_MODE */
+#endif /* CONFIG_VOICE_WAKEUP_MODE */
 #include "audio_processor.h"
 #include "button_key.h"
 #include "esp_gmf_oal_mem.h"
@@ -58,8 +58,6 @@ typedef enum
     LOCALPLAY_DONG,            // 收到dong
     LOCALPLAY_PAIR_NETWORK,    // 配网
     LOCALPLAY_CLEAR_NETWORK,   // 清除配网
-    LOCALPLAY_ENTER_KEY_MODE,  // 进入按键模式
-    LOCALPLAY_EXIT_KEY_MODE,   // 退出按键模式
     LOCALPLAY_MAX,
 } LocalPlayE;
 extern const char* tone_uri[];
