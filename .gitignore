@@ -6,3 +6,5 @@ managed_components
 CLAUDE.md 
 .claude 
 components/qcloud_iot_c_sdk/iot-hub-device-c-sdk
+.codebuddy
+
