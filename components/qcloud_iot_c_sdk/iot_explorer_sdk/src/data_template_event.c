@@ -30,13 +30,13 @@
 
 typedef struct {
     UtilsJsonValue client_token;
-    int code;
+    int            code;
 } EventParams;
 
 static UtilsListResult _event_callback(void* list, void* val, void* usr_data)
 {
-    DataTemplateContext* context = (DataTemplateContext*)val;
-    EventParams* event_params    = (EventParams*)usr_data;
+    DataTemplateContext* context      = (DataTemplateContext*)val;
+    EventParams*         event_params = (EventParams*)usr_data;
     context->event_callback.method_event_reply_callback(event_params->client_token, event_params->code,
                                                         context->usr_data);
     return LIST_TRAVERSE_CONTINUE;
@@ -98,7 +98,7 @@ int data_template_event_reply_publish(void* client, char* buf, int buf_len, IotD
 
     int len = TCI_HAL_Snprintf(
         buf, buf_len,
-        "{\"method\":\"event_post\",\"clientToken\":\"event-%d\",\"eventId\":\"%s\",\"type\":\"%s\",\"params\":%s}",
+        "{\"method\":\"event_post\",\"clientToken\":\"event-%d\"\",\"eventId\":\"%s\",\"type\":\"%s\",\"params\":%s}",
         TCI_HAL_Random(), data.event_id, event_type[data.type], data.params);
     return data_template_publish(client, DATA_TEMPLATE_TYPE_EVENT, QOS0, buf, len);
 }

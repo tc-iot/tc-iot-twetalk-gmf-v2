@@ -233,7 +233,20 @@ static char *_find_json_delimiter(JsonDelimiter ch, char spilt_char, const char 
     char *src = (char *)str;
 
     while ((*remain_len) > 0 && src && *src) {
-        if ((!spilt_char && *src != ch) || (spilt_char && *src == spilt_char) || (*src == '\n')) {
+        // 跳过空白字符：空格、换行符、回车符、制表符
+        if (*src == ' ' || *src == '\n' || *src == '\r' || *src == '\t') {
+            _increase_pos(&src, remain_len);
+            continue;
+        }
+        
+        // 如果没有分隔字符，且当前字符不是目标字符，则跳过
+        if (!spilt_char && *src != ch) {
+            _increase_pos(&src, remain_len);
+            continue;
+        }
+        
+        // 如果有分隔字符，且当前字符是分隔字符，则跳过
+        if (spilt_char && *src == spilt_char) {
             _increase_pos(&src, remain_len);
             continue;
         }
@@ -244,7 +257,6 @@ static char *_find_json_delimiter(JsonDelimiter ch, char spilt_char, const char 
 
     return pos;
 }
-
 /**
  * @brief Find element end
  *
@@ -341,8 +353,8 @@ static int _get_json_value(char *key_end, int *remain_len, JsonDelimiter delimit
     }
     _increase_pos(&value_begin, remain_len);
 
-    // filter all the space
-    while (*value_begin == ' ') {
+    // filter all the whitespace characters: space, newline, carriage return, tab
+    while (*value_begin == ' ' || *value_begin == '\n' || *value_begin == '\r' || *value_begin == '\t') {
         value_begin++;
         (*remain_len)--;
         if (*remain_len <= 0) {

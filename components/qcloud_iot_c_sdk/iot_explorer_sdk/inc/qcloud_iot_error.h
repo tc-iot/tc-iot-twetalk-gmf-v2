@@ -116,6 +116,11 @@ typedef enum {
     QCLOUD_ERR_TWETALK_UNKNOW_TYPE            = -911, /**< twetalk unknow type */
     QCLOUD_ERR_TWETALK_CREATE_MAIL_QUEUE_FAIL = -912, /**< twetalk create mail queue fail */
     QCLOUD_ERR_TWETALK_TIMEOUT                = -913, /**< twetalk get event timeout */
+    QCLOUD_ERR_TWETALK_LICENSE_EXPIRED        = -914, /**< twetalk license expired */
+    QCLOUD_ERR_TWETALK_LICENSE_NOT_ACTIVATE   = -915, /**< twetalk license not activate */
+    QCLOUD_ERR_TWETALK_SUB_TOPIC_FAILED       = -916, /**< twetalk subscribe topic failed */
+    QCLOUD_ERR_TWETALK_SERVICE_UNAVAILABLE    = -917, /**< twetalk service unavailable */
+    QCLOUD_ERR_TWETALK_SEND_BUF_FULL          = -918, /**< twetalk send ringbuffer full, audio frame dropped */
 
     /* Video Kit error codes (-1000 ~ -1099) */
     QCLOUD_ERR_VIDEO_KIT_NOT_INIT           = -1000, /**< Video kit not initialized */

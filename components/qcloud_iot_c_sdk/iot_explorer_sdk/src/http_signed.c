@@ -35,6 +35,9 @@
 
 #include "utils_hmac.h"
 #include "utils_base64.h"
+#include "utils_sha256.h"
+#include "utils_sha1.h"
+#include "utils_md5.h"
 
 /**
  * @brief http signed request header.
@@ -57,6 +60,18 @@
 #define QCLOUD_SHA256_RESULT_LEN (32)
 #define QCLOUD_SHA1_RESULT_LEN   (20)
 
+/**
+ * @brief 将半字节转换为十六进制字符
+ *
+ * @param hb 半字节值 (0-15)
+ * @return 对应的十六进制字符
+ */
+static inline char _hb2hex(uint8_t hb)
+{
+    hb &= 0x0F;
+    return (char)(hb < 10 ? '0' + hb : 'a' + hb - 10);
+}
+
 typedef struct {
     HttpSignedParams     params;
     void                *http_client;
@@ -75,11 +90,28 @@ static int _http_signed_connect(HTTPSignedHandle *handle)
 {
     IotHTTPConnectParams connect_params = {
         .url    = handle->url,
-        .port   = "80",
+        .port   = handle->params.port ? handle->params.port : "80",
         .ca_crt = NULL,  // TODO: support cert
 
     };
     return TCIOT_HTTP_Connect(handle->http_client, &connect_params);
+}
+
+/**
+ * @brief 获取算法名称字符串
+ *
+ * @param algorithm 算法类型
+ * @return 算法名称字符串
+ */
+static const char *_get_algorithm_name(HttpSignAlgorithm algorithm)
+{
+    switch (algorithm) {
+        case HTTP_SIGN_ALGORITHM_HMACSHA256:
+            return "hmacsha256";
+        case HTTP_SIGN_ALGORITHM_HMACSHA1:
+        default:
+            return "hmacsha1";
+    }
 }
 
 /**
@@ -99,13 +131,94 @@ static void _http_signed_upload_header_construct(HTTPSignedHandle *handle, uint3
  */
 #define QCLOUD_HTTP_HEADER_FORMAT      \
     "Accept: application/json;*/*\r\n" \
-    "X-TC-Algorithm: hmacsha1\r\n"     \
+    "X-TC-Algorithm: %s\r\n"           \
     "X-TC-Timestamp: %d\r\n"           \
     "X-TC-Nonce: %d\r\n"               \
     "X-TC-Signature: %s\r\n"
-    TCI_HAL_Snprintf(handle->http_request.header, HTTP_SIGNED_REQUEST_HEADER_LEN, QCLOUD_HTTP_HEADER_FORMAT, timestamp,
-                 nonce, sign);
+    TCI_HAL_Snprintf(handle->http_request.header, HTTP_SIGNED_REQUEST_HEADER_LEN, QCLOUD_HTTP_HEADER_FORMAT,
+                 _get_algorithm_name(handle->params.algorithm), timestamp, nonce, sign);
     // Log_d("header:%s", handle->http_request.header);
+}
+
+/**
+ * @brief 将SHA256结果转换为十六进制字符串
+ *
+ * @param input 输入数据
+ * @param ilen 输入数据长度
+ * @param output_hex 输出的十六进制字符串（需要64字节+1）
+ */
+static void _sha256_hex(const uint8_t *input, uint32_t ilen, char *output_hex)
+{
+    uint8_t sha256_result[QCLOUD_SHA256_RESULT_LEN] = {0};
+    utils_sha256(input, ilen, sha256_result);
+
+    for (int i = 0; i < QCLOUD_SHA256_RESULT_LEN; i++) {
+        output_hex[i * 2]     = _hb2hex(sha256_result[i] >> 4);
+        output_hex[i * 2 + 1] = _hb2hex(sha256_result[i] & 0x0F);
+    }
+    output_hex[QCLOUD_SHA256_RESULT_LEN * 2] = '\0';
+}
+
+/**
+ * @brief http signed header construct using hmacsha1
+ *
+ * @param[in,out] handle pointer to http signed handle, @see HTTPSignedHandle
+ * @param request_body_buf
+ * @param request_body_buf_len
+ */
+static void _http_signed_upload_header_hmacsha1(HTTPSignedHandle *handle, const char *request_body_buf,
+                                                int request_body_buf_len)
+{
+    uint8_t  sign[QCLOUD_SHA1_RESULT_LEN]                     = {0};
+    char     sign_out[QCLOUD_SHA1_RESULT_LEN * 2]             = {0};
+    char     request_buf_sha1[QCLOUD_SHA1_RESULT_LEN * 2 + 1] = {0};
+    size_t   olen                                             = 0;
+    int      nonce                                            = TCI_HAL_Random();
+    uint32_t timestamp                                        = TCI_HAL_GetTimeSecond();
+
+    memset(handle->sign_string, 0, HTTP_SIGNED_STRING_BUFFER_LEN);
+    /* cal sha1 */
+    utils_sha1_hex((const uint8_t *)request_body_buf, request_body_buf_len, (uint8_t *)request_buf_sha1);
+    /* create sign string */
+    TCI_HAL_Snprintf(handle->sign_string, HTTP_SIGNED_STRING_BUFFER_LEN, "%s\n%s\n\nhmacsha1\n%s\n%d\n%d\n%s", "POST",
+                 handle->params.host, handle->params.uri, timestamp, nonce, request_buf_sha1);
+    utils_hmac_sha1((const uint8_t *)handle->sign_string, strlen(handle->sign_string),
+                    (uint8_t *)handle->params.secret_key, strlen(handle->params.secret_key), sign);
+    /* base64 encode */
+    utils_base64encode(sign_out, QCLOUD_SHA1_RESULT_LEN * 2, &olen, sign, QCLOUD_SHA1_RESULT_LEN);
+    _http_signed_upload_header_construct(handle, timestamp, nonce, sign_out);
+}
+
+/**
+ * @brief http signed header construct using hmacsha256
+ *
+ * @param[in,out] handle pointer to http signed handle, @see HTTPSignedHandle
+ * @param request_body_buf
+ * @param request_body_buf_len
+ */
+static void _http_signed_upload_header_hmacsha256(HTTPSignedHandle *handle, const char *request_body_buf,
+                                                  int request_body_buf_len)
+{
+    uint8_t  sign[QCLOUD_SHA256_RESULT_LEN]                       = {0};
+    char     sign_out[QCLOUD_SHA256_RESULT_LEN * 2]               = {0};
+    char     request_buf_sha256[QCLOUD_SHA256_RESULT_LEN * 2 + 1] = {0};
+    size_t   olen                                                 = 0;
+    int      nonce                                                = TCI_HAL_Random();
+    uint32_t timestamp                                            = TCI_HAL_GetTimeSecond();
+
+    memset(handle->sign_string, 0, HTTP_SIGNED_STRING_BUFFER_LEN);
+    /* cal sha256 */
+    _sha256_hex((const uint8_t *)request_body_buf, request_body_buf_len, request_buf_sha256);
+    /* create sign string:
+     * POST\nhost\nuri\n\nhmacsha256\ntimestamp\nnonce\nhashed_body
+     */
+    TCI_HAL_Snprintf(handle->sign_string, HTTP_SIGNED_STRING_BUFFER_LEN, "%s\n%s\n%s\n\n%s\n%d\n%d\n%s", "POST",
+                 handle->params.host, handle->params.uri, "hmacsha256", timestamp, nonce, request_buf_sha256);
+    utils_hmac_sha256((const uint8_t *)handle->sign_string, strlen(handle->sign_string),
+                      (const uint8_t *)handle->params.secret_key, strlen(handle->params.secret_key), sign);
+    /* base64 encode */
+    utils_base64encode(sign_out, QCLOUD_SHA256_RESULT_LEN * 2, &olen, sign, QCLOUD_SHA256_RESULT_LEN);
+    _http_signed_upload_header_construct(handle, timestamp, nonce, sign_out);
 }
 
 /**
@@ -119,24 +232,11 @@ static void _http_signed_upload_header_construct(HTTPSignedHandle *handle, uint3
 static void _http_signed_upload_header_new(HTTPSignedHandle *handle, const char *request_body_buf,
                                            int request_body_buf_len)
 {
-    uint8_t  sign[QCLOUD_SHA1_RESULT_LEN]                     = {0};
-    char     sign_out[QCLOUD_SHA1_RESULT_LEN * 2]             = {0};
-    char     request_buf_sha1[QCLOUD_SHA1_RESULT_LEN * 2 + 1] = {0};
-    size_t   olen                                             = 0;
-    int      nonce                                            = TCI_HAL_Random();
-    uint32_t timestamp                                        = TCI_HAL_GetTimeSecond();
-
-    memset(handle->sign_string, 0, HTTP_SIGNED_STRING_BUFFER_LEN);
-    /* cal hmac sha1 */
-    utils_sha1_hex((const uint8_t *)request_body_buf, request_body_buf_len, (uint8_t *)request_buf_sha1);
-    /* create sign string */
-    TCI_HAL_Snprintf(handle->sign_string, HTTP_SIGNED_STRING_BUFFER_LEN, "%s\n%s\n\nhmacsha1\n%s\n%d\n%d\n%s", "POST",
-                 handle->params.host, handle->params.uri, timestamp, nonce, request_buf_sha1);
-    utils_hmac_sha1((const uint8_t *)handle->sign_string, strlen(handle->sign_string),
-                    (uint8_t *)handle->params.secret_key, strlen(handle->params.secret_key), sign);
-    /* base64 encode */
-    utils_base64encode(sign_out, QCLOUD_SHA1_RESULT_LEN * 2, &olen, sign, QCLOUD_SHA1_RESULT_LEN);
-    _http_signed_upload_header_construct(handle, timestamp, nonce, sign_out);
+    if (handle->params.algorithm == HTTP_SIGN_ALGORITHM_HMACSHA256) {
+        _http_signed_upload_header_hmacsha256(handle, request_body_buf, request_body_buf_len);
+    } else {
+        _http_signed_upload_header_hmacsha1(handle, request_body_buf, request_body_buf_len);
+    }
 }
 
 /**

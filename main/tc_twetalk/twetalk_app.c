@@ -238,7 +238,7 @@ int _on_download_finish(const char* version, size_t total_len)
 
 const char* _get_firmware_version(void)
 {
-    return "esp32s3_v1.1.2";
+    return "esp32s3_v1.1.8";
 }
 
 static int get_twetalk_language(void)
@@ -342,9 +342,9 @@ static void twetalk_thread_entry(void* param)
     Log_i("twetalk thread entry");
 #if 1  // 测试用，正式使用请注释掉
     static DeviceInfo device_info = {
-        .product_id    = "LTIHOHJW7F",
-        .device_name   = "xph_test_002",
-        .device_secret = "请从腾讯云控制台获取",
+        .product_id    = "VI5C901SKI",
+        .device_name   = "aitalk_002",
+        .device_secret = "请从控制台获取",
     };
     // memset(&device_info, 0, sizeof(device_info));
     strncpy(device_info.device_version, _get_firmware_version(), sizeof(device_info.device_version) - 1);
@@ -499,6 +499,10 @@ static void twetalk_thread_entry(void* param)
                 Log_i("bot stop speaking");
                 break;
 
+            case TWETALK_EVENT_IDLE_DETECTION:
+                Log_i("idle detection event received");
+                break;
+
             /**< 用户开始讲话 */
             case TWETALK_EVENT_USR_START_SPEAKING:
                 Log_i("usr start speaking");
@@ -511,12 +515,28 @@ static void twetalk_thread_entry(void* param)
 
             /**< 机器人讲话字幕，可做UI显示，UTF-8编码 */
             case TWETALK_EVENT_BOT_TRANSCRIPTION: {
-                Log_i("bot: %s", event_msg.BotTranscription.transcription);
+                const char* bot_text =
+                    (event_msg.BotTranscription.is_dynamic && event_msg.BotTranscription.long_transcription)
+                        ? event_msg.BotTranscription.long_transcription
+                        : event_msg.BotTranscription.transcription;
+                Log_i("bot: %s", bot_text);
+                if (event_msg.BotTranscription.is_dynamic && event_msg.BotTranscription.long_transcription) {
+                    TCI_HAL_Free(event_msg.BotTranscription.long_transcription);
+                    event_msg.BotTranscription.long_transcription = NULL;
+                }
             } break;
 
             /**< 用户讲话字幕，可做UI显示，UTF-8编码 */
             case TWETALK_EVENT_USR_TRANSCRIPTION: {
-                Log_i("usr: %s", event_msg.UsrTranscription.transcription);
+                const char* usr_text =
+                    (event_msg.UsrTranscription.is_dynamic && event_msg.UsrTranscription.long_transcription)
+                        ? event_msg.UsrTranscription.long_transcription
+                        : event_msg.UsrTranscription.transcription;
+                Log_i("usr: %s", usr_text);
+                if (event_msg.UsrTranscription.is_dynamic && event_msg.UsrTranscription.long_transcription) {
+                    TCI_HAL_Free(event_msg.UsrTranscription.long_transcription);
+                    event_msg.UsrTranscription.long_transcription = NULL;
+                }
             } break;
 
             /**< 收到小程序呼叫，可做UI显示，可以接听/挂断/不理会 */
@@ -572,8 +592,21 @@ static void twetalk_thread_entry(void* param)
                 TWeTalk_WS_Disconnect(sg_twetalk_handle);
             } break;
 
+            /** 请求图片 */
+            case TWETALK_EVENT_REQUEST_IMAGE: {
+                Log_i("request image transcription: %s", event_msg.RequestImage.transcription);
+                // TODO: 实现图片发送逻辑
+            } break;
+
             case TWETALK_EVENT_METRICS_REPORT: {
                 // just ignore
+            } break;
+
+            case TWETALK_EVENT_PLAY_MUSIC: {
+                Log_i("play music: %s by %s, genre: %s, language: %s, id: %s", event_msg.PlayMusic.song_name,
+                      event_msg.PlayMusic.artist_name, event_msg.PlayMusic.music_genre,
+                      event_msg.PlayMusic.music_language, event_msg.PlayMusic.id);
+                // TODO: 实现音乐播放逻辑
             } break;
 
             default:

@@ -213,7 +213,7 @@ static int _http_client_send_request_line(IotHTTPClient *client, const IotHTTPRe
         return QCLOUD_ERR_MALLOC;
     }
 
-    len = TCI_HAL_Snprintf(buf, buf_len, "%s %.*s HTTP/1.1\r\nHost:%.*s\r\n", method_str[params->method], path.data_len,
+    len = TCI_HAL_Snprintf(buf, buf_len, "%s %.*s HTTP/1.1\r\nHost: %.*s\r\n", method_str[params->method], path.data_len,
                        path.data, host.data_len, host.data);
     rc  = _http_client_send(client, buf, len);
     TCI_HAL_Free(buf);
@@ -239,14 +239,14 @@ static int _http_client_send_request_content(IotHTTPClient *client, const IotHTT
         return QCLOUD_ERR_MALLOC;
     }
 
-    len = TCI_HAL_Snprintf(buf, buf_len, "Content-Length:%d\r\n", params->content_length);
+    len = TCI_HAL_Snprintf(buf, buf_len, "Content-Length: %d\r\n", params->content_length);
     rc  = _http_client_send(client, buf, len);
     if (rc) {
         goto exit;
     }
 
     if (params->content_type) {
-        len = TCI_HAL_Snprintf(buf, buf_len, "Content-Type:%s\r\n", params->content_type);
+        len = TCI_HAL_Snprintf(buf, buf_len, "Content-Type: %s\r\n", params->content_type);
         rc  = _http_client_send(client, buf, len);
         if (rc) {
             goto exit;
@@ -445,7 +445,25 @@ static int _http_client_recv_response(IotHTTPClient *client, uint32_t timeout_ms
         rc = _http_client_recv(client, (uint8_t *)buf + len, buf_len - len - 1, 100);
         if (rc < 0) {
             if (rc == QCLOUD_ERR_TCP_READ_TIMEOUT || rc == QCLOUD_ERR_SSL_READ_TIMEOUT) {
+                // 超时时检查缓冲区是否已有数据（底层可能已接收部分数据）
+                int actual_len = strlen(buf);
+                if (actual_len > len) {
+                    len = actual_len;
+                }
                 continue;
+            }
+            // 当连接被关闭时，检查缓冲区是否已有完整响应头
+            if (rc == QCLOUD_ERR_TCP_PEER_SHUTDOWN) {
+                // 更新缓冲区长度（底层可能已经接收了数据）
+                int actual_len = strlen(buf);
+                if (actual_len > len) {
+                    len = actual_len;
+                }
+                // 再次检查是否有完整的响应头
+                body_end = strstr(buf, "\r\n\r\n");
+                if (body_end) {
+                    break;  // 跳出循环继续处理
+                }
             }
             Log_e("read failed, rc %d", rc);
             return rc;
@@ -455,34 +473,51 @@ static int _http_client_recv_response(IotHTTPClient *client, uint32_t timeout_ms
 
     body_end += 4;                 // \r\n\r\n
     len = len - (body_end - buf);  // body length
-
     // 2. get response code
     response->status_code = atoi(buf + 9);
     switch (response->status_code) {
         case 403:
-            return QCLOUD_ERR_HTTP_AUTH;
+            Log_w("HTTP status code 403 (Forbidden)");
+            break;  // 继续读取body，让上层处理错误信息
         case 404:
-            return QCLOUD_ERR_HTTP_NOT_FOUND;
+            Log_w("HTTP status code 404 (Not Found)");
+            break;  // 继续读取body
         default:
-            if (response->status_code < 200 || response->status_code >= 400) {
-                Log_w("HTTP status code %d", response->status_code);
+            if (response->status_code < 200) {
+                Log_w("HTTP status code %d (unexpected)", response->status_code);
                 return QCLOUD_ERR_HTTP;
+            }
+            // 对于 >= 200 的状态码（包括 4xx），继续读取body
+            // 让上层根据body内容判断是否成功
+            if (response->status_code >= 400) {
+                Log_w("HTTP status code %d", response->status_code);
             }
             break;
     }
 
     // 3. parse header
-    // content length
+    // content length (支持大小写)
     content_length = strstr(buf, "Content-Length");
+    if (!content_length) {
+        content_length = strstr(buf, "content-length");
+    }
     if (content_length) {
         response->is_chunked     = 0;
-        response->content_length = atoi(content_length + strlen("Content-Length: "));
+        // 跳过 "Content-Length" 或 "content-length" 和冒号，找到数字
+        const char *val = strchr(content_length, ':');
+        if (val) {
+            val++;  // 跳过冒号
+            while (*val == ' ') val++;  // 跳过空格
+            response->content_length = atoi(val);
+        } else {
+            response->content_length = atoi(content_length + strlen("Content-Length: "));
+        }
         response->need_recv_len  = response->content_length - len;
         goto recv_content;
     }
 
-    // chunked
-    if (strstr(buf, "Transfer-Encoding: chunked")) {
+    // chunked (支持大小写)
+    if (strstr(buf, "Transfer-Encoding: chunked") || strstr(buf, "transfer-encoding: chunked")) {
         response->is_chunked    = 1;
         response->need_recv_len = 1;  // means always need recv
         goto recv_content;

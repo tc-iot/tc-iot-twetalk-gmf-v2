@@ -36,63 +36,72 @@ typedef struct {
 } TWeTalkWsServerInfo;
 
 typedef struct {
-    TWeTalkAudioType      audio_type;               /**< 音频类型，支持Opus和PCM */
-    TWeTalkLanguageType   language_type;            /**< 语言类型，目前只支持中文和英文 */
-    int                   frame_interval;           /**< 帧间隔，可配置为20 40 60ms等 */
-    int                   push_recv_frame_interval; /**< 推送接收的音频数据间隔，可配置为20 40 60ms等，如果播放有卡顿可以适当该小 */
-    void*                 mqtt_client;              /**< mqtt handle */
-    TWeTalkWsServerInfo   ws_server;                /**< websocket server info */
-    TWeTalkWsServerInfo   ws_wxa_server;            /**< 微信通话websocket server info */
-    twetalk_recv_audio_cb recv_audio_cb;            /**< 接收音频回调，不要阻塞 */
-    twetalk_recv_event_cb recv_event_cb;            /**< 接收事件回调，不要阻塞 */
-    void*                 context;                  /**< 透传给recv_audio_cb和recv_event_cb的参数 */
-    int         ringbuffer_size; /**< 接收环形缓冲区大小，单位字节，传0表示不需要缓冲，直接传递给recv_audio_cb */
-    IotBool     use_vl;          /**< 是否多模态接入，需要在控制台购买多模态对应的license才能使用 */
-    IotBool     auto_reconnect;  /**< 是否自动重连 TODO ：待实现 */
-    IotBool     is_encrypt;      /**< 是否加密传输 TODO : 待实现 */
-    const char* wxa_appid;       /**< 微信通话的微信小程序appid，NULL表示不使用微信通话 */
-    const char* wxa_modelid;     /**< 微信通话的微信小程序modelid， NULL表示不使用微信通话 */
-    char        bot_id[16 + 1];  /**< 需要连接的botid，自行从服务端获取，不传则使用默认botid */
+    TWeTalkAudioType    audio_type;     /**< 音频类型，支持Opus和PCM */
+    TWeTalkLanguageType language_type;  /**< 语言类型，目前只支持中文和英文 */
+    int                 frame_interval; /**< 帧间隔，可配置为20 40 60ms等 */
+    int   push_recv_frame_interval;     /**< 推送接收的音频数据间隔，可配置为20 40 60ms等，如果播放有卡顿可以适当该小 */
+    void* mqtt_client;                  /**< mqtt handle */
+    TWeTalkWsServerInfo   ws_server;    /**< websocket server info */
+    TWeTalkWsServerInfo   ws_wxa_server; /**< 微信通话websocket server info */
+    twetalk_recv_audio_cb recv_audio_cb; /**< 接收音频回调，不要阻塞 */
+    twetalk_recv_event_cb recv_event_cb; /**< 接收事件回调，不要阻塞 */
+    void*                 context;       /**< 透传给recv_audio_cb和recv_event_cb的参数 */
+    int         ringbuffer_size;     /**< 接收环形缓冲区大小，单位字节，传0表示不需要缓冲，直接传递给recv_audio_cb */
+    IotBool     use_vl;              /**< 是否多模态接入，需要在控制台购买多模态对应的license才能使用 */
+    IotBool     auto_reconnect;      /**< 是否自动重连 TODO ：待实现 */
+    IotBool     is_encrypt;          /**< 是否加密传输 TODO : 待实现 */
+    const char* wxa_appid;           /**< 微信通话的微信小程序appid，NULL表示不使用微信通话 */
+    const char* wxa_modelid;         /**< 微信通话的微信小程序modelid， NULL表示不使用微信通话 */
+    char        bot_id[16 + 1];      /**< 需要连接的botid，自行从服务端获取，不传则使用默认botid */
+    char                custom_params[1024]; /**< 自定义参数，必须是json字符串，UTF-8编码。传给服务端 */
+    TWeTalkUserTurnMode user_turn_mode;      /**< 对话模式，默认为连续对话模式 */
+    int                 error_code;          /**< 错误码,TWeTalk_WS_Init返回NULL可以查询错误原因 */
 } TWeTalkWsInitParams;
 
 #ifdef ENABLE_AUTH_NO_TLS
-#define DEFAULT_TWETALK_WS_INIT_PARAMS \
-    {TWETALK_AUDIO_TYPE_OPUS,          \
-     TWETALK_LANGUAGE_TYPE_ZH,         \
-     60,                               \
-     60,                               \
-     NULL,                             \
-     {NULL, 0},                        \
-     {NULL, 0},                        \
-     NULL,                             \
-     NULL,                             \
-     NULL,                             \
-     90 * 180,                         \
-     0,                                \
-     1,                                \
-     0,                                \
-     NULL,                             \
-     NULL,                             \
-     ""}
+#define DEFAULT_TWETALK_WS_INIT_PARAMS                     \
+    {.audio_type               = TWETALK_AUDIO_TYPE_OPUS,  \
+     .language_type            = TWETALK_LANGUAGE_TYPE_ZH, \
+     .frame_interval           = 60,                       \
+     .push_recv_frame_interval = 60,                       \
+     .mqtt_client              = NULL,                     \
+     .ws_server                = {NULL, 0},                \
+     .ws_wxa_server            = {NULL, 0},                \
+     .recv_audio_cb            = NULL,                     \
+     .recv_event_cb            = NULL,                     \
+     .context                  = NULL,                     \
+     .ringbuffer_size          = 90 * 180,                 \
+     .use_vl                   = 0,                        \
+     .auto_reconnect           = 1,                        \
+     .is_encrypt               = 0,                        \
+     .wxa_appid                = NULL,                     \
+     .wxa_modelid              = NULL,                     \
+     .bot_id                   = "",                       \
+     .custom_params            = "",                                  \
+     .user_turn_mode           = TWETALK_USER_TURN_MODE_CONTINUOUS,    \
+     .error_code               = 0}
 #else
-#define DEFAULT_TWETALK_WS_INIT_PARAMS \
-    {TWETALK_AUDIO_TYPE_OPUS,          \
-     TWETALK_LANGUAGE_TYPE_ZH,         \
-     60,                               \
-     60,                               \
-     NULL,                             \
-     {NULL, 0},                        \
-     {NULL, 0},                        \
-     NULL,                             \
-     NULL,                             \
-     NULL,                             \
-     90 * 180,                         \
-     0,                                \
-     1,                                \
-     1,                                \
-     NULL,                             \
-     NULL,                             \
-     ""}
+#define DEFAULT_TWETALK_WS_INIT_PARAMS                                \
+    {.audio_type               = TWETALK_AUDIO_TYPE_OPUS,             \
+     .language_type            = TWETALK_LANGUAGE_TYPE_ZH,            \
+     .frame_interval           = 60,                                  \
+     .push_recv_frame_interval = 60,                                  \
+     .mqtt_client              = NULL,                                \
+     .ws_server                = {NULL, 0},                           \
+     .ws_wxa_server            = {NULL, 0},                           \
+     .recv_audio_cb            = NULL,                                \
+     .recv_event_cb            = NULL,                                \
+     .context                  = NULL,                                \
+     .ringbuffer_size          = 90 * 180,                            \
+     .use_vl                   = 0,                                   \
+     .auto_reconnect           = 1,                                   \
+     .is_encrypt               = 1,                                   \
+     .wxa_appid                = NULL,                                \
+     .wxa_modelid              = NULL,                                \
+     .bot_id                   = "",                                  \
+     .custom_params            = "",                                  \
+     .user_turn_mode           = TWETALK_USER_TURN_MODE_CONTINUOUS,   \
+     .error_code               = 0}
 #endif
 
 /**
@@ -222,6 +231,25 @@ int TWeTalk_WS_GetEvent(void* handle, TWeTalkEventType* type, TWeTalkEventMsg* m
  * @return 0 for success, negative for error
  */
 int TWeTalk_WS_SendTextToLLM(void* handle, const char* msg, size_t msg_len);
+
+/**
+ * @brief 手动（开启/关闭）空闲探测。
+ * 默认是开启空闲探测，当一段时间没有对话时会收到TWETALK_EVENT_IDLE_DETECT事件和语音提示。
+ *
+ * @param handle twetalk init时返回的句柄
+ * @param enable 是否启用空闲检测
+ * @return 0 for success, negative for error
+ */
+int TWeTalk_WS_EnableIdleDetect(void* handle, IotBool enable);
+
+/**
+ * @brief PTT控制统一接口，支持开始说话、结束说话、打断Bot
+ *
+ * @param[in] handle twetalk init时返回的句柄
+ * @param[in] action PTT控制动作 @see TWeTalkPttAction
+ * @return 0 for success, negative for error
+ */
+int TWeTalk_WS_PttControl(void* handle, TWeTalkPttAction action);
 
 // --------------------------------------- twetalk over websocket end ------------------------------
 

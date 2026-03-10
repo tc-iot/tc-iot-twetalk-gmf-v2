@@ -34,16 +34,26 @@ extern "C" {
 
 #include "qcloud_iot_common.h"
 
+/**
+ * @brief HTTP签名算法类型
+ */
+typedef enum {
+    HTTP_SIGN_ALGORITHM_HMACSHA1 = 0,   /**< HMAC-SHA1 算法 */
+    HTTP_SIGN_ALGORITHM_HMACSHA256 = 1, /**< HMAC-SHA256 算法 */
+} HttpSignAlgorithm;
+
 typedef struct {
-    const char *host;
-    const char *uri;
-    const char *secret_key;
-    uint32_t    recv_timeout_ms;
-    IotBool     need_recv;
-    int         nonce;
-    uint32_t    time_stamp;
-    const char *sign;
-    const int   sign_len;
+    const char      *host;
+    const char      *port;        /**< 端口号，如"80"，NULL则默认为"80" */
+    const char      *uri;
+    const char      *secret_key;
+    uint32_t         recv_timeout_ms;
+    IotBool          need_recv;
+    int              nonce;
+    uint32_t         time_stamp;
+    const char      *sign;
+    const int        sign_len;
+    HttpSignAlgorithm algorithm;  /**< 签名算法类型，默认为HMACSHA1 */
 } HttpSignedParams;
 
 /**

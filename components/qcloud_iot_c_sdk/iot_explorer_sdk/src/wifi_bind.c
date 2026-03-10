@@ -31,7 +31,7 @@
 
 typedef struct {
     IotBool token_received;
-    int bind_result;
+    int     bind_result;
 } WifiBindContext;
 
 static const char* sg_service_method_str[] = {

@@ -30,7 +30,7 @@ extern "C" {
 #include "utils_json.h"
 #include "qcloud_iot_config.h"
 
-#define TWETALK_VERSION "1.1.4"
+#define TWETALK_VERSION "1.1.8"
 
 typedef enum {
     /** AI对话相关事件 */
@@ -70,8 +70,11 @@ typedef enum {
     TWETALK_EVENT_TRTC_REMOTE_USR_EXIT_ROOM  = 51, /**< trtc远端用户退出房间 */
     TWETALK_EVENT_TRTC_NOONE_READER_IN_ROOM  = 52, /**< trtc房间没有reader,意味着此时只有你一个在房间里 */
 
-    /** 请求图片事件 */
     TWETALK_EVENT_REQUEST_IMAGE = 60, /**< 请求图片 */
+    TWETALK_EVENT_PLAY_MUSIC    = 61, /**< 播放音乐,服务端只判断意图，具体播放流程自行实现 */
+
+    /** PTT相关事件 */
+    TWETALK_EVENT_PTT_FORCE_STOP = 70, /**< 服务端强制结束PTT发言（超时） */
 
     /** 最大值 */
     TWETALK_EVENT_MAX,
@@ -83,13 +86,13 @@ typedef enum {
  */
 typedef union {
     struct {
-        char transcription[512];
+        char  transcription[512];
         char* long_transcription;  // 动态分配的长文本缓冲区
         int   is_dynamic;          // 标记是否使用了动态分配
     } BotTranscription;
 
     struct {
-        char transcription[512];
+        char  transcription[512];
         char* long_transcription;  // 动态分配的长文本缓冲区
         int   is_dynamic;          // 标记是否使用了动态分配
     } UsrTranscription;
@@ -137,14 +140,14 @@ typedef union {
         char called[128]; /**< 被呼叫方的标识符，通常为设备ID或用户ID */
         char openid[128]; /**< 微信用户的唯一标识符，在同一个小程序下唯一 */
         int  code;        /**< 错误码，具体含义如下：
-                            *   100:  - 微信client初始化失败，内部错误
-                            *   101:  - 呼叫参数缺失
-                            *   102:  - 设备没有注册
-                            *   103:  - 设备票据失效
-                            *   104:  - 设备与oppid不匹配
-                            *   105:  - 房间号非法
-                            *   106:  - 微信占线或其他错误
-                            */
+                           *   100:  - 微信client初始化失败，内部错误
+                           *   101:  - 呼叫参数缺失
+                           *   102:  - 设备没有注册
+                           *   103:  - 设备票据失效
+                           *   104:  - 设备与oppid不匹配
+                           *   105:  - 房间号非法
+                           *   106:  - 微信占线或其他错误
+                           */
     } UserError;
 
     struct {
@@ -183,28 +186,40 @@ typedef union {
         char metrics[512];
     } Metrics;
 
-} TWeTalkEventMsg;
+    struct {
+        char song_name[128];
+        char artist_name[64];
+        char music_genre[64];
+        char music_language[32];
+        char id[128];
+    } PlayMusic;
 
-/**
- * @brief TWeTalk事件邮件项
- *        用于在事件队列中传递事件信息
- */
-typedef struct {
-    TWeTalkEventType type;
-    TWeTalkEventMsg  msg;
-} TWeTalkEventMailItem;
+    struct {
+        void* src_frame;
+        void* dst_frame;
+    } TrtcAudioCodec;
+
+    struct {
+        char  reason[64];        /**< 强制停止原因，如"segment-too-long" */
+        float max_duration_secs; /**< 最大发言时长（秒） */
+    } PttForceStop;
+
+} TWeTalkEventMsg;
 
 /**
  * @brief 设备通讯录，当对话过程中说"给小明打电话"时，会从通讯录中查找对应的设备
  *        所以在通话☎️前需要更新次通讯录
  *
- */typedef struct {
+ */
+typedef struct {
     char name[32];    /**< 用户昵称，如：妈妈、小明 */
     char open_id[64]; /**< 用户open_id，同一个用户在同一个小程序下的openid是唯一的 */
 } TWeCallOpenids;
 
+#define TWETALK_MAX_OPENIDS 10 /**< 最大支持的联系人数量 */
+
 /**
- * @brief 音频回调，不要阻塞
+ * @brief 音频接收回调，不要阻塞
  *
  */
 typedef int (*twetalk_recv_audio_cb)(uint8_t* recv_data, int recv_len, void* context);
@@ -214,6 +229,23 @@ typedef int (*twetalk_recv_audio_cb)(uint8_t* recv_data, int recv_len, void* con
  *
  */
 typedef int (*twetalk_recv_event_cb)(TWeTalkEventType type, TWeTalkEventMsg* msg, void* context);
+
+/**
+ * @brief 对话模式
+ */
+typedef enum {
+    TWETALK_USER_TURN_MODE_CONTINUOUS = 0, /**< 连续对话模式（默认） */
+    TWETALK_USER_TURN_MODE_PTT       = 1, /**< 按键对话模式 */
+} TWeTalkUserTurnMode;
+
+/**
+ * @brief PTT控制动作
+ */
+typedef enum {
+    TWETALK_PTT_ACTION_START     = 0, /**< 开始说话 */
+    TWETALK_PTT_ACTION_END       = 1, /**< 结束说话 */
+    TWETALK_PTT_ACTION_INTERRUPT = 2, /**< 打断Bot */
+} TWeTalkPttAction;
 
 typedef enum {
     TWETALK_AUDIO_TYPE_PCM,
