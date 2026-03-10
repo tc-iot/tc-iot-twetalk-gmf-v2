@@ -384,7 +384,9 @@ static int recorder_inport_release_read(void *handle, esp_gmf_data_bus_block_t *
 #ifndef CONFIG_KEY_PRESS_DIALOG_MODE
 static void esp_gmf_afe_event_cb(esp_gmf_obj_handle_t obj, esp_gmf_afe_evt_t *event, void *user_data)
 {
-    audio_recorder.cb((void *)event, audio_recorder.ctx);
+    if (audio_recorder.cb) {
+        audio_recorder.cb((void *)event, audio_recorder.ctx);
+    }
     switch (event->type) {
         case ESP_GMF_AFE_EVT_WAKEUP_START: {
             // wakeup = true;
